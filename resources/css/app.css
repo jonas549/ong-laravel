@@ -662,7 +662,16 @@ table.plist tr:hover td { background: #fdfcfb; }
     padding: 22px 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    /*
+     * El árbol entero desplegado no cabe en una pantalla, así que la barra
+     * lleva su propio scroll y se queda quieta mientras se navega el contenido.
+     */
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .admin-side a {
@@ -690,6 +699,129 @@ table.plist tr:hover td { background: #fdfcfb; }
     font-weight: 700;
     padding: 18px 22px 6px;
 }
+
+/* ── Árbol del menú ─────────────────────────────────────── */
+
+.nav-buscador {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 16px 12px;
+    padding: 7px 11px;
+    border: 1.5px solid var(--linea);
+    border-radius: 10px;
+    background: var(--bg-warm);
+    color: var(--gris);
+}
+
+.nav-buscador:focus-within { border-color: var(--naranjo); background: #fff; }
+
+.nav-buscador input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: none;
+    font-family: var(--font);
+    font-size: 13.5px;
+    color: var(--ink);
+}
+
+.nav-arbol { display: flex; flex-direction: column; gap: 1px; }
+
+/* Hojas: enlazan a una pantalla. */
+.admin-side .nav-hoja {
+    display: block;
+    padding: 8px 22px;
+    font-size: 13.5px;
+    line-height: 1.35;
+    color: var(--gris-700);
+    border-left: 3px solid transparent;
+}
+
+.admin-side .nav-hoja:hover { background: var(--bg-warm); color: var(--naranjo); }
+
+.admin-side .nav-hoja.on {
+    border-left-color: var(--naranjo);
+    color: var(--naranjo-600);
+    font-weight: 600;
+    background: var(--naranjo-100);
+}
+
+/* Ramas: agrupan y se abren. */
+.nav-rama {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px 8px 22px;
+    border: 0;
+    border-left: 3px solid transparent;
+    background: none;
+    font-family: var(--font);
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.nav-rama:hover { background: var(--bg-warm); }
+
+.nav-rama.on { border-left-color: var(--naranjo); color: var(--naranjo-600); }
+
+.admin-side .nav-rama-texto {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    background: none;
+}
+
+.admin-side a.nav-rama-texto:hover { background: none; color: inherit; }
+
+.nav-flecha {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: #a9adb2;
+    cursor: pointer;
+}
+
+.nav-flecha:hover { background: var(--linea); color: var(--ink); }
+
+.nav-flecha svg { transition: transform .16s ease; }
+
+.nav-hijos { display: flex; flex-direction: column; gap: 1px; }
+
+/* ── Migas de pan ───────────────────────────────────────── */
+
+.migas {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 14px;
+    font-size: 12.5px;
+    color: var(--gris);
+}
+
+.migas a { color: var(--gris); }
+
+.migas a:hover { color: var(--naranjo); text-decoration: underline; }
+
+.migas [aria-current='page'] { color: var(--ink); font-weight: 600; }
+
+.migas-sep { color: #c9ccd0; }
 
 .admin-main { background: var(--bg-warm); padding: 28px 32px 60px; min-width: 0; }
 
@@ -730,7 +862,16 @@ table.plist tr:hover td { background: #fdfcfb; }
         border-bottom: 1px solid var(--linea);
     }
 
-    .admin-side { display: none; border-right: 0; border-bottom: 1px solid var(--linea); padding: 8px 0 16px; }
+    .admin-side {
+        display: none;
+        border-right: 0;
+        border-bottom: 1px solid var(--linea);
+        padding: 8px 0 16px;
+        /* Aquí no se queda fija: es un panel que se despliega y se cierra. */
+        position: static;
+        max-height: none;
+        overflow: visible;
+    }
 
     .admin-side.abierta { display: flex; }
 
@@ -738,6 +879,18 @@ table.plist tr:hover td { background: #fdfcfb; }
     .admin-side > div:first-child { display: none; }
 
     .admin-side a { padding: 12px 20px; }
+
+    /* 44px de alto para que se puedan pulsar con el dedo. */
+    .admin-side .nav-hoja { padding-top: 11px; padding-bottom: 11px; font-size: 14.5px; }
+
+    .nav-rama { padding-top: 11px; padding-bottom: 11px; font-size: 14.5px; }
+
+    .nav-flecha { width: 40px; height: 40px; }
+
+    .nav-buscador { margin: 4px 16px 10px; padding: 9px 12px; }
+
+    /* 16px: por debajo de eso, iOS hace zoom al enfocar el campo. */
+    .nav-buscador input { font-size: 16px; }
 
     .admin-main { padding: 20px 20px 48px; }
 }

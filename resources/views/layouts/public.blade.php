@@ -18,8 +18,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', config('app.name'))</title>
-    <meta name="description" content="@yield('meta', 'Participa como voluntario, visita actividades solidarias o comparte la tuya.')">
+    @php
+        // Lo que cada vista declare manda; lo de Configuracion > SEO es el
+        // valor por defecto para las que no declaran nada.
+        $seoTitulo = trim($__env->yieldContent('title')) ?: (\App\Models\Setting::get('seo_titulo') ?: config('app.name'));
+        $seoDescripcion = trim($__env->yieldContent('meta')) ?: (\App\Models\Setting::get('seo_descripcion') ?: '');
+        $seoImagen = \App\Models\Setting::get('seo_imagen');
+    @endphp
+
+    <title>{{ $seoTitulo }}</title>
+    <meta name="description" content="{{ $seoDescripcion }}">
+
+    @unless (\App\Models\Setting::get('seo_indexable', true))
+        {{-- Mientras el sitio no esta listo, que no lo indexe nadie. --}}
+        <meta name="robots" content="noindex, nofollow">
+    @endunless
+
+    {{-- Lo que se ve al compartir el enlace en redes o en WhatsApp. --}}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ \App\Models\Setting::get('sitio_nombre') ?: config('app.name') }}">
+    <meta property="og:title" content="{{ $seoTitulo }}">
+    <meta property="og:description" content="{{ $seoDescripcion }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    @if ($seoImagen)
+        <meta property="og:image" content="{{ \Illuminate\Support\Str::startsWith($seoImagen, ['http://', 'https://']) ? $seoImagen : asset($seoImagen) }}">
+    @endif
+    <meta name="twitter:card" content="{{ $seoImagen ? 'summary_large_image' : 'summary' }}">
 
     <link rel="icon" href="{{ asset('img/dps-logo-header.png') }}">
 

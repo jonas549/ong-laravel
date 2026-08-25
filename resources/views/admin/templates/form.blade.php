@@ -1,4 +1,5 @@
 @extends('layouts.admin')
+@section('miga', $plantilla->nombre)
 @section('title', $plantilla->nombre)
 
 @section('actions')

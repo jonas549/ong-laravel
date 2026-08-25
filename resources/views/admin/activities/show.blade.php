@@ -1,5 +1,6 @@
 @extends('layouts.admin')
 @section('title', 'Revisar actividad')
+@section('miga', \Illuminate\Support\Str::limit($activity->titulo, 40))
 
 @section('content')
 @php $t = $activity->estado_color; @endphp

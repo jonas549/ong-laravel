@@ -1,4 +1,5 @@
 @extends('layouts.admin')
+@section('miga', \Illuminate\Support\Str::limit($email->subject ?: 'Correo', 40))
 @section('title', 'Detalle del correo')
 
 @section('content')

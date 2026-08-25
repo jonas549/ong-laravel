@@ -38,6 +38,48 @@ window.estiloCirculoPaso = (paso, n) => {
     return base + 'background:#fff;color:#b7babe;border:1.5px solid #e6e8ea;';
 };
 
+/*
+ * Secciones colapsables del menú del panel.
+ *
+ * El estado se guarda en localStorage para que el menú siga como lo dejaste al
+ * cambiar de pantalla: con el árbol entero desplegado hay que hacer scroll para
+ * llegar a lo de abajo, y eso cansa a la tercera vez.
+ *
+ * La sección que contiene la pantalla actual se abre siempre, aunque estuviera
+ * cerrada: si no, al entrar por un enlace directo no se vería dónde estás.
+ */
+const CLAVE_MENU = 'dps.panel.menu';
+
+const leerMenu = () => {
+    try {
+        return JSON.parse(localStorage.getItem(CLAVE_MENU)) || {};
+    } catch {
+        // Modo privado, almacenamiento bloqueado o un valor corrupto: se sigue
+        // sin memoria, que es peor experiencia pero no un error.
+        return {};
+    }
+};
+
+const guardarMenu = (estado) => {
+    try {
+        localStorage.setItem(CLAVE_MENU, JSON.stringify(estado));
+    } catch {
+        /* sin memoria, pero el menú sigue funcionando */
+    }
+};
+
+Alpine.data('seccionMenu', (clave, contieneLaPantallaActual) => ({
+    abierta: contieneLaPantallaActual || leerMenu()[clave] === true,
+
+    alternar() {
+        this.abierta = !this.abierta;
+
+        const estado = leerMenu();
+        estado[clave] = this.abierta;
+        guardarMenu(estado);
+    },
+}));
+
 window.Alpine = Alpine;
 Alpine.start();
 

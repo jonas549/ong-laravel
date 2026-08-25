@@ -1,5 +1,6 @@
 @extends('layouts.admin')
 @section('title', ($fila->exists ? 'Editar' : 'Agregar') . ' · ' . $def['titulo'])
+@section('miga', $fila->exists ? 'Editar' : 'Agregar')
 
 @section('content')
 <a href="{{ route('admin.content.index', $tipo) }}" class="textlink" style="font-size:14px;">← Volver a {{ Str::lower($def['titulo']) }}</a>

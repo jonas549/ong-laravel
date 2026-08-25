@@ -38,31 +38,27 @@
             </a>
         </div>
 
-        <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'on' : '' }}" x-on:click="nav = false">Resumen</a>
+        {{-- Buscador del panel: con el árbol ya crecido, cuesta más recordar
+             dónde estaba una pantalla que encontrar el registro. --}}
+        <form method="GET" action="{{ route('admin.buscar') }}" class="nav-buscador">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
+            </svg>
+            <input type="search" name="q" value="@viejo('q', request()->routeIs('admin.buscar') ? request()->query('q') : '')"
+                   placeholder="Buscar en el panel…" aria-label="Buscar en el panel">
+        </form>
 
-        <div class="grp">Moderación</div>
-        <a href="{{ route('admin.activities.index') }}" class="{{ request()->routeIs('admin.activities.*') ? 'on' : '' }}">Actividades</a>
-        <a href="{{ route('admin.organizations.index') }}" class="{{ request()->routeIs('admin.organizations.*') ? 'on' : '' }}">Organizaciones</a>
-        <a href="{{ route('admin.registrations.index') }}" class="{{ request()->routeIs('admin.registrations.*') ? 'on' : '' }}">Inscripciones</a>
-
-        <div class="grp">Contenido</div>
-        @foreach (\App\Http\Controllers\Admin\ContentController::menu() as $slug => $label)
-            <a href="{{ route('admin.content.index', $slug) }}"
-               class="{{ request()->routeIs('admin.content.*') && request()->route('tipo') === $slug ? 'on' : '' }}">{{ $label }}</a>
-        @endforeach
-        <a href="{{ route('admin.taxonomies.index') }}" class="{{ request()->routeIs('admin.taxonomies.*') ? 'on' : '' }}">Catálogos</a>
-
-        <div class="grp">Sistema</div>
-        <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'on' : '' }}">Usuarios</a>
-        <a href="{{ route('admin.settings.general') }}" class="{{ request()->routeIs('admin.settings.general*') ? 'on' : '' }}">Configuración</a>
-        <a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'on' : '' }}">Correo (SMTP)</a>
-        <a href="{{ route('admin.emails.index') }}" class="{{ request()->routeIs('admin.emails.*') ? 'on' : '' }}">Log de correos</a>
-        <a href="{{ route('admin.accesos.index') }}" class="{{ request()->routeIs('admin.accesos.*') ? 'on' : '' }}">Log de accesos</a>
+        <nav class="nav-arbol" aria-label="Secciones del panel">
+            @foreach (\App\Support\MenuPanel::arbol() as $nodo)
+                @include('partials.admin.nodo', ['nodo' => $nodo, 'nivel' => 0])
+            @endforeach
+        </nav>
 
         {{-- El perfil va abajo, separado del menú de gestión: es de la persona,
              no del sitio. --}}
         <div class="grp" style="margin-top:auto;">Mi cuenta</div>
-        <a href="{{ route('admin.perfil') }}" class="{{ request()->routeIs('admin.perfil*') ? 'on' : '' }}">Mi perfil</a>
+        <a href="{{ route('admin.perfil') }}" class="nav-hoja {{ request()->routeIs('admin.perfil*') ? 'on' : '' }}"
+           x-on:click="nav = false">Mi perfil</a>
 
         <div style="padding:14px 22px 0;">
             <form method="POST" action="{{ route('admin.logout') }}">
@@ -73,6 +69,8 @@
     </aside>
 
     <main class="admin-main">
+        @include('partials.admin.migas')
+
         <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:22px;flex-wrap:wrap;">
             <h1 style="font-size:26px;font-weight:800;margin:0;letter-spacing:-.01em;">@yield('title', 'Panel')</h1>
             @yield('actions')

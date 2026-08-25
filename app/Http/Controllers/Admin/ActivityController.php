@@ -10,9 +10,14 @@ use Illuminate\Http\Request;
 
 class ActivityController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Cada estado tiene su nodo en el menu, asi que el estado puede venir fijo
+     * desde la ruta. Sigue aceptandose por query para no romper los enlaces
+     * que ya existian.
+     */
+    public function index(Request $request, ?string $estadoFijo = null)
     {
-        $estado = Filtro::texto($request, 'estado');
+        $estado = $estadoFijo ?: Filtro::texto($request, 'estado');
 
         $actividades = Activity::with(['organization', 'commune', 'region'])
             ->when($estado, fn ($q) => $q->where('estado', $estado))
@@ -24,7 +29,7 @@ class ActivityController extends Controller
 
         $conteos = Activity::selectRaw('estado, COUNT(*) n')->groupBy('estado')->pluck('n', 'estado');
 
-        return view('admin.activities.index', compact('actividades', 'conteos', 'estado'));
+        return view('admin.activities.index', compact('actividades', 'conteos', 'estado', 'estadoFijo'));
     }
 
     public function show(Activity $activity)

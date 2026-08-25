@@ -9,6 +9,7 @@ use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PublishController;
 use App\Http\Controllers\RegistrationController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -172,8 +173,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/perfil/sesiones/cerrar', [PerfilController::class, 'cerrarSesion'])->name('perfil.sesiones.cerrar');
         Route::post('/perfil/sesiones/otras', [PerfilController::class, 'cerrarOtras'])->name('perfil.sesiones.otras');
 
-        // Moderación
+        // Moderación. Cada estado es un nodo del menú, así que tiene su ruta.
         Route::get('/actividades', [Admin\ActivityController::class, 'index'])->name('activities.index');
+        Route::get('/actividades/pendientes', fn (Request $r, Admin\ActivityController $c) => $c->index($r, 'revision'))
+            ->name('activities.pendientes');
+        Route::get('/actividades/publicadas', fn (Request $r, Admin\ActivityController $c) => $c->index($r, 'publicada'))
+            ->name('activities.publicadas');
+        Route::get('/actividades/canceladas', fn (Request $r, Admin\ActivityController $c) => $c->index($r, 'cancelada'))
+            ->name('activities.canceladas');
         Route::get('/actividades/{activity}', [Admin\ActivityController::class, 'show'])->name('activities.show');
         Route::post('/actividades/{activity}/publicar', [Admin\ActivityController::class, 'approve'])->name('activities.approve');
         Route::post('/actividades/{activity}/ajustes', [Admin\ActivityController::class, 'requestChanges'])->name('activities.changes');
@@ -181,14 +188,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/actividades/{activity}/destacar', [Admin\ActivityController::class, 'toggleFeatured'])->name('activities.featured');
 
         Route::get('/organizaciones', [Admin\OrganizationController::class, 'index'])->name('organizations.index');
+        Route::get('/organizaciones/verificacion', [Admin\OrganizationController::class, 'verificacion'])
+            ->name('organizations.verificacion');
         Route::post('/organizaciones/{organization}/verificar', [Admin\OrganizationController::class, 'toggleVerified'])
             ->name('organizations.verify');
 
         Route::get('/inscripciones', [Admin\RegistrationController::class, 'index'])->name('registrations.index');
+        Route::get('/inscripciones/exportar', [Admin\RegistrationController::class, 'exportar'])->name('registrations.exportar');
+        Route::get('/inscripciones/exportar/descargar', [Admin\RegistrationController::class, 'descargar'])->name('registrations.descargar');
 
         Route::get('/usuarios', [Admin\UserController::class, 'index'])->name('users.index');
         Route::post('/usuarios', [Admin\UserController::class, 'store'])->name('users.store');
         Route::post('/usuarios/{user}/estado', [Admin\UserController::class, 'toggleActive'])->name('users.toggle');
+
+        // Buscador del panel
+        Route::get('/buscar', Admin\BuscadorController::class)->name('buscar');
+
+        // Secciones del home. El editor es el bloque F; aquí existen para que
+        // el árbol esté completo y se pueda navegar.
+        Route::get('/paginas/home/{seccion}', [Admin\HomeSectionController::class, 'show'])->name('home.seccion');
+        Route::get('/paginas/privacidad', [Admin\PaginaLegalController::class, 'privacidad'])->name('paginas.privacidad');
+
+        // Regiones y comunas (sólo consulta)
+        Route::get('/regiones', [Admin\RegionController::class, 'index'])->name('regiones.index');
 
         // Taxonomías
         Route::get('/taxonomias', [Admin\TaxonomyController::class, 'index'])->name('taxonomies.index');
@@ -207,6 +229,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Configuración
         Route::get('/configuracion', [Admin\SettingController::class, 'edit'])->name('settings.general');
         Route::put('/configuracion', [Admin\SettingController::class, 'update'])->name('settings.general.update');
+
+        Route::get('/configuracion/seo', [Admin\SeoController::class, 'edit'])->name('settings.seo');
+        Route::put('/configuracion/seo', [Admin\SeoController::class, 'update'])->name('settings.seo.update');
 
         Route::get('/configuracion/smtp', [Admin\SmtpSettingController::class, 'edit'])->name('settings.smtp');
         Route::put('/configuracion/smtp', [Admin\SmtpSettingController::class, 'update'])->name('settings.smtp.update');

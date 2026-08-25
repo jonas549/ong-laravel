@@ -12,7 +12,13 @@ class TaxonomyController extends Controller
 {
     public function index(Request $request)
     {
-        $grupo = Filtro::texto($request, 'grupo') ?: 'tema';
+        $grupo = Filtro::texto($request, 'grupo');
+
+        // Sin grupo no hay nodo del menu que marcar, asi que se manda al
+        // primero con su grupo puesto en la URL.
+        if ($grupo === '') {
+            return redirect()->route('admin.taxonomies.index', ['grupo' => 'tema']);
+        }
 
         abort_unless(isset(TaxonomyTerm::GRUPOS[$grupo]), 404);
 

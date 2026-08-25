@@ -12,8 +12,19 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
+        // El rol viene del menu: "Administradores" y "Organizadores" son dos
+        // nodos distintos que llevan a la misma pantalla.
+        $rol = Filtro::texto($request, 'rol');
+
+        if ($rol && ! in_array($rol, [User::ROL_ADMIN, User::ROL_ORGANIZER], true)) {
+            $rol = '';
+        }
+
         $usuarios = User::with('organization')
+            ->when($rol, fn ($q) => $q->where('role', $rol))
             ->when(Filtro::texto($request, 'q'), function ($q, $b) {
+                $b = Filtro::like($b);
+
                 $q->where(function ($w) use ($b) {
                     $w->where('name', 'like', "%{$b}%")->orWhere('email', 'like', "%{$b}%");
                 });
@@ -22,7 +33,11 @@ class UserController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.users.index', compact('usuarios'));
+        return view('admin.users.index', [
+            'usuarios' => $usuarios,
+            'rol' => $rol,
+            'conteos' => User::selectRaw('role, COUNT(*) n')->groupBy('role')->pluck('n', 'role'),
+        ]);
     }
 
     public function store(Request $request)

@@ -113,6 +113,31 @@ class SettingsSeeder extends Seeder
                 'label' => 'Publicación de actividades abierta',
                 'descripcion' => 'Apagar oculta el formulario público de publicación.',
             ],
+
+            // SEO
+            [
+                'grupo' => 'seo', 'clave' => 'seo_titulo', 'tipo' => 'string',
+                'valor' => 'Día del Patrimonio Social — 4 y 5 de diciembre, Chile 2026',
+                'label' => 'Título por defecto',
+                'descripcion' => 'El que sale en la pestaña del navegador y en Google cuando la página no trae uno propio.',
+            ],
+            [
+                'grupo' => 'seo', 'clave' => 'seo_descripcion', 'tipo' => 'string',
+                'valor' => 'Dos días para poner en valor lo que las organizaciones sociales construyen todo el año. Suma tu actividad o participa en una cerca de ti.',
+                'label' => 'Descripción por defecto',
+                'descripcion' => 'Entre 120 y 160 caracteres es lo que Google suele mostrar entero.',
+            ],
+            [
+                'grupo' => 'seo', 'clave' => 'seo_imagen', 'tipo' => 'string',
+                'valor' => 'img/dps-logo-header.png',
+                'label' => 'Imagen para redes sociales',
+                'descripcion' => 'La que se ve al compartir un enlace. Ruta dentro de public/, por ejemplo img/portada.png.',
+            ],
+            [
+                'grupo' => 'seo', 'clave' => 'seo_indexable', 'tipo' => 'bool', 'valor' => '1',
+                'label' => 'Permitir que los buscadores indexen el sitio',
+                'descripcion' => 'Apagar añade noindex en todas las páginas. Útil mientras el sitio no está listo.',
+            ],
         ];
     }
 }
