@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Activity;
 use App\Models\ActivityCollaborator;
 use App\Models\TaxonomyTerm;
+use App\Rules\CorreoEnviable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -101,7 +102,7 @@ class UpdateActivityRequest extends FormRequest
             'inscripcion_habilitada' => ['nullable', 'boolean'],
             'info_previa' => ['nullable', 'string', 'max:2000'],
 
-            'correo_contacto' => ['nullable', 'email', 'max:255'],
+            'correo_contacto' => ['nullable', 'email', 'max:255', new CorreoEnviable],
             'enlace_red_social' => ['nullable', 'url', 'max:255'],
             'enlace_web' => ['nullable', 'url', 'max:255'],
 

@@ -16,17 +16,29 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->data() as $orden => $s) {
-            Setting::updateOrCreate(
-                ['clave' => $s['clave']],
-                [
-                    'grupo' => $s['grupo'],
-                    'valor' => $s['valor'] ?? null,
-                    'tipo' => $s['tipo'],
-                    'label' => $s['label'],
-                    'descripcion' => $s['descripcion'] ?? null,
-                    'orden' => $orden + 1,
-                ],
-            );
+            $existente = Setting::where('clave', $s['clave'])->first();
+
+            $meta = [
+                'grupo' => $s['grupo'],
+                'tipo' => $s['tipo'],
+                'label' => $s['label'],
+                'descripcion' => $s['descripcion'] ?? null,
+                'orden' => $orden + 1,
+            ];
+
+            if ($existente) {
+                // Sólo se refresca la metadatos. El valor NO se toca: volver a
+                // correr el seeder en producción borraría la contraseña SMTP y
+                // cualquier ajuste que haya cambiado la ONG.
+                $existente->update($meta);
+
+                continue;
+            }
+
+            Setting::create($meta + [
+                'clave' => $s['clave'],
+                'valor' => $s['valor'] ?? null,
+            ]);
         }
     }
 
@@ -90,6 +102,11 @@ class SettingsSeeder extends Seeder
                 'grupo' => 'general', 'clave' => 'inscripciones_abiertas', 'tipo' => 'bool', 'valor' => '1',
                 'label' => 'Inscripciones abiertas',
                 'descripcion' => 'Apagar cierra la inscripción en todas las actividades a la vez.',
+            ],
+            [
+                'grupo' => 'general', 'clave' => 'recordatorio_dias', 'tipo' => 'int', 'valor' => '3',
+                'label' => 'Días de antelación del recordatorio',
+                'descripcion' => 'Cuántos días antes de la actividad se avisa a las personas inscritas.',
             ],
             [
                 'grupo' => 'general', 'clave' => 'publicacion_abierta', 'tipo' => 'bool', 'valor' => '1',

@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
+use App\Services\CorreoTransaccional;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -115,6 +116,8 @@ class PublishController extends Controller
 
         // Fuera de la transacción: si el correo falla, la actividad ya existe.
         $moderacion->cambiar($actividad, 'revision', null);
+
+        app(CorreoTransaccional::class)->bienvenida($actividad->organization->user);
 
         return redirect()
             ->route('publish.done', $actividad)

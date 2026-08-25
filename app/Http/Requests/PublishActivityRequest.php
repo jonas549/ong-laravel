@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Activity;
 use App\Models\Organization;
 use App\Models\TaxonomyTerm;
+use App\Rules\CorreoEnviable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -75,7 +76,7 @@ class PublishActivityRequest extends FormRequest
             'org_num_voluntarios' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'org_unidad_educativa' => ['nullable', 'required_if:org_tipo,Institución educativa', 'string', 'max:255'],
             'org_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:500'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => ['required', 'email', 'max:255', new CorreoEnviable, Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
 
             // Paso 4 — la actividad
@@ -98,7 +99,7 @@ class PublishActivityRequest extends FormRequest
             'accesibilidad_detalle' => ['nullable', 'string', 'max:2000'],
 
             'usar_correo_cuenta' => ['nullable', 'boolean'],
-            'correo_contacto' => ['nullable', 'email', 'max:255'],
+            'correo_contacto' => ['nullable', 'email', 'max:255', new CorreoEnviable],
             'enlace_red_social' => ['nullable', 'url', 'max:255'],
             'enlace_web' => ['nullable', 'url', 'max:255'],
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],

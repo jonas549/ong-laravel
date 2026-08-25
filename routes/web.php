@@ -143,9 +143,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/configuracion/smtp', [Admin\SmtpSettingController::class, 'update'])->name('settings.smtp.update');
         Route::post('/configuracion/smtp/probar', [Admin\SmtpSettingController::class, 'sendTest'])->name('settings.smtp.test');
 
+        // Plantillas de correo
+        Route::get('/plantillas', [Admin\EmailTemplateController::class, 'index'])->name('templates.index');
+        Route::get('/plantillas/{template}', [Admin\EmailTemplateController::class, 'edit'])->name('templates.edit');
+        Route::put('/plantillas/{template}', [Admin\EmailTemplateController::class, 'update'])->name('templates.update');
+        Route::post('/plantillas/{template}/previa', [Admin\EmailTemplateController::class, 'preview'])->name('templates.preview');
+        Route::post('/plantillas/{template}/prueba', [Admin\EmailTemplateController::class, 'test'])->name('templates.test');
+
         // Log de correos
         Route::get('/correos', [Admin\EmailLogController::class, 'index'])->name('emails.index');
         Route::get('/correos/{email}', [Admin\EmailLogController::class, 'show'])->name('emails.show');
+        Route::post('/correos/{email}/reenviar', [Admin\EmailLogController::class, 'resend'])->name('emails.resend');
     });
 });
 

@@ -22,7 +22,24 @@
         @if ($email->sent_at)
             <dt class="helper" style="font-weight:700;">Enviado</dt><dd style="margin:0;">{{ $email->sent_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
         @endif
+        @if ($email->reenviado_at)
+            <dt class="helper" style="font-weight:700;">Reenviado</dt><dd style="margin:0;">{{ $email->reenviado_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+        @endif
+        @if ($email->plantilla)
+            <dt class="helper" style="font-weight:700;">Plantilla</dt><dd style="margin:0;">{{ $email->plantilla }}</dd>
+        @endif
+        @if ($email->adjuntos)
+            <dt class="helper" style="font-weight:700;">Adjuntos</dt><dd style="margin:0;">{{ implode(', ', $email->adjuntos) }}</dd>
+        @endif
+        <dt class="helper" style="font-weight:700;">Intentos</dt><dd style="margin:0;">{{ $email->attempts }}</dd>
     </dl>
+
+    <form method="POST" action="{{ route('admin.emails.resend', $email) }}" style="margin-bottom:22px;"
+          onsubmit="return confirm('¿Reenviar este correo a {{ $email->to }}?');">
+        @csrf
+        <button type="submit" class="btn btn-outline btn-sm">Reenviar</button>
+        <span class="helper" style="margin-left:10px;">Se reenvía el contenido tal como quedó registrado.</span>
+    </form>
 
     @if ($email->error)
         <div class="alert alert-error" style="margin-bottom:22px;">

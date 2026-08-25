@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RegionCommuneSeeder::class,
             TaxonomySeeder::class,
             SettingsSeeder::class,
+            EmailTemplateSeeder::class,
             UserSeeder::class,
             ContentSeeder::class,
             ActivitySeeder::class,

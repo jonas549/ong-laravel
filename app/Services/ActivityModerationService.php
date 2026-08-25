@@ -62,9 +62,34 @@ class ActivityModerationService
 
         if ($notificar) {
             $this->avisar($actividad, $nuevoEstado);
+
+            // Cancelar afecta a quien ya se inscribió, no sólo a la organización.
+            if ($nuevoEstado === 'cancelada') {
+                $this->avisarInscritos($actividad);
+            }
         }
 
         return $actividad;
+    }
+
+    /**
+     * Avisa a cada persona inscrita de que la actividad se canceló.
+     *
+     * Por lotes: una actividad con cientos de inscritos no debe cargarlos
+     * todos en memoria ni encolar de golpe.
+     */
+    private function avisarInscritos(Activity $actividad): void
+    {
+        $correos = app(CorreoTransaccional::class);
+
+        $actividad->registrations()
+            ->where('estado', '!=', 'cancelado')
+            ->chunkById(100, function ($inscripciones) use ($correos, $actividad) {
+                foreach ($inscripciones as $inscripcion) {
+                    $inscripcion->setRelation('activity', $actividad);
+                    $correos->inscripcionCancelada($inscripcion);
+                }
+            });
     }
 
     /**

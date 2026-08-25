@@ -6,6 +6,7 @@ use App\Http\Requests\RegistrationRequest;
 use App\Models\Activity;
 use App\Models\Registration;
 use App\Models\Setting;
+use App\Services\CorreoTransaccional;
 use Illuminate\Support\Facades\DB;
 
 class RegistrationController extends Controller
@@ -31,7 +32,7 @@ class RegistrationController extends Controller
             return back()->with('error', 'Ese correo ya está inscrito en esta actividad.');
         }
 
-        DB::transaction(function () use ($activity, $datos, $request) {
+        $inscripcion = DB::transaction(function () use ($activity, $datos, $request) {
             // Bloqueo de fila: sin esto, dos inscripciones simultáneas podrían
             // pasar del cupo cuando quede solo uno disponible.
             $bloqueada = Activity::whereKey($activity->id)->lockForUpdate()->first();
@@ -40,7 +41,7 @@ class RegistrationController extends Controller
                 abort(409, 'Se acabaron los cupos.');
             }
 
-            Registration::create([
+            $inscripcion = Registration::create([
                 'activity_id' => $bloqueada->id,
                 'nombre' => $datos['nombre'],
                 'correo' => $datos['correo'],
@@ -52,7 +53,17 @@ class RegistrationController extends Controller
             if ($bloqueada->cupos_disponibles !== null) {
                 $bloqueada->decrement('cupos_disponibles');
             }
+
+            return $inscripcion;
         });
+
+        // Fuera de la transacción: la inscripción ya está guardada, y un fallo
+        // de correo no debe deshacerla.
+        $inscripcion->load('activity.organization.user', 'activity.commune', 'activity.region');
+
+        $correos = app(CorreoTransaccional::class);
+        $correos->inscripcionConfirmada($inscripcion);
+        $correos->nuevaInscripcion($inscripcion);
 
         return back()->with('ok', 'Listo, guardamos tu inscripción. Te esperamos.');
     }

@@ -10,13 +10,18 @@ class EmailLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'to', 'cc', 'bcc', 'subject', 'body_html', 'mailable',
-        'status', 'error', 'sent_at', 'attempts', 'related_type', 'related_id',
+        'mensaje_uuid', 'to', 'cc', 'bcc', 'subject', 'body_html', 'mailable', 'plantilla', 'adjuntos',
+        'status', 'error', 'sent_at', 'reenviado_at', 'attempts', 'related_type', 'related_id',
     ];
 
     protected function casts(): array
     {
-        return ['sent_at' => 'datetime', 'attempts' => 'integer'];
+        return [
+            'sent_at' => 'datetime',
+            'reenviado_at' => 'datetime',
+            'attempts' => 'integer',
+            'adjuntos' => 'array',
+        ];
     }
 
     public function related()

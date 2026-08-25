@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\CorreoEnviable;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegistrationRequest extends FormRequest
@@ -16,7 +17,7 @@ class RegistrationRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'correo' => ['required', 'email', 'max:255'],
+            'correo' => ['required', 'email', 'max:255', new CorreoEnviable],
             'telefono' => ['nullable', 'string', 'max:40'],
             'es_mayor_edad' => ['nullable', 'boolean'],
         ];
