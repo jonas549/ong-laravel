@@ -148,11 +148,25 @@ document.addEventListener('click', (e) => {
     }
 });
 
+/*
+ * Deslizar un carrusel dispara decenas de eventos de scroll por segundo, y
+ * syncDots lee scrollWidth, clientWidth y getBoundingClientRect: son lecturas
+ * que fuerzan al navegador a recalcular la maquetación. Se agrupan en un solo
+ * frame para no pagarlo en cada evento.
+ */
+let dotsPendientes = null;
+
 document.addEventListener('scroll', (e) => {
     const t = e.target;
-    if (t && t.classList && t.classList.contains('carousel')) {
-        syncDots(t.getAttribute('data-carousel'));
-    }
+    if (!t || !t.classList || !t.classList.contains('carousel')) return;
+
+    const key = t.getAttribute('data-carousel');
+    if (dotsPendientes) return;
+
+    dotsPendientes = requestAnimationFrame(() => {
+        dotsPendientes = null;
+        syncDots(key);
+    });
 }, true);
 
 // ── Video diferido: el iframe no se carga hasta el click ─────

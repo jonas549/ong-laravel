@@ -143,7 +143,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     background: #fff;
     color: var(--gris);
     cursor: pointer;
-    transition: all .18s ease;
+    transition: border-color .18s ease, color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 .icon-btn:hover { border-color: var(--naranjo); color: var(--naranjo); transform: scale(1.06); }
@@ -159,7 +159,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     border: 1.5px solid #e2e3e6;
     background: #fff;
     color: var(--gris-700);
-    transition: all .18s ease;
+    transition: border-color .18s ease, color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 .sqbtn:hover {
@@ -252,7 +252,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     border: 1.5px solid #e4e6e8;
     background: #fff;
     color: var(--gris);
-    transition: all .18s ease;
+    transition: border-color .18s ease, color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 .chip:hover { border-color: var(--naranjo); color: var(--naranjo); }
@@ -275,7 +275,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     border-radius: 999px;
     border: 1.5px solid transparent;
     color: var(--gris);
-    transition: all .18s ease;
+    transition: border-color .18s ease, color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
     white-space: nowrap;
     background: transparent;
 }
@@ -317,7 +317,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     border: 2px solid #e8e9eb;
     border-radius: 22px;
     padding: 26px;
-    transition: all .22s ease;
+    transition: border-color .22s ease, color .22s ease, background .22s ease, transform .22s ease, box-shadow .22s ease;
     box-shadow: 0 14px 34px -30px rgba(0, 0, 0, .3);
 }
 
@@ -343,7 +343,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     background: #fff;
     border: 2px solid #e8e9eb;
     border-radius: 20px;
-    transition: all .22s ease;
+    transition: border-color .22s ease, color .22s ease, background .22s ease, transform .22s ease, box-shadow .22s ease;
 }
 
 .tileopt:hover { border-color: var(--naranjo); color: var(--naranjo); transform: translateY(-3px); }
@@ -407,7 +407,7 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .part-card:hover .pc-cta { transform: translateY(-1px); box-shadow: 0 12px 24px -10px rgba(229, 114, 0, .9); }
 
-.part-card .pc-arrow { display: grid; place-items: center; transition: all .22s ease; }
+.part-card .pc-arrow { display: grid; place-items: center; transition: border-color .22s ease, color .22s ease, background .22s ease, transform .22s ease, box-shadow .22s ease; }
 
 .part-card:hover .pc-arrow { transform: translateX(3px); }
 
@@ -481,7 +481,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     height: 8px;
     border-radius: 50%;
     background: #d5d6d9;
-    transition: all .2s ease;
+    transition: border-color .2s ease, color .2s ease, background .2s ease, transform .2s ease;
     cursor: pointer;
     border: 0;
     padding: 0;
@@ -757,6 +757,24 @@ table.plist tr:hover td { background: #fdfcfb; }
 
 .nav-toggle { display: none; }
 
+/*
+ * touch-action: manipulation quita el retardo de ~300ms que algunos
+ * navegadores dejan para detectar el doble toque de zoom. Era parte del
+ * "a veces responde al toque, a veces no".
+ */
+button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
+    touch-action: manipulation;
+}
+
+/* El :hover en táctil se queda pegado tras el toque. */
+@media (hover: none) {
+    .icon-btn:hover, .btn:hover, .sqbtn:hover, .bigopt:hover,
+    .tileopt:hover, .chip:hover, .logo-chip:hover, .actcard:hover,
+    .act-card:hover, .part-card:hover {
+        transform: none;
+    }
+}
+
 .navlink-movil {
     display: block;
     padding: 11px 2px;
@@ -775,9 +793,18 @@ table.plist tr:hover td { background: #fdfcfb; }
 }
 
 @media (max-width: 1020px) {
-    /* Sólo logo y hamburguesa: el resto baja al desplegable. */
+    /*
+     * Fondo sólido en vez de desenfoque. backdrop-filter sobre una barra
+     * sticky obliga al navegador a recomponer la zona desenfocada en cada
+     * frame de scroll; en teléfono es de las causas más habituales de que la
+     * página se sienta pegada. La diferencia visual a este ancho es mínima.
+     */
+    .nav-barra { backdrop-filter: none !important; background: #fff !important; }
+
+    /* Los enlaces y los iconos bajan al desplegable; el botón de publicar se
+       queda visible entre el logo y la hamburguesa. */
     .nav-links { display: none !important; }
-    .nav-cta { display: none !important; }
+    .nav-iconos { display: none !important; }
     .nav-toggle { display: grid; }
 }
 
@@ -809,6 +836,30 @@ table.plist tr:hover td { background: #fdfcfb; }
 
     .grid-3 { grid-template-columns: 1fr !important; }
     .grid-auto { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+    /*
+     * Carruseles. Las tarjetas traían min-width de 288 y 320px: con las flechas
+     * ocupando su sitio a los lados, la ventana visible quedaba en 167px y el
+     * texto salía cortado a media palabra. En móvil cada tarjeta ocupa el ancho
+     * completo, las flechas desaparecen —se pasa deslizando y con los puntos— y
+     * así dejan de taparla.
+     */
+    .carrusel-fila > .icon-btn { display: none !important; }
+
+    .tarjeta-carrusel {
+        flex: 0 0 100% !important;
+        /* Sin reset global de box-sizing, el 100% es del contenido y el padding
+           se suma encima: la tarjeta acababa 50px más ancha que su ventana. */
+        box-sizing: border-box;
+        min-width: 0 !important;
+        scroll-snap-align: start;
+    }
+
+    .carousel { scroll-snap-type: x mandatory; }
+
+    /* El acolchado de la tarjeta de testimonio ahoga el texto a este ancho. */
+    figure.tarjeta-carrusel { padding: 32px 24px 28px !important; gap: 20px !important; }
+    figure.tarjeta-carrusel > span[aria-hidden] { top: 22px !important; right: 22px !important; }
 
     /*
      * iOS Safari hace zoom al enfocar un campo cuya fuente baja de 16px, y
@@ -855,7 +906,11 @@ table.plist tr:hover td { background: #fdfcfb; }
     .grid-logos .logo-chip img { max-height: 44px; }
 
     .nav-sep, .nav-cos { display: none !important; }
-    .nav-logos img { height: 38px !important; }
+    .nav-logos img { height: 34px !important; }
+
+    /* Sitio para que "Publica tu actividad" quepa junto al logo. */
+    .nav-fila { padding: 10px 16px !important; gap: 12px !important; }
+    .nav-cta { font-size: 12.5px !important; padding: 10px 14px !important; min-height: 40px; }
 
     .contenido { padding-left: 18px !important; padding-right: 18px !important; }
 
