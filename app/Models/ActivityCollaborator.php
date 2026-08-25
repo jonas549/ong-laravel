@@ -10,7 +10,15 @@ class ActivityCollaborator extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['activity_id', 'nombre', 'orden'];
+    /** Los tipos que ofrece el select de mi-cuenta.html: TIPOS sin "Otra". */
+    public const TIPOS = [
+        'Organización sin fines de lucro',
+        'Empresa o institución privada',
+        'Institución educativa',
+        'Municipalidad u organismo público',
+    ];
+
+    protected $fillable = ['activity_id', 'nombre', 'tipo', 'orden'];
 
     public function activity(): BelongsTo
     {

@@ -1,9 +1,9 @@
 <section style="background:var(--bg-warm);position:relative;overflow:hidden;">
-    <img class="linework" src="{{ asset('img/manos.png') }}" alt="" aria-hidden="true">
+    <img loading="lazy" decoding="async" class="linework" width="1045" height="721" src="{{ asset('img/manos.png') }}" alt="" aria-hidden="true">
 
     <div style="max-width:1180px;margin:0 auto;padding:88px 40px;text-align:center;position:relative;z-index:2;">
         <div class="reveal" style="display:flex;align-items:center;gap:28px;text-align:left;margin-bottom:40px;">
-            <img src="{{ asset('img/voces-crop.png') }}" alt="" aria-hidden="true" style="flex:none;width:112px;height:auto;">
+            <img loading="lazy" decoding="async" width="388" height="541" src="{{ asset('img/voces-crop.png') }}" alt="" aria-hidden="true" style="flex:none;width:112px;height:auto;">
             <div>
                 <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">Participantes del Día del Patrimonio Social</div>
                 <h2 style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">Voces del movimiento</h2>
@@ -25,7 +25,7 @@
                         <figcaption style="margin-top:auto;display:flex;align-items:center;gap:14px;">
                             <span style="flex:none;width:96px;height:96px;border-radius:999px;background:#fff;padding:11px;border:1px solid #e4e6e8;box-shadow:0 2px 10px -4px rgba(0,0,0,.14);display:grid;place-items:center;overflow:hidden;">
                                 @if ($q->logo_path)
-                                    <img src="{{ $q->logo_url }}" alt="" aria-hidden="true"
+                                    <img loading="lazy" decoding="async" src="{{ $q->logo_url }}" alt="" aria-hidden="true"
                                          style="width:100%;height:100%;object-fit:contain;{{ $q->bleed ? 'transform:scale(2.15);' : '' }}">
                                 @endif
                             </span>

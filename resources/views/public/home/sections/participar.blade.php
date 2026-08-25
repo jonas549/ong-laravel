@@ -13,12 +13,12 @@
                style="position:relative;overflow:hidden;background:#fff;border:1px solid #eef0f1;border-top:4px solid {{ $w->color }};border-radius:18px;padding:18px 18px 16px;display:flex;flex-direction:column;height:100%;box-shadow:0 22px 44px -26px rgba(0,0,0,.34);">
 
                 @if ($w->art_path)
-                    <img class="pc-art" src="{{ asset($w->art_path) }}" alt="" aria-hidden="true"
+                    <img loading="lazy" decoding="async" class="pc-art" src="{{ asset($w->art_path) }}" alt="" aria-hidden="true"
                          style="position:absolute;right:-30px;bottom:-30px;width:170px;opacity:.18;pointer-events:none;">
                 @endif
 
                 @if ($w->mask_path)
-                    <img class="pc-icon" src="{{ asset($w->mask_path) }}" alt="" aria-hidden="true"
+                    <img loading="lazy" decoding="async" class="pc-icon" src="{{ asset($w->mask_path) }}" alt="" aria-hidden="true"
                          style="position:relative;z-index:1;height:78px;width:auto;max-width:96px;object-fit:contain;object-position:left bottom;align-self:flex-start;margin-bottom:12px;">
                 @endif
 

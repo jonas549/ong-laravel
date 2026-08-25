@@ -11,7 +11,7 @@
 
     @if ($post->imagen)
         <div style="border-radius:22px;overflow:hidden;margin:0 0 28px;">
-            <img src="{{ $post->imagen_url }}" alt="{{ $post->titulo }}" style="width:100%;height:auto;display:block;">
+            <img loading="lazy" decoding="async" src="{{ $post->imagen_url }}" alt="{{ $post->titulo }}" style="width:100%;height:auto;display:block;">
         </div>
     @endif
 

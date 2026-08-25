@@ -1,3 +1,16 @@
+{{--
+    El HTML fuente no usa un footer único: index.html trae el grande (redes,
+    "Volver arriba", crédito de ilustraciones) y mi-cuenta.html y
+    publicar-actividad.html traen uno compacto de una sola fila. Esos dos
+    además llevan el body en --bg-warm, mientras index.html lo deja blanco.
+
+    Las vistas de esos dos lo piden declarando, fuera de la sección:
+        @php $footerCompacto = true; @endphp
+
+    Con él vienen también el envoltorio en columna que necesita el
+    margin-top:auto del footer y la escala de botón de esas dos páginas.
+--}}
+@php $footerCompacto = $footerCompacto ?? false; @endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,8 +26,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-<body>
-<div style="overflow-x:hidden;">
+<body @class(['fondo-calido' => $footerCompacto])>
+<div @class(['escala-form' => $footerCompacto])
+     style="overflow-x:hidden;@if ($footerCompacto) min-height:100vh;display:flex;flex-direction:column; @endif">
 
     @include('partials.public.header')
 
@@ -31,7 +45,7 @@
 
     @yield('content')
 
-    @include('partials.public.footer')
+    @include($footerCompacto ? 'partials.public.footer-compact' : 'partials.public.footer')
 
 </div>
 @stack('scripts')

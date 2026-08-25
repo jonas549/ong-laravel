@@ -33,9 +33,13 @@ class ActivityController extends Controller
         ]);
     }
 
-    public function show(Activity $activity)
+    public function show(Request $request, Activity $activity)
     {
-        abort_unless($activity->estado === 'publicada', 404);
+        // La ficha es pública sólo si está publicada; su organización puede
+        // verla igual, que es lo que hace el botón "Vista previa" del editor.
+        $suya = $activity->organization_id === $request->user()?->organization?->id;
+
+        abort_unless($activity->estado === 'publicada' || $suya, 404);
 
         $activity->load(['organization', 'region', 'commune', 'terms', 'collaborators']);
 

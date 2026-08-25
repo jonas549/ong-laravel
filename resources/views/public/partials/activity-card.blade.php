@@ -7,7 +7,7 @@
 
 <div class="act-card reveal" style="flex:0 0 calc((100% - 52px) / 3);min-width:288px;background:#fff;border:1px solid #eef0f1;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 30px -22px rgba(0,0,0,.2);">
     <div style="aspect-ratio:16/10;overflow:hidden;background:var(--gris-100);">
-        <img class="act-img" src="{{ $act->imagen_url }}" alt="{{ $act->titulo }}"
+        <img loading="lazy" decoding="async" class="act-img" src="{{ $act->imagen_url }}" alt="{{ $act->titulo }}"
              style="width:100%;height:100%;object-fit:cover;display:block;">
     </div>
 

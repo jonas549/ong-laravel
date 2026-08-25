@@ -1,5 +1,5 @@
 <section id="top" style="position:relative;overflow:hidden;background:#e9c7e0;">
-    <img src="{{ asset('img/dps-banner-2560x1080-010726.jpg') }}"
+    <img decoding="async" width="1920" height="810" src="{{ asset('img/dps-banner-2560x1080-010726.jpg') }}"
          alt="Ilustración del Día del Patrimonio Social"
          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;">
 
@@ -20,7 +20,7 @@
         </p>
 
         <div style="position:relative;width:470px;max-width:100%;margin:22px auto 0;">
-            <img class="floaty" src="{{ asset('img/logo-corazon-15f12e4a.png') }}"
+            <img decoding="async" class="floaty" width="486" height="375" src="{{ asset('img/logo-corazon-15f12e4a.png') }}"
                  alt="Día del Patrimonio Social — dar está en nuestra naturaleza"
                  style="display:block;width:100%;height:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.22)) drop-shadow(0 4px 10px rgba(0,0,0,.12));">
             <a href="#voluntariado" style="position:absolute;left:50%;bottom:64px;transform:translateX(-50%);white-space:nowrap;background:var(--naranjo);color:#fff;font-weight:700;font-size:17px;padding:13px 30px;border-radius:999px;box-shadow:0 12px 26px -12px rgba(229,114,0,.85);">

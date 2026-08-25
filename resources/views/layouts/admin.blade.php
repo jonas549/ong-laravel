@@ -13,7 +13,7 @@
     <aside class="admin-side">
         <div style="padding:0 22px 14px;">
             <a href="{{ route('admin.dashboard') }}" style="display:inline-flex;">
-                <img src="{{ asset('img/dps-logo-header.png') }}" alt="Panel" style="height:38px;width:auto;">
+                <img loading="lazy" decoding="async" width="400" height="120" src="{{ asset('img/dps-logo-header.png') }}" alt="Panel" style="height:38px;width:auto;">
             </a>
         </div>
 

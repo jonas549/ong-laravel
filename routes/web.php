@@ -3,7 +3,6 @@
 use App\Http\Controllers\Account;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin;
-use App\Http\Controllers\EditionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
@@ -33,8 +32,6 @@ Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::clas
 Route::get('/noticias', [PostController::class, 'index'])->name('posts.index');
 Route::get('/noticias/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 
-Route::get('/ediciones', [EditionController::class, 'index'])->name('editions.index');
-
 /*
 |--------------------------------------------------------------------------
 | Mi cuenta (organizador)
@@ -50,6 +47,14 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
         Route::get('/', fn () => redirect()->route('account.activities.index'))->name('home');
 
         Route::get('/actividades', [Account\MyActivityController::class, 'index'])->name('activities.index');
+        Route::get('/actividades/{activity}/editar', [Account\MyActivityController::class, 'edit'])
+            ->name('activities.edit');
+        Route::put('/actividades/{activity}', [Account\MyActivityController::class, 'update'])
+            ->name('activities.update');
+        Route::get('/actividades/{activity}/guardado', [Account\MyActivityController::class, 'saved'])
+            ->name('activities.saved');
+        Route::post('/actividades/{activity}/duplicar', [Account\MyActivityController::class, 'duplicate'])
+            ->name('activities.duplicate');
         Route::post('/actividades/{activity}/enviar', [Account\MyActivityController::class, 'submitForReview'])
             ->name('activities.submit');
         Route::post('/actividades/{activity}/cancelar', [Account\MyActivityController::class, 'cancel'])
@@ -57,9 +62,31 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
 
         Route::get('/actividades/{activity}/participantes', [Account\ParticipantController::class, 'index'])
             ->name('participants.index');
+        Route::get('/actividades/{activity}/participantes/exportar', [Account\ParticipantController::class, 'export'])
+            ->name('participants.export');
         Route::patch('/actividades/{activity}/cupos', [Account\ParticipantController::class, 'updateCupos'])
             ->name('participants.cupos');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Recuperación de contraseña
+|--------------------------------------------------------------------------
+| Los nombres son los estándar de Laravel (password.*) porque son los que
+| arma el broker al construir el enlace del correo.
+*/
+
+Route::prefix('mi-cuenta')->group(function () {
+    Route::get('/recuperar-contrasena', [Account\PasswordResetController::class, 'request'])
+        ->name('password.request');
+    Route::post('/recuperar-contrasena', [Account\PasswordResetController::class, 'email'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('/restablecer-contrasena/{token}', [Account\PasswordResetController::class, 'reset'])
+        ->name('password.reset');
+    Route::post('/restablecer-contrasena', [Account\PasswordResetController::class, 'update'])
+        ->name('password.update');
 });
 
 /*

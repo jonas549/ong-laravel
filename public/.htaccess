@@ -5,6 +5,14 @@
 
     RewriteEngine On
 
+    # Sirve el .webp cuando el navegador lo acepta y el archivo existe.
+    # Se hace acá y no en las plantillas para no tener que envolver cada
+    # <img> en un <picture>: la URL sigue siendo la del .jpg o .png.
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{REQUEST_URI} ^/img/(.+)\.(jpe?g|png)$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/img/%1.webp -f
+    RewriteRule ^img/(.+)\.(jpe?g|png)$ /img/$1.webp [T=image/webp,E=webp:1,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -22,4 +30,10 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+
+    # Sin esto, una caché intermedia podría entregar el .webp a un navegador
+    # que pidió el .jpg.
+    <IfModule mod_headers.c>
+        Header append Vary Accept env=REDIRECT_webp
+    </IfModule>
 </IfModule>

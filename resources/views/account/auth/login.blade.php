@@ -1,40 +1,45 @@
-@extends('layouts.account')
-@section('title', 'Accede a tu cuenta')
+@extends('layouts.public')
+@section('title', 'Accede a tu cuenta · ' . config('app.name'))
+
+{{-- mi-cuenta.html lleva el footer compacto. --}}
+@php $footerCompacto = true; @endphp
 
 @section('content')
-<div style="max-width:420px;margin:40px auto 0;">
-    <div class="card" style="padding:38px;">
-        <h1 style="font-weight:800;font-size:26px;margin:0 0 8px;">Accede a tu cuenta</h1>
-        <p class="helper" style="margin:0 0 24px;">Gestiona tus actividades y revisa quién se inscribió.</p>
 
-        <form method="POST" action="{{ route('account.login.attempt') }}" style="display:flex;flex-direction:column;gap:16px;">
+<main style="flex:1;">
+{{-- PANTALLA 0 — LOGIN de mi-cuenta.html --}}
+<div class="rise grid-2" style="max-width:1080px;margin:0 auto;padding:72px 32px 110px;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;">
+    <div>
+        <h1 style="font-size:42px;font-weight:800;letter-spacing:-.02em;line-height:1.08;margin:0 0 14px;color:var(--ink);text-wrap:pretty;">Accede a tu cuenta</h1>
+        <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 28px;max-width:44ch;text-wrap:pretty;">Desde aquí podrás publicar, editar y hacer seguimiento a tus actividades del Día del Patrimonio Social.</p>
+        <img loading="lazy" decoding="async" width="1008" height="490" src="{{ asset('img/construyamos-juntos-c2664680.png') }}" alt="" aria-hidden="true"
+             style="width:100%;max-width:520px;height:auto;display:block;">
+    </div>
+
+    <div class="card" style="padding:34px 32px;">
+        <form method="POST" action="{{ route('account.login.attempt') }}"
+              style="display:flex;flex-direction:column;gap:18px;">
             @csrf
 
-            <div>
-                <label class="helper" for="email" style="display:block;margin-bottom:6px;font-weight:600;">Correo electrónico</label>
-                <input class="fld @error('email') is-invalid @enderror" type="email" id="email" name="email"
-                       value="{{ old('email') }}" placeholder="contacto@organizacion.cl" required autofocus autocomplete="email">
+            <label class="lbl">Correo electrónico
+                <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
+                       value="{{ old('email') }}" placeholder="contacto@organizacion.cl"
+                       required autofocus autocomplete="email">
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
-            </div>
-
-            <div>
-                <label class="helper" for="password" style="display:block;margin-bottom:6px;font-weight:600;">Contraseña</label>
-                <input class="fld @error('password') is-invalid @enderror" type="password" id="password" name="password"
-                       placeholder="••••••••" required autocomplete="current-password">
-                @error('password') <span class="field-error">{{ $message }}</span> @enderror
-            </div>
-
-            <label style="display:flex;align-items:center;gap:9px;font-size:14px;color:var(--gris-700);cursor:pointer;">
-                <input type="checkbox" name="remember" value="1"> Mantener sesión iniciada
             </label>
 
-            <button type="submit" class="btn btn-primary" style="justify-content:center;">Entrar</button>
-        </form>
+            <label class="lbl">Contraseña
+                <input class="fld @error('password') is-invalid @enderror" type="password" name="password"
+                       placeholder="••••••••" required autocomplete="current-password">
+                @error('password') <span class="field-error">{{ $message }}</span> @enderror
+            </label>
 
-        <hr style="border:0;border-top:1px solid var(--linea);margin:24px 0 18px;">
-        <p class="helper" style="margin:0;">
-            ¿Todavía no publicas? <a class="textlink" href="{{ route('publish.create') }}">Publica tu actividad</a> y creamos tu cuenta en el mismo paso.
-        </p>
+            <button type="submit" class="btn btn-primary" style="justify-content:center;">Ingresar</button>
+
+            <a class="textlink" href="{{ route('password.request') }}"
+               style="font-size:13.5px;font-weight:600;text-align:center;">¿Olvidaste tu contraseña?</a>
+        </form>
     </div>
 </div>
+</main>
 @endsection

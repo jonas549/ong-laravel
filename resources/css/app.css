@@ -28,7 +28,12 @@
     --font-title: 'Raleway', system-ui, sans-serif;
 }
 
-* { box-sizing: border-box; }
+/*
+ * Sin reset global de box-sizing: ninguno de los tres HTML fuente lo tiene, y
+ * ponerlo restaba el padding al ancho de cada contenedor (el paso 1 del wizard
+ * medía 860px en vez de los 924 de la referencia). Los pocos elementos que lo
+ * necesitan lo declaran, igual que en el fuente.
+ */
 
 html { scroll-behavior: smooth; }
 
@@ -39,6 +44,9 @@ body {
     font-family: var(--font);
     -webkit-font-smoothing: antialiased;
 }
+
+/* index.html deja el body blanco; mi-cuenta y publicar-actividad lo tienen calido. */
+body.fondo-calido { background: var(--bg-warm); }
 
 h1, h2, h3 { font-family: var(--font-title); }
 
@@ -199,6 +207,7 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .fld {
     width: 100%;
+    box-sizing: border-box;
     font-family: var(--font);
     font-size: 14.5px;
     color: var(--ink);
@@ -291,6 +300,16 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .tab.on .count-badge { background: var(--naranjo-100); color: var(--naranjo-600); }
 
+/*
+ * El fuente usa <div> con onClick para chips, tarjetas y pasos; acá son
+ * <button> por accesibilidad y teclado. Los botones no heredan la tipografía
+ * del documento, así que hay que devolvérsela o salen con la fuente del
+ * sistema y a 13.3px.
+ */
+.bigopt, .tileopt, .chip, .tab, .sqbtn, .steplink { font-family: var(--font); }
+
+.bigopt, .sqbtn { font-size: 16px; font-weight: 400; }
+
 .bigopt {
     cursor: pointer;
     text-align: left;
@@ -336,6 +355,10 @@ a.textlink:hover { color: var(--naranjo-600); }
     display: flex;
     align-items: center;
     gap: 9px;
+    /* Es un <button>: sin esto arrastra el padding del navegador y los cinco
+       pasos juntos desbordan el contenedor, que saca barra horizontal. */
+    padding: 0;
+    margin: 0;
     font-size: 13.5px;
     font-weight: 600;
     color: #b7babe;
@@ -530,6 +553,60 @@ a.textlink:hover { color: var(--naranjo-600); }
 .alert-error { background: #fdeaf0; color: #a82249; border-color: #f0cdd8; }
 
 .alert-info { background: var(--naranjo-100); color: var(--naranjo-600); border-color: #f6ddc2; }
+
+/* ── Mi cuenta ─────────────────────────────────── */
+
+/*
+ * mi-cuenta.html y publicar-actividad.html traen el botón medio punto más
+ * chico que index.html (14.5px / 12px 22px contra 15px / 13px 24px). Como la
+ * hoja está unificada, esas dos vistas piden su tamaño por ámbito.
+ */
+.escala-form .btn { font-size: 14.5px; padding: 12px 22px; }
+
+.escala-form .btn-sm { font-size: 13px; padding: 9px 16px; }
+
+.crumb { font-size: 13px; color: #a9adb2; }
+
+.crumb a { color: #a9adb2; }
+
+.crumb a:hover { color: var(--naranjo); }
+
+.lbl {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gris-700);
+}
+
+.actcard:hover { transform: translateY(-3px); box-shadow: 0 24px 48px -30px rgba(0, 0, 0, .3); }
+
+/* Lista de participantes inscritos. */
+table.plist { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+table.plist th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #a9adb2;
+    padding: 0 14px 12px;
+    border-bottom: 1px solid var(--linea);
+}
+
+table.plist td { padding: 14px; border-bottom: 1px solid #f4f5f6; color: var(--gris-700); }
+
+table.plist tr:hover td { background: #fdfcfb; }
+
+/*
+ * Las rejillas de dos columnas de mi-cuenta.html no traen breakpoint en el
+ * prototipo: a menos de 900px se parten. Se apilan.
+ */
+@media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr !important; }
+}
 
 /* ── Panel admin ────────────────────────────────────────── */
 

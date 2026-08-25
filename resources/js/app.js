@@ -1,5 +1,43 @@
 import Alpine from 'alpinejs';
 
+/*
+ * Barra de pasos del wizard (publicar-actividad.html).
+ *
+ * Van en window y no dentro del componente porque las usan dos vistas: el
+ * wizard, donde `paso` es estado de Alpine, y la pantalla de envío, donde
+ * el paso es fijo en 5.
+ *
+ * Devuelven el style COMPLETO a propósito. Alpine, cuando el valor de
+ * :style es un string, reemplaza el atributo entero en vez de fusionarlo,
+ * así que mezclar style estático con x-bind:style borraba el estático: era
+ * justo lo que dejaba los círculos convertidos en números sueltos.
+ */
+
+window.estiloPaso = (paso, n, navegable = true) => {
+    const color = paso === n
+        ? 'var(--naranjo-600)'
+        : (paso > n ? 'var(--gris-700)' : '#b7babe');
+
+    const clicable = navegable && n !== 5;
+
+    return 'color:' + color + ';cursor:' + (clicable ? 'pointer' : 'default') + ';';
+};
+
+window.estiloCirculoPaso = (paso, n) => {
+    const base = 'display:grid;place-items:center;width:28px;height:28px;'
+        + 'border-radius:999px;font-size:12.5px;font-weight:800;';
+
+    if (paso === n) {
+        return base + 'background:var(--naranjo);color:#fff;border:1.5px solid var(--naranjo);';
+    }
+
+    if (paso > n) {
+        return base + 'background:var(--naranjo-100);color:var(--naranjo-600);border:1.5px solid var(--naranjo);';
+    }
+
+    return base + 'background:#fff;color:#b7babe;border:1.5px solid #e6e8ea;';
+};
+
 window.Alpine = Alpine;
 Alpine.start();
 

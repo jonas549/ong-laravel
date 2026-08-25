@@ -54,7 +54,8 @@ class Activity extends Model
         'fecha_inicio', 'fecha_termino', 'hora_inicio', 'hora_termino', 'sin_fecha_definida',
         'region_id', 'commune_id', 'direccion',
         'participantes_estimados', 'cupos_totales', 'cupos_disponibles',
-        'abierta_publico', 'inscripcion_habilitada', 'tiene_accesibilidad', 'info_previa',
+        'abierta_publico', 'inscripcion_habilitada', 'tiene_accesibilidad',
+        'accesibilidad_detalle', 'publico_otro', 'info_previa',
         'imagen_portada', 'correo_contacto', 'enlace_red_social', 'enlace_web',
         'estado', 'observaciones_revision', 'destacada', 'orden', 'published_at',
     ];
@@ -216,6 +217,16 @@ class Activity extends Model
         return Str::ucfirst($this->fecha_inicio->locale('es')->isoFormat('ddd D MMM'));
     }
 
+    /** El formato del listado de "Mi cuenta": "26 julio 2026". */
+    public function getFechaListaAttribute(): string
+    {
+        if ($this->sin_fecha_definida || ! $this->fecha_inicio) {
+            return 'Fecha por definir';
+        }
+
+        return $this->fecha_inicio->locale('es')->isoFormat('D MMMM YYYY');
+    }
+
     public function getFechaLargaAttribute(): string
     {
         if ($this->sin_fecha_definida || ! $this->fecha_inicio) {
@@ -223,6 +234,19 @@ class Activity extends Model
         }
 
         return $this->fecha_inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
+    }
+
+    /** "Vie 4 dic · 09:00-13:00 · Recoleta", el resumen del paso 5 del wizard. */
+    public function getResumenFechaLugarAttribute(): string
+    {
+        $horas = collect([$this->hora_inicio, $this->hora_termino])
+            ->filter()
+            ->map(fn ($h) => substr((string) $h, 0, 5))
+            ->implode('-');
+
+        return collect([$this->fecha_corta, $horas, $this->commune?->nombre])
+            ->filter()
+            ->implode(' · ');
     }
 
     public function getLugarAttribute(): string
@@ -235,7 +259,7 @@ class Activity extends Model
     {
         return $this->imagen_portada
             ? asset($this->imagen_portada)
-            : asset('img/dps_banner_2560x1080_010726.jpg');
+            : asset('img/dps-banner-2560x1080-010726.jpg');
     }
 
     public function getInscritosCountAttribute(): int

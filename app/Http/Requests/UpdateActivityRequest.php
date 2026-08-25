@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\Activity;
+use App\Models\ActivityCollaborator;
+use App\Models\TaxonomyTerm;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+/**
+ * Edición de una actividad desde "Mi cuenta".
+ *
+ * Es el mismo formulario del paso 4 del wizard más los campos que sólo
+ * aparecen en la pantalla de edición de mi-cuenta.html (fecha de término,
+ * cupos, info previa, tipo de colaborador). No lleva los datos de la
+ * organización ni los de la cuenta: eso ya existe cuando se edita.
+ *
+ * Las fechas y horas llegan como texto, no como input[type=date]: el
+ * prototipo usa campos de texto ("26 / 07 / 2026", "10:00") y además los
+ * navegadores no dejan pegar en los campos nativos de fecha y hora.
+ */
+class UpdateActivityRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Normaliza antes de validar: las fechas y horas del formulario vienen
+     * en formato chileno y hay que dejarlas como las espera la base.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'fecha_inicio' => $this->fechaIso($this->input('fecha_inicio')),
+            'fecha_termino' => $this->fechaIso($this->input('fecha_termino')),
+            'hora_inicio' => $this->horaIso($this->input('hora_inicio')),
+            'hora_termino' => $this->horaIso($this->input('hora_termino')),
+        ]);
+    }
+
+    /** "26 / 07 / 2026", "26-7-2026" o "2026-07-26" → "2026-07-26". */
+    private function fechaIso(mixed $valor): ?string
+    {
+        $texto = trim((string) $valor);
+
+        if ($texto === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})$/', $texto, $m)) {
+            [, $anio, $mes, $dia] = $m;
+        } elseif (preg_match('/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/', $texto, $m)) {
+            [, $dia, $mes, $anio] = $m;
+        } else {
+            // Que falle la regla `date` con el valor original a la vista.
+            return $texto;
+        }
+
+        return sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
+    }
+
+    /** "10:00", "10.00" o "10:00:00" → "10:00". */
+    private function horaIso(mixed $valor): ?string
+    {
+        $texto = trim((string) $valor);
+
+        if ($texto === '') {
+            return null;
+        }
+
+        return preg_match('/^(\d{1,2})\D(\d{2})/', $texto, $m)
+            ? sprintf('%02d:%02d', $m[1], $m[2])
+            : $texto;
+    }
+
+    /** @return array<string, mixed> */
+    public function rules(): array
+    {
+        return [
+            'titulo' => ['required', 'string', 'max:255'],
+            'descripcion' => ['required', 'string', 'max:1000'],
+            'formato' => ['required', Rule::in(Activity::FORMATOS)],
+
+            'sin_fecha_definida' => ['nullable', 'boolean'],
+            'fecha_inicio' => ['nullable', 'required_without:sin_fecha_definida', 'date'],
+            'fecha_termino' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'hora_inicio' => ['nullable', 'date_format:H:i'],
+            'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
+
+            'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+
+            'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'cupos_disponibles' => ['nullable', 'integer', 'min:0', 'max:100000'],
+
+            'abierta_publico' => ['nullable', 'boolean'],
+            'inscripcion_habilitada' => ['nullable', 'boolean'],
+            'info_previa' => ['nullable', 'string', 'max:2000'],
+
+            'correo_contacto' => ['nullable', 'email', 'max:255'],
+            'enlace_red_social' => ['nullable', 'url', 'max:255'],
+            'enlace_web' => ['nullable', 'url', 'max:255'],
+
+            // 2 MB y 1200×600 recomendado, como dice el propio formulario.
+            'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+
+            'temas' => ['required', 'array', 'min:1', 'max:' . TaxonomyTerm::limiteDe('tema')],
+            'temas.*' => ['exists:taxonomy_terms,id'],
+            'caracteristicas' => ['nullable', 'array', 'max:' . TaxonomyTerm::limiteDe('caracteristica')],
+            'caracteristicas.*' => ['exists:taxonomy_terms,id'],
+            'publicos' => ['required', 'array', 'min:1'],
+            'publicos.*' => ['exists:taxonomy_terms,id'],
+            'accesos' => ['nullable', 'array'],
+            'accesos.*' => ['exists:taxonomy_terms,id'],
+
+            'colaboradores' => ['nullable', 'array', 'max:20'],
+            'colaboradores.*.nombre' => ['nullable', 'string', 'max:255'],
+            'colaboradores.*.tipo' => ['nullable', Rule::in(ActivityCollaborator::TIPOS)],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'temas.max' => 'Puedes elegir hasta 3 temas principales.',
+            'temas.required' => 'Elige al menos un tema.',
+            'caracteristicas.max' => 'Puedes elegir hasta 5 características.',
+            'publicos.required' => 'Indica a qué público está dirigida la actividad.',
+            'fecha_inicio.required_without' => 'Indica la fecha, o marca que está disponible de forma permanente.',
+            'fecha_inicio.date' => 'Escribe la fecha como día / mes / año.',
+            'fecha_termino.date' => 'Escribe la fecha como día / mes / año.',
+            'fecha_termino.after_or_equal' => 'La fecha de término no puede ser anterior a la de inicio.',
+            'hora_inicio.date_format' => 'Escribe la hora como HH:MM, por ejemplo 10:00.',
+            'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:30.',
+            'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
+            'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
+            'imagen.max' => 'La imagen no puede pesar más de 2 MB.',
+            'imagen.mimes' => 'La imagen debe ser JPG, PNG o WEBP.',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'titulo' => 'nombre de la actividad',
+            'descripcion' => 'descripción',
+            'commune_id' => 'comuna',
+            'direccion' => 'dirección',
+            'imagen' => 'imagen de la actividad',
+        ];
+    }
+}

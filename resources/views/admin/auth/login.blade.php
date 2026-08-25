@@ -11,7 +11,7 @@
 
 <div style="width:100%;max-width:400px;padding:24px;">
     <div style="text-align:center;margin-bottom:24px;">
-        <img src="{{ asset('img/dps-logo-header.png') }}" alt="{{ config('app.name') }}" style="height:48px;width:auto;">
+        <img loading="lazy" decoding="async" width="400" height="120" src="{{ asset('img/dps-logo-header.png') }}" alt="{{ config('app.name') }}" style="height:48px;width:auto;">
     </div>
 
     <div class="card" style="padding:34px;">

@@ -1,7 +1,7 @@
 <section style="position:relative;background:url('{{ asset('img/fondo-03.png') }}') center/cover no-repeat;overflow:hidden;">
     <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.1) 45%,rgba(255,255,255,.4) 100%);"></div>
     <div class="reveal" style="position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:40px 40px 44px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;">
-        <img class="floaty" src="{{ asset('img/dia-del-patrimonio-footer.png') }}"
+        <img loading="lazy" decoding="async" class="floaty" width="482" height="356" src="{{ asset('img/dia-del-patrimonio-footer.png') }}"
              alt="Día del Patrimonio Social — 4 y 5 de diciembre"
              style="display:block;width:420px;max-width:100%;height:auto;filter:drop-shadow(0 16px 28px rgba(0,0,0,.16));">
     </div>
@@ -10,7 +10,7 @@
 <footer style="background:#fff;color:var(--gris-700);border-top:1px solid #eef0f1;">
     <div style="max-width:1180px;margin:0 auto;padding:30px 40px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
         <span style="flex:none;display:inline-flex;">
-            <img src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
+            <img loading="lazy" decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
                  style="height:68px;width:auto;object-fit:contain;">
         </span>
 

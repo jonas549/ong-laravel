@@ -1,9 +1,9 @@
 <section style="background:linear-gradient(145deg,#fff7ef 0%,#fdeede 55%,#fbe6ce 100%);color:var(--ink);position:relative;overflow:hidden;">
-    <img class="linework" src="{{ asset('img/manos.png') }}" alt="" aria-hidden="true">
+    <img loading="lazy" decoding="async" class="linework" width="1045" height="721" src="{{ asset('img/manos.png') }}" alt="" aria-hidden="true">
     <div style="position:absolute;top:0;left:0;right:0;height:180px;background:linear-gradient(to bottom,#fff 0%,rgba(255,255,255,.75) 45%,rgba(255,255,255,0) 100%);z-index:1;"></div>
 
     <div class="reveal" style="max-width:720px;margin:0 auto;padding:76px 40px;text-align:center;position:relative;z-index:2;">
-        <img src="{{ asset('img/construyamos-crop.png') }}" alt="" aria-hidden="true"
+        <img loading="lazy" decoding="async" width="840" height="388" src="{{ asset('img/construyamos-crop.png') }}" alt="" aria-hidden="true"
              style="display:block;width:100%;max-width:420px;height:auto;margin:0 auto 18px;">
 
         <div style="font-size:13px;letter-spacing:.04em;font-weight:700;color:var(--naranjo);margin-bottom:14px;text-transform:uppercase;">Construyamos juntos</div>

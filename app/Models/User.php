@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
 {
@@ -47,6 +48,25 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Devuelve el usuario si esas credenciales son válidas pero pertenecen a
+     * un rol distinto del que pide el formulario: sirve para mandar a la
+     * persona al login correcto en vez de decirle que la cuenta no existe.
+     *
+     * Sólo responde cuando la contraseña ya es correcta, así que no le revela
+     * nada a quien no la sepa.
+     */
+    public static function credencialesDeOtroRol(string $email, string $password, string $rolEsperado): ?self
+    {
+        $usuario = static::where('email', $email)->first();
+
+        if (! $usuario || $usuario->role === $rolEsperado) {
+            return null;
+        }
+
+        return Hash::check($password, (string) $usuario->password) ? $usuario : null;
     }
 
     public function organization(): HasOne

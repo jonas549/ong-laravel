@@ -11,7 +11,7 @@
                     @foreach ($logos as $lg)
                         <div class="logo-chip" style="display:grid;place-items:center;height:{{ $destacado ? '124px' : '76px' }};padding:0 {{ $destacado ? '44px' : '26px' }};background:#fff;border:1px solid #eef0f1;border-radius:{{ $destacado ? '16px' : '14px' }};box-shadow:0 6px 18px -14px rgba(0,0,0,.25);">
                             @if ($lg->logo_path)
-                                <img src="{{ $lg->logo_url }}" alt="{{ $lg->nombre }}"
+                                <img loading="lazy" decoding="async" src="{{ $lg->logo_url }}" alt="{{ $lg->nombre }}"
                                      style="max-height:{{ $destacado ? '76px' : '44px' }};max-width:{{ $destacado ? '300px' : '200px' }};width:auto;object-fit:contain;">
                             @else
                                 <span style="font-weight:800;font-size:20px;letter-spacing:-.01em;color:var(--gris-700);white-space:nowrap;">{{ $lg->nombre }}</span>

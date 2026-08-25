@@ -14,7 +14,7 @@
                 <article class="act-card" style="background:#fff;border:1px solid #eef0f1;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;">
                     @if ($post->imagen)
                         <div style="aspect-ratio:16/10;overflow:hidden;background:var(--gris-100);">
-                            <img class="act-img" src="{{ $post->imagen_url }}" alt="{{ $post->titulo }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                            <img loading="lazy" decoding="async" class="act-img" src="{{ $post->imagen_url }}" alt="{{ $post->titulo }}" style="width:100%;height:100%;object-fit:cover;display:block;">
                         </div>
                     @endif
                     <div style="padding:20px 22px 22px;display:flex;flex-direction:column;gap:9px;flex:1;">

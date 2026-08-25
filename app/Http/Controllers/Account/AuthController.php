@@ -27,8 +27,14 @@ class AuthController extends Controller
         ], [], ['email' => 'correo', 'password' => 'contraseña']);
 
         if (! Auth::attempt($datos + ['role' => User::ROL_ORGANIZER, 'is_active' => true], $request->boolean('remember'))) {
+            // Contraseña correcta pero cuenta de administración: es la puerta
+            // equivocada, no unas credenciales malas.
+            $otroRol = User::credencialesDeOtroRol($datos['email'], $datos['password'], User::ROL_ORGANIZER);
+
             throw ValidationException::withMessages([
-                'email' => 'No encontramos una cuenta con ese correo y contraseña.',
+                'email' => $otroRol
+                    ? 'Esa es una cuenta de administración. Entra por el panel, en ' . route('admin.login') . '.'
+                    : 'No encontramos una cuenta con ese correo y contraseña.',
             ]);
         }
 

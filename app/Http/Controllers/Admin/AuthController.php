@@ -27,8 +27,14 @@ class AuthController extends Controller
         ], [], ['email' => 'correo', 'password' => 'contraseña']);
 
         if (! Auth::attempt($datos + ['role' => User::ROL_ADMIN, 'is_active' => true], $request->boolean('remember'))) {
+            // Si la contraseña es correcta pero la cuenta es de organizador,
+            // el problema es la puerta, no las credenciales: hay que decirlo.
+            $otroRol = User::credencialesDeOtroRol($datos['email'], $datos['password'], User::ROL_ADMIN);
+
             throw ValidationException::withMessages([
-                'email' => 'Esas credenciales no corresponden a una cuenta de administración.',
+                'email' => $otroRol
+                    ? 'Esa es una cuenta de organizador. Entra por el acceso de organizaciones, en ' . route('account.login') . '.'
+                    : 'Esas credenciales no corresponden a una cuenta de administración.',
             ]);
         }
 

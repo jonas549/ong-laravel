@@ -20,7 +20,7 @@
                     <article class="reveal" style="background:#fff;border:1px solid #eef0f1;border-radius:18px;overflow:hidden;">
                         @if ($e->imagen)
                             <div style="aspect-ratio:16/9;overflow:hidden;background:var(--gris-100);">
-                                <img src="{{ $e->imagen_url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+                                <img loading="lazy" decoding="async" src="{{ $e->imagen_url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
                             </div>
                         @endif
                         <div style="padding:18px 20px 20px;">

@@ -11,7 +11,7 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:44px;margin-top:24px;align-items:start;">
         <div>
             <div style="border-radius:24px;overflow:hidden;aspect-ratio:16/10;background:var(--gris-100);">
-                <img src="{{ $activity->imagen_url }}" alt="{{ $activity->titulo }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                <img loading="lazy" decoding="async" src="{{ $activity->imagen_url }}" alt="{{ $activity->titulo }}" style="width:100%;height:100%;object-fit:cover;display:block;">
             </div>
 
             <h1 style="font-weight:800;font-size:36px;line-height:1.12;margin:26px 0 14px;letter-spacing:-.02em;">{{ $activity->titulo }}</h1>

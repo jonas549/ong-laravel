@@ -6,10 +6,9 @@ use App\Http\Requests\PublishActivityRequest;
 use App\Models\Activity;
 use App\Models\Commune;
 use App\Models\Organization;
-use App\Models\Region;
 use App\Models\Setting;
-use App\Models\TaxonomyTerm;
 use App\Models\User;
+use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
 use Illuminate\Support\Facades\DB;
 
@@ -35,7 +34,12 @@ class PublishController extends Controller
 
         $datos = $request->validated();
 
-        $actividad = DB::transaction(function () use ($datos, $request) {
+        // El paso 4 ofrece reusar el correo de la cuenta como contacto público.
+        $correoPublico = $request->boolean('usar_correo_cuenta')
+            ? $datos['email']
+            : ($datos['correo_contacto'] ?? $datos['email']);
+
+        $actividad = DB::transaction(function () use ($datos, $request, $correoPublico) {
             $usuario = User::create([
                 'name' => $datos['org_nombre'],
                 'email' => $datos['email'],
@@ -52,7 +56,10 @@ class PublishController extends Controller
                 'descripcion' => $datos['org_descripcion'] ?? null,
                 'num_voluntarios' => $datos['org_num_voluntarios'] ?? null,
                 'unidad_educativa' => $datos['org_unidad_educativa'] ?? null,
-                'correo_contacto' => $datos['correo_contacto'] ?? $datos['email'],
+                'logo_path' => ($logo = $request->file('org_logo'))
+                    ? 'storage/' . $logo->store('organizaciones', 'public')
+                    : null,
+                'correo_contacto' => $correoPublico,
                 'enlace_web' => $datos['enlace_web'] ?? null,
                 'enlace_red_social' => $datos['enlace_red_social'] ?? null,
             ]);
@@ -68,16 +75,24 @@ class PublishController extends Controller
                 'hora_inicio' => $datos['hora_inicio'] ?? null,
                 'hora_termino' => $datos['hora_termino'] ?? null,
                 'sin_fecha_definida' => $request->boolean('sin_fecha_definida'),
-                'region_id' => $comuna?->region_id,
+                'region_id' => $comuna?->region_id ?? ($datos['region_id'] ?? null),
                 'commune_id' => $comuna?->id,
                 'direccion' => $datos['direccion'] ?? null,
                 'participantes_estimados' => $datos['participantes_estimados'] ?? null,
                 'cupos_totales' => $datos['cupos_totales'] ?? null,
                 'cupos_disponibles' => $datos['cupos_totales'] ?? null,
-                'abierta_publico' => $request->boolean('abierta_publico'),
+                // El paso 4 no lo pregunta: si pide inscripción, es abierta.
+                'abierta_publico' => true,
                 'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
                 'tiene_accesibilidad' => $request->boolean('tiene_accesibilidad'),
-                'correo_contacto' => $datos['correo_contacto'] ?? $datos['email'],
+                'accesibilidad_detalle' => $request->boolean('tiene_accesibilidad')
+                    ? ($datos['accesibilidad_detalle'] ?? null)
+                    : null,
+                'publico_otro' => $datos['publico_otro'] ?? null,
+                'imagen_portada' => ($portada = $request->file('imagen'))
+                    ? 'storage/' . $portada->store('actividades', 'public')
+                    : null,
+                'correo_contacto' => $correoPublico,
                 'enlace_red_social' => $datos['enlace_red_social'] ?? null,
                 'enlace_web' => $datos['enlace_web'] ?? null,
                 'estado' => 'borrador',
@@ -86,7 +101,6 @@ class PublishController extends Controller
             $terminos = collect($datos['temas'] ?? [])
                 ->merge($datos['publicos'] ?? [])
                 ->merge($datos['caracteristicas'] ?? [])
-                ->merge($datos['accesos'] ?? [])
                 ->filter()
                 ->unique();
 
@@ -109,21 +123,20 @@ class PublishController extends Controller
 
     public function done(Activity $activity)
     {
+        $activity->load(['organization', 'commune']);
+
         return view('public.publish.done', compact('activity'));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Los mismos catálogos que usa la edicion en "Mi cuenta", más el tipo de
+     * organización, que sólo se pregunta al publicar por primera vez.
+     *
+     * @return array<string, mixed>
+     */
     private function catalogos(): array
     {
-        return [
-            'tiposOrg' => Organization::TIPOS,
-            'formatos' => Activity::FORMATOS,
-            'regiones' => Region::ordered()->with('communes')->get(),
-            'temas' => TaxonomyTerm::grupo('tema')->activos()->ordered()->get(),
-            'caracteristicas' => TaxonomyTerm::grupo('caracteristica')->activos()->ordered()->get(),
-            'publicos' => TaxonomyTerm::grupo('publico')->activos()->ordered()->get(),
-            'accesos' => TaxonomyTerm::grupo('acceso')->activos()->ordered()->get(),
-            'limites' => TaxonomyTerm::LIMITES,
-        ];
+        return app(ActivityCatalogService::class)->todos()
+            + ['tiposOrg' => Organization::TIPOS];
     }
 }

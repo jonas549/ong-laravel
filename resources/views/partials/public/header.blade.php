@@ -1,15 +1,15 @@
 <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-bottom:1px solid #eeeff0;"
         x-data="{ abierto: false }">
-    <nav style="max-width:1180px;margin:0 auto;padding:14px 40px;display:flex;align-items:center;gap:24px;">
+    <nav style="max-width:1180px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;gap:20px;">
 
-        <div class="nav-logos" style="flex:none;display:flex;align-items:center;gap:18px;">
+        <div class="nav-logos" style="flex:none;display:flex;align-items:center;gap:16px;min-width:0;">
             <a href="{{ route('home') }}" aria-label="Volver al inicio" style="display:inline-flex;">
-                <img src="{{ asset('img/dps-logo-header.png') }}" alt="Día del Patrimonio Social 2026"
+                <img decoding="async" width="400" height="120" src="{{ asset('img/dps-logo-header.png') }}" alt="Día del Patrimonio Social 2026"
                      style="height:46px;width:auto;object-fit:contain;">
             </a>
             <span aria-hidden="true" style="width:1px;height:44px;background:#e4e5e7;"></span>
             <a href="https://comunidad-org.cl" target="_blank" rel="noopener" style="display:inline-flex;">
-                <img src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
+                <img decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
                      style="height:58px;width:auto;object-fit:contain;">
             </a>
         </div>
@@ -18,7 +18,7 @@
             <a class="navlink" href="{{ route('activities.index') }}">Actividades</a>
             <a class="navlink" href="{{ route('publish.create') }}">Voluntariado</a>
             <a class="navlink" href="{{ route('home') }}#que-es">¿Qué es el Patrimonio Social?</a>
-            <a class="navlink" href="{{ route('editions.index') }}">Ediciones</a>
+            <a class="navlink" href="{{ route('home') }}#ediciones">Ediciones</a>
             <a class="navlink" href="{{ route('posts.index') }}">Noticias</a>
         </div>
 
@@ -59,7 +59,7 @@
         <a class="navlink" href="{{ route('activities.index') }}">Actividades</a>
         <a class="navlink" href="{{ route('publish.create') }}">Voluntariado</a>
         <a class="navlink" href="{{ route('home') }}#que-es">¿Qué es el Patrimonio Social?</a>
-        <a class="navlink" href="{{ route('editions.index') }}">Ediciones</a>
+        <a class="navlink" href="{{ route('home') }}#ediciones">Ediciones</a>
         <a class="navlink" href="{{ route('posts.index') }}">Noticias</a>
     </div>
 </header>

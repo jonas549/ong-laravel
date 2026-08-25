@@ -11,11 +11,11 @@
         <figure class="reveal" style="margin:0;position:relative;overflow:visible;">
             <span style="position:absolute;top:-18px;right:-18px;width:72px;height:72px;border-radius:18px;background:var(--amarillo);z-index:-1;opacity:.9;"></span>
             <div style="border-radius:26px;overflow:hidden;aspect-ratio:16/11;background:var(--gris-100);box-shadow:0 26px 50px -28px rgba(7,79,113,.4);">
-                <img src="{{ asset('img/group-people-shaking-hands-with-one-that-says-h-it.jpg') }}"
+                <img loading="lazy" decoding="async" width="1376" height="771" src="{{ asset('img/group-people-shaking-hands-with-one-that-says-h-it.jpg') }}"
                      alt="Personas dándose la mano en una jornada solidaria"
                      style="width:100%;height:100%;object-fit:cover;display:block;">
             </div>
-            <img class="sticker" src="{{ asset('img/dps-mascara-corazon-ronda.png') }}" alt="" aria-hidden="true"
+            <img loading="lazy" decoding="async" class="sticker" width="400" height="400" src="{{ asset('img/dps-mascara-corazon-ronda.png') }}" alt="" aria-hidden="true"
                  style="--rot:-8deg;position:absolute;top:-52px;left:-52px;width:140px;height:auto;">
         </figure>
     </div>
