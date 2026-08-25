@@ -60,7 +60,7 @@
             <input type="hidden" name="grupo" value="{{ $grupo }}">
             <div>
                 <label class="helper" for="t-nombre" style="display:block;margin-bottom:6px;font-weight:600;">Nombre</label>
-                <input class="fld @error('nombre') is-invalid @enderror" type="text" id="t-nombre" name="nombre" value="{{ old('nombre') }}" required>
+                <input class="fld @error('nombre') is-invalid @enderror" type="text" id="t-nombre" name="nombre" value="@viejo('nombre')" required>
                 @error('nombre') <span class="field-error">{{ $message }}</span> @enderror
             </div>
             <div>

@@ -15,7 +15,7 @@
 
 <form method="GET" style="display:flex;gap:10px;margin-bottom:20px;max-width:420px;">
     <input type="hidden" name="estado" value="{{ $estado }}">
-    <input class="fld" type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre…">
+    <input class="fld" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar por nombre…">
     <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
 </form>
 

@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Commune;
 use App\Models\Region;
 use App\Models\TaxonomyTerm;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 
 class ActivityController extends Controller
@@ -16,7 +17,7 @@ class ActivityController extends Controller
             ->with(['commune', 'region', 'terms', 'organization'])
             ->byRegion($request->integer('region') ?: null)
             ->byCommune($request->integer('comuna') ?: null)
-            ->byFormato($request->string('formato')->toString() ?: null)
+            ->byFormato(Filtro::texto($request, 'formato') ?: null)
             ->byTerm($request->integer('tema') ?: null)
             ->ordered()
             ->paginate(12)

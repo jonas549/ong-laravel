@@ -28,7 +28,7 @@
             <div>
                 <label class="helper" for="smtp_host" style="display:block;margin-bottom:6px;font-weight:600;">Servidor SMTP</label>
                 <input class="fld @error('smtp_host') is-invalid @enderror" type="text" id="smtp_host" name="smtp_host"
-                       value="{{ old('smtp_host', $v['smtp_host'] ?? '') }}" placeholder="mail.tudominio.cl">
+                       value="@viejo('smtp_host', $v['smtp_host'] ?? '')" placeholder="mail.tudominio.cl">
                 @error('smtp_host') <span class="field-error">{{ $message }}</span> @enderror
             </div>
 
@@ -36,7 +36,7 @@
                 <div>
                     <label class="helper" for="smtp_port" style="display:block;margin-bottom:6px;font-weight:600;">Puerto</label>
                     <input class="fld @error('smtp_port') is-invalid @enderror" type="number" id="smtp_port" name="smtp_port"
-                           value="{{ old('smtp_port', $v['smtp_port'] ?? 587) }}">
+                           value="@viejo('smtp_port', $v['smtp_port'] ?? 587)">
                     <span class="helper">587 para TLS, 465 para SSL.</span>
                     @error('smtp_port') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
@@ -53,7 +53,7 @@
             <div>
                 <label class="helper" for="smtp_username" style="display:block;margin-bottom:6px;font-weight:600;">Usuario</label>
                 <input class="fld" type="text" id="smtp_username" name="smtp_username"
-                       value="{{ old('smtp_username', $v['smtp_username'] ?? '') }}" autocomplete="off">
+                       value="@viejo('smtp_username', $v['smtp_username'] ?? '')" autocomplete="off">
             </div>
 
             <div>
@@ -70,14 +70,14 @@
             <div>
                 <label class="helper" for="smtp_from_address" style="display:block;margin-bottom:6px;font-weight:600;">Correo remitente</label>
                 <input class="fld @error('smtp_from_address') is-invalid @enderror" type="email" id="smtp_from_address"
-                       name="smtp_from_address" value="{{ old('smtp_from_address', $v['smtp_from_address'] ?? '') }}">
+                       name="smtp_from_address" value="@viejo('smtp_from_address', $v['smtp_from_address'] ?? '')">
                 @error('smtp_from_address') <span class="field-error">{{ $message }}</span> @enderror
             </div>
 
             <div>
                 <label class="helper" for="smtp_from_name" style="display:block;margin-bottom:6px;font-weight:600;">Nombre remitente</label>
                 <input class="fld" type="text" id="smtp_from_name" name="smtp_from_name"
-                       value="{{ old('smtp_from_name', $v['smtp_from_name'] ?? config('app.name')) }}">
+                       value="@viejo('smtp_from_name', $v['smtp_from_name'] ?? config('app.name'))">
             </div>
 
             <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Guardar configuración</button>
@@ -96,7 +96,7 @@
                 <div>
                     <label class="helper" for="destino" style="display:block;margin-bottom:6px;font-weight:600;">Enviar a</label>
                     <input class="fld @error('destino') is-invalid @enderror" type="email" id="destino" name="destino"
-                           value="{{ old('destino', auth()->user()->email) }}" required>
+                           value="@viejo('destino', auth()->user()->email)" required>
                     @error('destino') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
                 <button type="submit" class="btn btn-outline" style="justify-content:center;">Enviar correo de prueba</button>

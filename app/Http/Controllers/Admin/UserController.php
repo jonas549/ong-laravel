@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +13,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $usuarios = User::with('organization')
-            ->when($request->string('q')->toString(), function ($q, $b) {
+            ->when(Filtro::texto($request, 'q'), function ($q, $b) {
                 $q->where(function ($w) use ($b) {
                     $w->where('name', 'like', "%{$b}%")->orWhere('email', 'like', "%{$b}%");
                 });

@@ -15,7 +15,10 @@
 
         @foreach ($def['campos'] as $campo => $meta)
             @php
-                $valor = old($campo, $fila->{$campo} ?? null);
+                // viejoCrudo y no old(): con `campo[]=x` old() devuelve un
+                // array y el {{ }} de abajo revienta con un 500. Crudo porque
+                // aquí el tipo importa: más abajo se comprueba si es un Carbon.
+                $valor = \App\Support\Formulario::viejoCrudo($campo, $fila->{$campo} ?? null);
                 $id = 'c-' . $campo;
             @endphp
 

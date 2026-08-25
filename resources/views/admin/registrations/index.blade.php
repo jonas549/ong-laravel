@@ -3,7 +3,7 @@
 
 @section('content')
 <form method="GET" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-    <input class="fld" style="max-width:280px;" type="search" name="q" value="{{ request('q') }}" placeholder="Buscar nombre o correo…">
+    <input class="fld" style="max-width:280px;" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar nombre o correo…">
     <select class="fld" style="max-width:180px;" name="estado">
         <option value="">Todos</option>
         @foreach (\App\Models\Registration::ESTADOS as $e)

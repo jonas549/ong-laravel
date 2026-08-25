@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SesionesActivas;
 use App\Services\SmtpConfigService;
+use App\Support\Filtro;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -56,7 +57,7 @@ class PasswordResetController extends Controller
     {
         return view('account.auth.reset', [
             'token' => $token,
-            'email' => $request->string('email')->toString(),
+            'email' => Filtro::texto($request, 'email'),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Registration;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Row;
@@ -21,8 +22,8 @@ class ParticipantController extends Controller
     {
         $this->autorizar($request, $activity);
 
-        $busqueda = $request->string('q')->toString();
-        $estado = $request->string('estado')->toString();
+        $busqueda = Filtro::texto($request, 'q');
+        $estado = Filtro::texto($request, 'estado');
 
         $consulta = $this->consulta($activity, $busqueda, $estado);
 
@@ -51,19 +52,19 @@ class ParticipantController extends Controller
 
         $inscritos = $this->consulta(
             $activity,
-            $request->string('q')->toString(),
-            $request->string('estado')->toString(),
+            Filtro::texto($request, 'q'),
+            Filtro::texto($request, 'estado'),
         )->get();
 
-        $archivo = Str::slug($activity->titulo) . '-participantes.xlsx';
+        $archivo = Str::slug($activity->titulo).'-participantes.xlsx';
 
         return response()->streamDownload(function () use ($inscritos) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValuesWithStyle(
                 ['Nombre', 'Correo', 'Fecha inscripción', 'Mayor de edad', 'Estado'],
-                (new Style())->withFontBold(true),
+                (new Style)->withFontBold(true),
             ));
 
             foreach ($inscritos as $i) {

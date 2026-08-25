@@ -59,9 +59,13 @@ class PerfilController extends Controller
              * llegaba a él y la cuenta cambiaba de dueño sin que hiciera falta
              * saber la contraseña en ningún momento.
              */
-            if (blank($datos['actual_correo']) || ! Hash::check($datos['actual_correo'], $usuario->password)) {
+            // Con `nullable`, validate() no devuelve la clave si no vino en la
+            // petición: leerla a pelo daba un 500 en la propia comprobación.
+            $confirmacion = $datos['actual_correo'] ?? null;
+
+            if (blank($confirmacion) || ! Hash::check($confirmacion, $usuario->password)) {
                 throw ValidationException::withMessages([
-                    'actual_correo' => blank($datos['actual_correo'])
+                    'actual_correo' => blank($confirmacion)
                         ? 'Escribe tu contraseña actual para cambiar el correo.'
                         : 'Esa no es tu contraseña actual.',
                 ]);
@@ -141,7 +145,11 @@ class PerfilController extends Controller
     /** Cierra una sesión concreta desde la lista. */
     public function cerrarSesion(Request $request)
     {
-        $id = $request->validate(['sesion' => ['required', 'string']])['sesion'];
+        $id = $request->validate(
+            ['sesion' => ['required', 'string']],
+            ['sesion.required' => 'No dijiste qué sesión cerrar.',
+                'sesion.string' => 'Esa no es una sesión válida.'],
+        )['sesion'];
 
         return $this->sesiones->cerrar($request->user(), $request, $id)
             ? back()->with('ok', 'Sesión cerrada.')

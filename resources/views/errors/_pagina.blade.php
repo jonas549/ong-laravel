@@ -32,7 +32,15 @@
 
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
             <a href="{{ url('/') }}" class="btn btn-primary">Volver al inicio</a>
-            <a href="{{ url()->previous() !== url()->current() ? url()->previous() : url('/actividades') }}" class="btn btn-outline">Volver atrás</a>
+            {{-- El destino sale de la cabecera Referer y no de url()->previous(),
+                 que lee la sesión: si el 500 lo provocó la base de datos, la
+                 propia página de error volvería a caerse al pintarse. --}}
+            @php $atras = request()->headers->get('referer'); @endphp
+            @if ($atras && $atras !== request()->fullUrl())
+                <a href="{{ $atras }}" class="btn btn-outline">Volver atrás</a>
+            @else
+                <a href="{{ url('/actividades') }}" class="btn btn-outline">Ver actividades</a>
+            @endif
         </div>
     </div>
 </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 
 class OrganizationController extends Controller
@@ -12,7 +13,7 @@ class OrganizationController extends Controller
     {
         $organizaciones = Organization::with('user')
             ->withCount('activities')
-            ->when($request->string('q')->toString(), fn ($q, $b) => $q->where('nombre', 'like', "%{$b}%"))
+            ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('nombre', 'like', "%{$b}%"))
             ->orderBy('nombre')
             ->paginate(20)
             ->withQueryString();

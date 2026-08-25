@@ -9,6 +9,7 @@ use App\Models\ActivityCollaborator;
 use App\Models\Commune;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -50,7 +51,7 @@ class MyActivityController extends Controller
         $filtros = collect(['Todas' => (clone $base)->count()])
             ->merge(collect(self::ORDEN_FILTROS)->mapWithKeys(fn ($f) => [$f => $porFiltro[$f] ?? 0]));
 
-        $filtroActivo = $request->string('filtro')->toString() ?: 'Todas';
+        $filtroActivo = Filtro::texto($request, 'filtro') ?: 'Todas';
 
         $estadoBuscado = collect(Activity::ESTADOS)
             ->search(fn ($m) => $m['filtro'] === $filtroActivo);
@@ -122,7 +123,7 @@ class MyActivityController extends Controller
             if ($imagen = $request->file('imagen')) {
                 $anterior = $activity->imagen_portada;
 
-                $activity->imagen_portada = 'storage/' . $imagen->store('actividades', 'public');
+                $activity->imagen_portada = 'storage/'.$imagen->store('actividades', 'public');
 
                 $this->borrarImagen($anterior);
             }
@@ -219,11 +220,11 @@ class MyActivityController extends Controller
     private function tituloDeCopia(string $titulo): string
     {
         $base = preg_replace('/\s*\(copia(?: \d+)?\)$/u', '', $titulo);
-        $nombre = $base . ' (copia)';
+        $nombre = $base.' (copia)';
         $i = 2;
 
         while (Activity::withTrashed()->where('titulo', $nombre)->exists()) {
-            $nombre = $base . ' (copia ' . $i . ')';
+            $nombre = $base.' (copia '.$i.')';
             $i++;
         }
 

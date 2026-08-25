@@ -5,17 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Services\ActivityModerationService;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 
 class ActivityController extends Controller
 {
     public function index(Request $request)
     {
-        $estado = $request->string('estado')->toString();
+        $estado = Filtro::texto($request, 'estado');
 
         $actividades = Activity::with(['organization', 'commune', 'region'])
             ->when($estado, fn ($q) => $q->where('estado', $estado))
-            ->when($request->string('q')->toString(), fn ($q, $b) => $q->where('titulo', 'like', "%{$b}%"))
+            ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('titulo', 'like', "%{$b}%"))
             ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
             ->latest('updated_at')
             ->paginate(20)
@@ -60,7 +61,7 @@ class ActivityController extends Controller
             $activity,
             'cancelada',
             $request->user(),
-            $request->string('comentario')->toString() ?: null,
+            Filtro::texto($request, 'comentario') ?: null,
         );
 
         return back()->with('ok', 'Actividad cancelada.');

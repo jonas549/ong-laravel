@@ -77,7 +77,7 @@
                     @csrf
                     <label class="helper" for="comentario" style="font-weight:600;">Pedir ajustes</label>
                     <textarea class="fld @error('comentario') is-invalid @enderror" id="comentario" name="comentario" rows="3"
-                              placeholder="Explica qué falta o qué hay que corregir…">{{ old('comentario') }}</textarea>
+                              placeholder="Explica qué falta o qué hay que corregir…">{{ \App\Support\Formulario::viejo('comentario') }}</textarea>
                     <span class="helper">El organizador recibe este texto tal cual, por correo.</span>
                     @error('comentario') <span class="field-error">{{ $message }}</span> @enderror
                     <button type="submit" class="btn btn-outline btn-sm">Enviar observaciones</button>

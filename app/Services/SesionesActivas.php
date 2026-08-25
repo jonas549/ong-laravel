@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Support\Dispositivo;
+use Illuminate\Auth\Recaller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -133,7 +135,7 @@ class SesionesActivas
 
     /**
      * Invalida las cookies de "recuérdame" de todos los dispositivos y le
-     * devuelve una nueva a este, si es que la tenía.
+     * devuelve una nueva a este, si es que traía una de verdad.
      *
      * Sin lo segundo, quien cierra las sesiones ajenas se quedaría también sin
      * su propio recordatorio y tendría que volver a escribir la contraseña la
@@ -141,18 +143,56 @@ class SesionesActivas
      */
     private function rotarRecordatorio(User $usuario, Request $request): void
     {
-        $guard = Auth::guard('web');
-
-        $teniaRecordatorio = $request->cookies->has($guard->getRecallerName());
+        $traiaRecordatorio = $this->recordatorioValido($usuario, $request);
 
         $usuario->forceFill(['remember_token' => Str::random(60)])->save();
 
-        if ($teniaRecordatorio && $guard->id() === $usuario->id) {
-            // login() vuelve a poner la cookie con el token nuevo. No cambia el
-            // identificador de sesión, así que la sesión actual sigue siendo la
-            // misma fila y no aparece duplicada en el listado.
-            $guard->login($usuario, true);
+        if (! $traiaRecordatorio) {
+            return;
         }
+
+        /*
+         * La cookie se pone a mano en vez de con `$guard->login($usuario, true)`
+         * por dos motivos. Uno, login() migra el identificador de sesión, y con
+         * dos peticiones a la vez —un doble clic en "Cerrar las demás"— eso
+         * dejaba dos filas nuevas en `sessions`, es decir, una sesión viva de
+         * más justo cuando se prometía lo contrario. Y dos, aquí no hay que
+         * volver a autenticar a nadie: la persona ya está dentro y lo único
+         * que cambia es el token del recordatorio.
+         *
+         * El formato es el que lee Illuminate\Auth\Recaller: id|token|hash.
+         */
+        Cookie::queue(Cookie::forever(
+            Auth::guard('web')->getRecallerName(),
+            $usuario->getAuthIdentifier().'|'.$usuario->getRememberToken().'|'.$usuario->getAuthPassword(),
+        ));
+    }
+
+    /**
+     * ¿La petición trae un recordatorio válido y de esta misma persona?
+     *
+     * `$request->cookies->has(...)` no vale: es cierto también cuando la cookie
+     * viene y no se puede descifrar, porque EncryptCookies deja la clave puesta
+     * con valor nulo. Con esa comprobación bastaba con mandar un
+     * `remember_web_…=basura` para que le devolviéramos un recordatorio nuevo y
+     * válido a quien nunca tuvo uno: una sesión robada de dos horas se
+     * convertía en acceso permanente.
+     */
+    private function recordatorioValido(User $usuario, Request $request): bool
+    {
+        $valor = $request->cookies->get(Auth::guard('web')->getRecallerName());
+
+        if (! is_string($valor) || $valor === '') {
+            return false;
+        }
+
+        $recaller = new Recaller($valor);
+
+        if (! $recaller->valid() || (string) $recaller->id() !== (string) $usuario->getAuthIdentifier()) {
+            return false;
+        }
+
+        return hash_equals((string) $usuario->getRememberToken(), $recaller->token());
     }
 
     /** Momento a partir del cual una sesión sigue considerándose viva. */

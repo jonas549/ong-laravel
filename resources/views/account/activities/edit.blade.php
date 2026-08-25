@@ -31,7 +31,7 @@
         abierta: {{ Js::from((bool) old('abierta_publico', $activity->abierta_publico)) }},
         insc: {{ Js::from((bool) old('inscripcion_habilitada', $activity->inscripcion_habilitada)) }},
         colaboradores: {{ Js::from(array_values($colaboradores)) }},
-        descLen: {{ mb_strlen(old('descripcion', $activity->descripcion ?? '')) }},
+        descLen: {{ mb_strlen(\App\Support\Formulario::viejo('descripcion', $activity->descripcion ?? '')) }},
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null, accesos: null },
      })">
 
@@ -80,14 +80,14 @@
                 <div style="display:flex;flex-direction:column;gap:18px;">
                     <label class="lbl">Nombre de la actividad *
                         <input class="fld @error('titulo') is-invalid @enderror" name="titulo"
-                               value="{{ old('titulo', $activity->titulo) }}" required>
+                               value="@viejo('titulo', $activity->titulo)" required>
                         @error('titulo') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Descripción * — máx. 1.000 caracteres
                         <textarea class="fld @error('descripcion') is-invalid @enderror" name="descripcion" rows="4"
                                   style="resize:vertical;" maxlength="1000"
-                                  x-on:input="descLen = $event.target.value.length">{{ old('descripcion', $activity->descripcion) }}</textarea>
+                                  x-on:input="descLen = $event.target.value.length">{{ \App\Support\Formulario::viejo('descripcion', $activity->descripcion) }}</textarea>
                         <span style="display:flex;justify-content:space-between;gap:12px;">
                             <span class="helper">Máximo 1.000 caracteres.</span>
                             {{-- El style va entero en el binding: Alpine reemplaza
@@ -128,7 +128,7 @@
                         <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
                                placeholder="dd / mm / aaaa" inputmode="numeric"
                                x-bind:disabled="sinFecha"
-                               value="{{ old('fecha_inicio', $activity->fecha_inicio?->format('d / m / Y')) }}">
+                               value="@viejo('fecha_inicio', $activity->fecha_inicio?->format('d / m / Y'))">
                         @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
@@ -136,21 +136,21 @@
                         <input class="fld @error('fecha_termino') is-invalid @enderror" name="fecha_termino"
                                placeholder="dd / mm / aaaa" inputmode="numeric"
                                x-bind:disabled="sinFecha"
-                               value="{{ old('fecha_termino', $activity->fecha_termino?->format('d / m / Y')) }}">
+                               value="@viejo('fecha_termino', $activity->fecha_termino?->format('d / m / Y'))">
                         @error('fecha_termino') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Hora de inicio (opcional)
                         <input class="fld @error('hora_inicio') is-invalid @enderror" name="hora_inicio"
                                placeholder="HH:MM" x-bind:disabled="sinFecha"
-                               value="{{ old('hora_inicio', $hora($activity->hora_inicio)) }}">
+                               value="@viejo('hora_inicio', $hora($activity->hora_inicio))">
                         @error('hora_inicio') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Hora de término (opcional)
                         <input class="fld @error('hora_termino') is-invalid @enderror" name="hora_termino"
                                placeholder="HH:MM" x-bind:disabled="sinFecha"
-                               value="{{ old('hora_termino', $hora($activity->hora_termino)) }}">
+                               value="@viejo('hora_termino', $hora($activity->hora_termino))">
                         @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
                 </div>
@@ -171,7 +171,7 @@
 
                 <label class="lbl">Dirección *
                     <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
-                           value="{{ old('direccion', $activity->direccion) }}">
+                           value="@viejo('direccion', $activity->direccion)">
                     @error('direccion') <span class="field-error">{{ $message }}</span> @enderror
                 </label>
 
@@ -236,7 +236,7 @@
 
                 <label class="lbl" style="max-width:260px;">Cantidad de participantes estimados
                     <input class="fld @error('participantes_estimados') is-invalid @enderror" name="participantes_estimados"
-                           inputmode="numeric" value="{{ old('participantes_estimados', $activity->participantes_estimados) }}">
+                           inputmode="numeric" value="@viejo('participantes_estimados', $activity->participantes_estimados)">
                     @error('participantes_estimados') <span class="field-error">{{ $message }}</span> @enderror
                 </label>
 
@@ -259,7 +259,7 @@
                 <div x-show="insc" x-cloak>
                     <label class="lbl" style="margin-top:16px;max-width:260px;">Cupos disponibles
                         <input class="fld @error('cupos_disponibles') is-invalid @enderror" name="cupos_disponibles"
-                               inputmode="numeric" value="{{ old('cupos_disponibles', $activity->cupos_disponibles) }}">
+                               inputmode="numeric" value="@viejo('cupos_disponibles', $activity->cupos_disponibles)">
                         <span class="helper">Los cupos disponibles son editables manualmente para reflejar inscripciones recibidas por fuera del sitio web.</span>
                         @error('cupos_disponibles') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
@@ -267,7 +267,7 @@
 
                 <label class="lbl" style="margin-top:20px;">¿Qué deben saber las personas antes de asistir? (opcional)
                     <textarea class="fld @error('info_previa') is-invalid @enderror" name="info_previa" rows="2"
-                              style="resize:vertical;" placeholder="Campo no obligatorio">{{ old('info_previa', $activity->info_previa) }}</textarea>
+                              style="resize:vertical;" placeholder="Campo no obligatorio">{{ \App\Support\Formulario::viejo('info_previa', $activity->info_previa) }}</textarea>
                     @error('info_previa') <span class="field-error">{{ $message }}</span> @enderror
                 </label>
             </div>
@@ -280,20 +280,20 @@
                 <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                     <label class="lbl">Correo de contacto público
                         <input class="fld @error('correo_contacto') is-invalid @enderror" type="email" name="correo_contacto"
-                               value="{{ old('correo_contacto', $activity->correo_contacto) }}">
+                               value="@viejo('correo_contacto', $activity->correo_contacto)">
                         @error('correo_contacto') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Enlace a red social
                         <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" name="enlace_red_social"
-                               value="{{ old('enlace_red_social', $activity->enlace_red_social) }}">
+                               value="@viejo('enlace_red_social', $activity->enlace_red_social)">
                         <span class="helper">Instagram, Facebook u otro.</span>
                         @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Enlace a página web (opcional)
                         <input class="fld @error('enlace_web') is-invalid @enderror" type="url" name="enlace_web"
-                               placeholder="https://tusitio.cl" value="{{ old('enlace_web', $activity->enlace_web) }}">
+                               placeholder="https://tusitio.cl" value="@viejo('enlace_web', $activity->enlace_web)">
                         <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                         @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror
                     </label>

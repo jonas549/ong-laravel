@@ -77,7 +77,8 @@ class PublishActivityRequest extends FormRequest
             'org_unidad_educativa' => ['nullable', 'required_if:org_tipo,Institución educativa', 'string', 'max:255'],
             'org_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:500'],
             'email' => ['required', 'email', 'max:255', new CorreoEnviable, Rule::unique('users', 'email')],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            // El tope de 72 no es capricho: bcrypt ignora lo que pase de ahí.
+            'password' => ['required', 'string', 'min:8', 'max:72', 'confirmed'],
 
             // Paso 4 — la actividad
             'titulo' => ['required', 'string', 'max:255'],

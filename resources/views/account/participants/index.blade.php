@@ -56,7 +56,7 @@
 
         <label class="lbl" style="max-width:200px;">Editar cupos disponibles
             <input class="fld @error('cupos_disponibles') is-invalid @enderror" name="cupos_disponibles"
-                   inputmode="numeric" value="{{ old('cupos_disponibles', $activity->cupos_disponibles) }}">
+                   inputmode="numeric" value="@viejo('cupos_disponibles', $activity->cupos_disponibles)">
             @error('cupos_disponibles') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 

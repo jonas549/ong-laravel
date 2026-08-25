@@ -23,14 +23,14 @@
 
         <label class="lbl" style="margin-bottom:16px;">Asunto
             <input class="fld @error('asunto') is-invalid @enderror" name="asunto" x-ref="asunto"
-                   value="{{ old('asunto', $plantilla->asunto) }}" required>
+                   value="@viejo('asunto', $plantilla->asunto)" required>
             @error('asunto') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
         <label class="lbl">Cuerpo del correo (HTML)
             <textarea class="fld @error('cuerpo_html') is-invalid @enderror" name="cuerpo_html" x-ref="cuerpo"
                       rows="18" style="resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.6;"
-                      required>{{ old('cuerpo_html', $plantilla->cuerpo_html) }}</textarea>
+                      required>{{ \App\Support\Formulario::viejo('cuerpo_html', $plantilla->cuerpo_html) }}</textarea>
             @error('cuerpo_html') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
@@ -75,7 +75,7 @@
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <input class="fld" style="flex:1;min-width:200px;" type="email" name="destino"
-                       value="{{ old('destino', auth()->user()->email) }}" required>
+                       value="@viejo('destino', auth()->user()->email)" required>
                 <button type="submit" class="btn btn-outline btn-sm">Enviar</button>
             </div>
             @error('destino') <span class="field-error">{{ $message }}</span> @enderror

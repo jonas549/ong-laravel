@@ -30,7 +30,7 @@
         regionId: {{ Js::from(old('region_id')) }},
         communeId: {{ Js::from(old('commune_id')) }},
         mismoCorreo: {{ Js::from((bool) old('usar_correo_cuenta', true)) }},
-        descLen: {{ mb_strlen(old('descripcion', '')) }},
+        descLen: {{ mb_strlen(\App\Support\Formulario::viejo('descripcion')) }},
         otrosId: {{ Js::from(optional($publicos->firstWhere('nombre', 'Otros'))->id) }},
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null },
         comunas: {{ Js::from($regiones->mapWithKeys(fn ($r) => [$r->id => $r->communes->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre])->values()])) }},

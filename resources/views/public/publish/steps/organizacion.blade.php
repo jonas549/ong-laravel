@@ -19,7 +19,7 @@
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <label class="lbl">Nombre de la organización *
                 <input class="fld @error('org_nombre') is-invalid @enderror" name="org_nombre"
-                       value="{{ old('org_nombre') }}" placeholder="Ej. Fundación Junto al Barrio">
+                       value="@viejo('org_nombre')" placeholder="Ej. Fundación Junto al Barrio">
                 @error('org_nombre') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
@@ -31,21 +31,21 @@
 
         <label class="lbl" x-show="esOtra()" x-cloak>Describe tu organización *
             <input class="fld @error('org_tipo_otro') is-invalid @enderror" name="org_tipo_otro"
-                   value="{{ old('org_tipo_otro') }}" placeholder="Otra (especificar)">
+                   value="@viejo('org_tipo_otro')" placeholder="Otra (especificar)">
             <span class="helper">Se muestra solo al seleccionar "Otra".</span>
             @error('org_tipo_otro') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
         <label class="lbl" style="max-width:280px;" x-show="esEmpresa()" x-cloak>¿Cuántos trabajadores participan como voluntarios?
             <input class="fld @error('org_num_voluntarios') is-invalid @enderror" name="org_num_voluntarios"
-                   inputmode="numeric" value="{{ old('org_num_voluntarios') }}" placeholder="Ej. 25">
+                   inputmode="numeric" value="@viejo('org_num_voluntarios')" placeholder="Ej. 25">
             <span class="helper">Número aproximado. Escribe 0 si no aplica.</span>
             @error('org_num_voluntarios') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
         <label class="lbl" x-show="esEducativa()" x-cloak>¿Qué unidad, grupo o comunidad educativa organiza la actividad? *
             <input class="fld @error('org_unidad_educativa') is-invalid @enderror" name="org_unidad_educativa"
-                   value="{{ old('org_unidad_educativa') }}" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B">
+                   value="@viejo('org_unidad_educativa')" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B">
             @error('org_unidad_educativa') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
@@ -81,7 +81,7 @@
         --}}
         <label class="lbl" style="margin-bottom:16px;">Correo electrónico *
             <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
-                   value="{{ old('email') }}" placeholder="contacto@organizacion.cl" autocomplete="email">
+                   value="@viejo('email')" placeholder="contacto@organizacion.cl" autocomplete="email">
             <span class="helper">Con este correo entrarás a tu cuenta.</span>
             @error('email') <span class="field-error">{{ $message }}</span> @enderror
         </label>

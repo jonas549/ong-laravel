@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApplySmtpSettings;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\SoloInvitados;
 use App\Listeners\LogSentMail;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureRole::class,
+            'invitado' => SoloInvitados::class,
         ]);
 
         // Hay dos logins distintos (panel y organizador) y ninguna ruta se

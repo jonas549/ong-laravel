@@ -81,6 +81,19 @@
         @if (session('ok'))
             <div class="alert alert-ok" style="margin-bottom:18px;">{{ session('ok') }}</div>
         @endif
+        {{-- Sin esto, un formulario del panel sin su propio bloque de errores
+             --el de desbloquear un acceso, por ejemplo-- recargaba la página
+             igual que estaba y no se sabía qué había fallado. --}}
+        @if ($errors->any())
+            <div class="alert alert-error" style="margin-bottom:18px;">
+                <ul style="margin:0;padding-left:18px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @if (session('error'))
             <div class="alert alert-error" style="margin-bottom:18px;">
                 {{ session('error') }}

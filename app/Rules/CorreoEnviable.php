@@ -27,7 +27,7 @@ class CorreoEnviable implements ValidationRule
         [$local] = explode('@', $value, 2);
 
         if (preg_match('/[^\x20-\x7E]/', $local)) {
-            $fail('El :attribute no puede llevar tildes ni caracteres especiales antes de la arroba.');
+            $fail(':Attribute no puede llevar tildes ni caracteres especiales antes de la arroba.');
         }
     }
 }

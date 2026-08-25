@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TaxonomyTerm;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -11,7 +12,7 @@ class TaxonomyController extends Controller
 {
     public function index(Request $request)
     {
-        $grupo = $request->string('grupo')->toString() ?: 'tema';
+        $grupo = Filtro::texto($request, 'grupo') ?: 'tema';
 
         abort_unless(isset(TaxonomyTerm::GRUPOS[$grupo]), 404);
 

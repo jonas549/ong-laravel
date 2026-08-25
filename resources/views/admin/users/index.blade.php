@@ -6,7 +6,7 @@
 
     <section style="min-width:0;">
         <form method="GET" style="display:flex;gap:10px;margin-bottom:18px;max-width:360px;">
-            <input class="fld" type="search" name="q" value="{{ request('q') }}" placeholder="Buscar usuario…">
+            <input class="fld" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar usuario…">
             <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
         </form>
 
@@ -44,12 +44,12 @@
             @csrf
             <div>
                 <label class="helper" for="u-name" style="display:block;margin-bottom:6px;font-weight:600;">Nombre</label>
-                <input class="fld @error('name') is-invalid @enderror" type="text" id="u-name" name="name" value="{{ old('name') }}" required>
+                <input class="fld @error('name') is-invalid @enderror" type="text" id="u-name" name="name" value="@viejo('name')" required>
                 @error('name') <span class="field-error">{{ $message }}</span> @enderror
             </div>
             <div>
                 <label class="helper" for="u-email" style="display:block;margin-bottom:6px;font-weight:600;">Correo</label>
-                <input class="fld @error('email') is-invalid @enderror" type="email" id="u-email" name="email" value="{{ old('email') }}" required>
+                <input class="fld @error('email') is-invalid @enderror" type="email" id="u-email" name="email" value="@viejo('email')" required>
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
             </div>
             <div>

@@ -26,11 +26,19 @@ Route::post('/actividades/{activity:slug}/inscribirse', [RegistrationController:
 Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'cancel'])
     ->name('registrations.cancel');
 
-Route::get('/publicar-actividad', [PublishController::class, 'create'])->name('publish.create');
+// El wizard es sólo para quien no tiene cuenta: crea una nueva y entra con
+// ella, así que a quien ya está dentro se le manda a sumar la actividad desde
+// su cuenta en vez de dejar la anterior huérfana.
+$avisoWizard = 'invitado:Ya tienes la sesión abierta. Suma la actividad desde aquí, con "Sumar nueva actividad", y así queda en tu misma cuenta.';
+
+Route::get('/publicar-actividad', [PublishController::class, 'create'])
+    ->middleware($avisoWizard)
+    ->name('publish.create');
+
 // El mismo freno que el registro: este POST también crea cuenta y dispara
 // tres correos, así que sin límite era la vía para saltarse el del registro.
 Route::post('/publicar-actividad', [PublishController::class, 'store'])
-    ->middleware('throttle:10,1')
+    ->middleware([$avisoWizard, 'throttle:10,1'])
     ->name('publish.store');
 Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::class, 'done'])->name('publish.done');
 

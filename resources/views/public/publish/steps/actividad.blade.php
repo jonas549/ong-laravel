@@ -10,7 +10,7 @@
         <div style="display:flex;flex-direction:column;gap:18px;">
             <label class="lbl">Nombre de la actividad *
                 <input class="fld @error('titulo') is-invalid @enderror" name="titulo"
-                       value="{{ old('titulo') }}" placeholder="Ej. Jornada comunitaria en el barrio">
+                       value="@viejo('titulo')" placeholder="Ej. Jornada comunitaria en el barrio">
                 @error('titulo') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
@@ -48,7 +48,7 @@
                 <textarea class="fld @error('descripcion') is-invalid @enderror" name="descripcion" rows="4"
                           style="resize:vertical;" maxlength="1000"
                           placeholder="Cuenta de qué se trata, qué harán las personas y por qué participar…"
-                          x-on:input="descLen = $event.target.value.length">{{ old('descripcion') }}</textarea>
+                          x-on:input="descLen = $event.target.value.length">{{ \App\Support\Formulario::viejo('descripcion') }}</textarea>
                 <span style="display:flex;justify-content:space-between;gap:12px;">
                     <span class="helper">Máximo 1.000 caracteres.</span>
                     <span class="helper"
@@ -73,19 +73,19 @@
             <label class="lbl">Fecha *
                 <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
                        inputmode="numeric" placeholder="dd / mm / aaaa"
-                       x-bind:disabled="sinFecha" value="{{ old('fecha_inicio') }}">
+                       x-bind:disabled="sinFecha" value="@viejo('fecha_inicio')">
                 @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Hora inicio
                 <input class="fld @error('hora_inicio') is-invalid @enderror" name="hora_inicio"
-                       placeholder="HH:MM" x-bind:disabled="sinFecha" value="{{ old('hora_inicio') }}">
+                       placeholder="HH:MM" x-bind:disabled="sinFecha" value="@viejo('hora_inicio')">
                 @error('hora_inicio') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Hora término
                 <input class="fld @error('hora_termino') is-invalid @enderror" name="hora_termino"
-                       placeholder="HH:MM" x-bind:disabled="sinFecha" value="{{ old('hora_termino') }}">
+                       placeholder="HH:MM" x-bind:disabled="sinFecha" value="@viejo('hora_termino')">
                 @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
             </label>
         </div>
@@ -129,7 +129,7 @@
 
         <label class="lbl" style="margin-top:16px;">Dirección *
             <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
-                   value="{{ old('direccion') }}" placeholder="Calle, número, referencia">
+                   value="@viejo('direccion')" placeholder="Calle, número, referencia">
             @error('direccion') <span class="field-error">{{ $message }}</span> @enderror
         </label>
     </div>
@@ -170,7 +170,7 @@
 
         <label class="lbl" style="margin-top:16px;max-width:440px;" x-show="publicoOtros()" x-cloak>¿Cuál? *
             <input class="fld @error('publico_otro') is-invalid @enderror" name="publico_otro"
-                   value="{{ old('publico_otro') }}" placeholder="Especifica el público beneficiado">
+                   value="@viejo('publico_otro')" placeholder="Especifica el público beneficiado">
             @error('publico_otro') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
@@ -183,7 +183,7 @@
 
         <label class="lbl" style="margin-top:16px;" x-show="acc" x-cloak>Cuéntanos brevemente cuáles (opcional)
             <textarea class="fld" name="accesibilidad_detalle" rows="2" style="resize:vertical;"
-                      placeholder="Ej. acceso en silla de ruedas, intérprete de lengua de señas, material accesible…">{{ old('accesibilidad_detalle') }}</textarea>
+                      placeholder="Ej. acceso en silla de ruedas, intérprete de lengua de señas, material accesible…">{{ \App\Support\Formulario::viejo('accesibilidad_detalle') }}</textarea>
         </label>
     </div>
 
@@ -193,7 +193,7 @@
 
         <label class="lbl" style="max-width:260px;">Cantidad de participantes estimados
             <input class="fld @error('participantes_estimados') is-invalid @enderror" name="participantes_estimados"
-                   inputmode="numeric" value="{{ old('participantes_estimados') }}" placeholder="Ej. 80">
+                   inputmode="numeric" value="@viejo('participantes_estimados')" placeholder="Ej. 80">
             @error('participantes_estimados') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
@@ -206,7 +206,7 @@
 
         <label class="lbl" style="margin-top:16px;max-width:260px;" x-show="insc" x-cloak>Cupos disponibles
             <input class="fld @error('cupos_totales') is-invalid @enderror" name="cupos_totales"
-                   inputmode="numeric" value="{{ old('cupos_totales', 80) }}">
+                   inputmode="numeric" value="@viejo('cupos_totales', 80)">
             <span class="helper">Las personas podrán reservar su cupo desde el sitio web.</span>
             @error('cupos_totales') <span class="field-error">{{ $message }}</span> @enderror
         </label>
@@ -248,21 +248,21 @@
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <label class="lbl">Correo de contacto público
                 <input class="fld @error('correo_contacto') is-invalid @enderror" type="email" name="correo_contacto"
-                       value="{{ old('correo_contacto') }}" placeholder="contacto@organizacion.cl">
+                       value="@viejo('correo_contacto')" placeholder="contacto@organizacion.cl">
                 <span class="helper">Para que las personas puedan escribirte con preguntas sobre la actividad.</span>
                 @error('correo_contacto') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Enlace a red social
                 <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" name="enlace_red_social"
-                       value="{{ old('enlace_red_social') }}" placeholder="https://instagram.com/...">
+                       value="@viejo('enlace_red_social')" placeholder="https://instagram.com/...">
                 <span class="helper">Solo un enlace: Instagram, Facebook, LinkedIn o el que prefieras.</span>
                 @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Enlace a página web (opcional)
                 <input class="fld @error('enlace_web') is-invalid @enderror" type="url" name="enlace_web"
-                       value="{{ old('enlace_web') }}" placeholder="https://tusitio.cl">
+                       value="@viejo('enlace_web')" placeholder="https://tusitio.cl">
                 <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                 @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror
             </label>
