@@ -5,6 +5,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PublishController;
 use App\Http\Controllers\RegistrationController;
@@ -26,11 +27,34 @@ Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'can
     ->name('registrations.cancel');
 
 Route::get('/publicar-actividad', [PublishController::class, 'create'])->name('publish.create');
-Route::post('/publicar-actividad', [PublishController::class, 'store'])->name('publish.store');
+// El mismo freno que el registro: este POST también crea cuenta y dispara
+// tres correos, así que sin límite era la vía para saltarse el del registro.
+Route::post('/publicar-actividad', [PublishController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('publish.store');
 Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::class, 'done'])->name('publish.done');
 
 Route::get('/noticias', [PostController::class, 'index'])->name('posts.index');
 Route::get('/noticias/{post:slug}', [PostController::class, 'show'])->name('posts.show');
+
+/*
+|--------------------------------------------------------------------------
+| Verificación de correo
+|--------------------------------------------------------------------------
+| Los nombres son los estándar (verification.*) porque son los que usa el
+| enlace firmado que arma la notificación del framework.
+*/
+
+Route::middleware('auth')->group(function () {
+    Route::get('/correo/verificar', [Account\VerificacionController::class, 'notice'])
+        ->name('verification.notice');
+    Route::get('/correo/verificar/{id}/{hash}', [Account\VerificacionController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::post('/correo/verificar/reenviar', [Account\VerificacionController::class, 'send'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -43,8 +67,27 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
     Route::post('/login', [Account\AuthController::class, 'login'])->name('login.attempt');
     Route::post('/logout', [Account\AuthController::class, 'logout'])->name('logout');
 
+    Route::get('/registro', [Account\RegistroController::class, 'create'])->name('registro');
+    Route::post('/registro', [Account\RegistroController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('registro.store');
+
     Route::middleware(['auth', 'role:organizer'])->group(function () {
         Route::get('/', fn () => redirect()->route('account.activities.index'))->name('home');
+
+        // Perfil: mismo controlador que el del admin, distinto layout.
+        Route::get('/perfil', [PerfilController::class, 'edit'])->name('perfil');
+        Route::put('/perfil', [PerfilController::class, 'update'])
+            ->middleware('throttle:12,1')
+            ->name('perfil.update');
+        // El freno es por la contraseña actual: con una sesión ya abierta se
+        // podía probar sin límite, que es justo lo que hace falta para
+        // aprovechar una sesión robada.
+        Route::post('/perfil/contrasena', [PerfilController::class, 'password'])
+            ->middleware('throttle:6,1')
+            ->name('perfil.password');
+        Route::post('/perfil/sesiones/cerrar', [PerfilController::class, 'cerrarSesion'])->name('perfil.sesiones.cerrar');
+        Route::post('/perfil/sesiones/otras', [PerfilController::class, 'cerrarOtras'])->name('perfil.sesiones.otras');
 
         Route::get('/actividades', [Account\MyActivityController::class, 'index'])->name('activities.index');
         Route::get('/actividades/{activity}/editar', [Account\MyActivityController::class, 'edit'])
@@ -100,8 +143,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/login', [Admin\AuthController::class, 'login'])->name('login.attempt');
     Route::post('/logout', [Admin\AuthController::class, 'logout'])->name('logout');
 
+    // Entrada a la recuperación desde el panel: el formulario y el correo son
+    // los mismos, sólo cambia el aspecto de la pantalla.
+    Route::get('/recuperar-contrasena', [Account\PasswordResetController::class, 'request'])
+        ->name('password.request');
+
     Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/perfil', [PerfilController::class, 'edit'])->name('perfil');
+        Route::put('/perfil', [PerfilController::class, 'update'])
+            ->middleware('throttle:12,1')
+            ->name('perfil.update');
+        // El freno es por la contraseña actual: con una sesión ya abierta se
+        // podía probar sin límite, que es justo lo que hace falta para
+        // aprovechar una sesión robada.
+        Route::post('/perfil/contrasena', [PerfilController::class, 'password'])
+            ->middleware('throttle:6,1')
+            ->name('perfil.password');
+        Route::post('/perfil/sesiones/cerrar', [PerfilController::class, 'cerrarSesion'])->name('perfil.sesiones.cerrar');
+        Route::post('/perfil/sesiones/otras', [PerfilController::class, 'cerrarOtras'])->name('perfil.sesiones.otras');
 
         // Moderación
         Route::get('/actividades', [Admin\ActivityController::class, 'index'])->name('activities.index');
@@ -154,6 +215,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/correos', [Admin\EmailLogController::class, 'index'])->name('emails.index');
         Route::get('/correos/{email}', [Admin\EmailLogController::class, 'show'])->name('emails.show');
         Route::post('/correos/{email}/reenviar', [Admin\EmailLogController::class, 'resend'])->name('emails.resend');
+
+        // Log de accesos
+        Route::get('/accesos', [Admin\AccessLogController::class, 'index'])->name('accesos.index');
+        Route::post('/accesos/desbloquear', [Admin\AccessLogController::class, 'desbloquear'])->name('accesos.desbloquear');
     });
 });
 

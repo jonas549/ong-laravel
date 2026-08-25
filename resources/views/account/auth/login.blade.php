@@ -23,7 +23,7 @@
 
             <label class="lbl">Correo electrónico
                 <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
-                       value="{{ old('email') }}" placeholder="contacto@organizacion.cl"
+                       value="@viejo('email')" placeholder="contacto@organizacion.cl"
                        required autofocus autocomplete="email">
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
             </label>
@@ -38,6 +38,10 @@
 
             <a class="textlink" href="{{ route('password.request') }}"
                style="font-size:13.5px;font-weight:600;text-align:center;">¿Olvidaste tu contraseña?</a>
+
+            {{-- No está en el prototipo: ahí la cuenta sólo nace publicando. --}}
+            <a class="textlink" href="{{ route('account.registro') }}"
+               style="font-size:13.5px;font-weight:600;text-align:center;">Crear una cuenta</a>
         </form>
     </div>
 </div>

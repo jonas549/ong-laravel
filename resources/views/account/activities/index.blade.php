@@ -28,13 +28,30 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;">
         <div class="crumb"><a href="{{ route('home') }}">Inicio</a> → Mi cuenta</div>
 
-        {{-- No está en el prototipo: sin esto no hay forma de cerrar sesión. --}}
-        <form method="POST" action="{{ route('account.logout') }}">
-            @csrf
-            <button type="submit" class="crumb"
-                    style="background:none;border:0;padding:0;cursor:pointer;font-family:var(--font);">Cerrar sesión</button>
-        </form>
+        {{-- No está en el prototipo: sin esto no hay forma de llegar al perfil
+             ni de cerrar sesión. --}}
+        <div style="display:flex;align-items:center;gap:14px;">
+            <a class="crumb" href="{{ route('account.perfil') }}">Mi perfil</a>
+            <span class="crumb" aria-hidden="true">·</span>
+            <form method="POST" action="{{ route('account.logout') }}">
+                @csrf
+                <button type="submit" class="crumb"
+                        style="background:none;border:0;padding:0;cursor:pointer;font-family:var(--font);">Cerrar sesión</button>
+            </form>
+        </div>
     </div>
+
+    @if (! auth()->user()->hasVerifiedEmail())
+        {{-- Avisa, pero no bloquea: el recorrido de publicar lleva directo aquí
+             y un muro cambiaría ese flujo. --}}
+        <div class="alert alert-info" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px;">
+            <span style="flex:1;min-width:240px;">Confirma tu correo para que no se pierdan los avisos de tus actividades.</span>
+            <form method="POST" action="{{ route('verification.send') }}">
+                @csrf
+                <button type="submit" class="btn btn-outline btn-sm">Reenviar verificación</button>
+            </form>
+        </div>
+    @endif
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:26px;">
         <div>

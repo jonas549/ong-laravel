@@ -32,9 +32,9 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::in([User::ROL_ADMIN, User::ROL_ORGANIZER])],
         ], [], [
-            'name' => 'nombre',
-            'email' => 'correo',
-            'password' => 'contraseña',
+            'name' => 'el nombre',
+            'email' => 'el correo',
+            'password' => 'la contraseña',
             'role' => 'rol',
         ]);
 

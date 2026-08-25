@@ -53,7 +53,7 @@ class ContentController extends Controller
         'partners' => [
             'modelo' => Partner::class,
             'titulo' => 'Auspiciadores y participantes',
-            'etiqueta' => 'nombre',
+            'etiqueta' => 'el nombre',
             'campos' => [
                 'nombre' => ['label' => 'Nombre', 'tipo' => 'text', 'reglas' => 'required|string|max:255'],
                 'grupo' => ['label' => 'Grupo', 'tipo' => 'select', 'reglas' => 'required|string|max:30', 'opciones' => Partner::GRUPOS],

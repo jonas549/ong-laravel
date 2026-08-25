@@ -29,7 +29,7 @@ class TaxonomyController extends Controller
             'grupo' => ['required', 'string', 'max:30'],
             'nombre' => ['required', 'string', 'max:255'],
             'orden' => ['nullable', 'integer', 'min:0'],
-        ], [], ['nombre' => 'nombre']);
+        ], [], ['nombre' => 'el nombre']);
 
         abort_unless(isset(TaxonomyTerm::GRUPOS[$datos['grupo']]), 404);
 
@@ -47,7 +47,7 @@ class TaxonomyController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'orden' => ['nullable', 'integer', 'min:0'],
             'activo' => ['nullable', 'boolean'],
-        ], [], ['nombre' => 'nombre']);
+        ], [], ['nombre' => 'el nombre']);
 
         $term->update([
             'nombre' => $datos['nombre'],

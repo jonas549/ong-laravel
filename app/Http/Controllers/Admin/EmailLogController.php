@@ -7,6 +7,7 @@ use App\Listeners\LogSentMail;
 use App\Models\EmailLog;
 use App\Models\EmailTemplate;
 use App\Services\SmtpConfigService;
+use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -16,11 +17,11 @@ class EmailLogController extends Controller
     public function index(Request $request)
     {
         $filtros = [
-            'status' => $request->string('status')->toString(),
-            'plantilla' => $request->string('plantilla')->toString(),
-            'q' => $request->string('q')->toString(),
-            'desde' => $request->string('desde')->toString(),
-            'hasta' => $request->string('hasta')->toString(),
+            'status' => Filtro::texto($request, 'status'),
+            'plantilla' => Filtro::texto($request, 'plantilla'),
+            'q' => Filtro::texto($request, 'q'),
+            'desde' => Filtro::texto($request, 'desde'),
+            'hasta' => Filtro::texto($request, 'hasta'),
         ];
 
         $correos = EmailLog::query()
@@ -31,6 +32,8 @@ class EmailLogController extends Controller
             ->when($filtros['desde'], fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($filtros['hasta'], fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->when($filtros['q'], function ($q, $b) {
+                $b = Filtro::like($b);
+
                 // El buscador cubre destinatario, asunto y cuerpo.
                 $q->where(function ($w) use ($b) {
                     $w->where('to', 'like', "%{$b}%")

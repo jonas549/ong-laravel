@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PublishActivityRequest;
+use App\Models\AccessLog;
 use App\Models\Activity;
 use App\Models\Commune;
 use App\Models\Organization;
@@ -10,7 +11,10 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
+use App\Services\ControlDeAcceso;
 use App\Services\CorreoTransaccional;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -58,7 +62,7 @@ class PublishController extends Controller
                 'num_voluntarios' => $datos['org_num_voluntarios'] ?? null,
                 'unidad_educativa' => $datos['org_unidad_educativa'] ?? null,
                 'logo_path' => ($logo = $request->file('org_logo'))
-                    ? 'storage/' . $logo->store('organizaciones', 'public')
+                    ? 'storage/'.$logo->store('organizaciones', 'public')
                     : null,
                 'correo_contacto' => $correoPublico,
                 'enlace_web' => $datos['enlace_web'] ?? null,
@@ -91,7 +95,7 @@ class PublishController extends Controller
                     : null,
                 'publico_otro' => $datos['publico_otro'] ?? null,
                 'imagen_portada' => ($portada = $request->file('imagen'))
-                    ? 'storage/' . $portada->store('actividades', 'public')
+                    ? 'storage/'.$portada->store('actividades', 'public')
                     : null,
                 'correo_contacto' => $correoPublico,
                 'enlace_red_social' => $datos['enlace_red_social'] ?? null,
@@ -117,7 +121,22 @@ class PublishController extends Controller
         // Fuera de la transacción: si el correo falla, la actividad ya existe.
         $moderacion->cambiar($actividad, 'revision', null);
 
-        app(CorreoTransaccional::class)->bienvenida($actividad->organization->user);
+        $nuevoUsuario = $actividad->organization->user;
+
+        // La cuenta se acaba de crear con la contraseña que eligió aquí mismo:
+        // dejarla fuera obligaba a volver a escribirla para ver su actividad, y
+        // el enlace del correo de verificación rebotaba al login.
+        Auth::login($nuevoUsuario);
+        $request->session()->regenerate();
+
+        $nuevoUsuario->forceFill(['last_login_at' => now()])->save();
+        app(ControlDeAcceso::class)->exito($request, AccessLog::PANEL_ORGANIZADOR, $nuevoUsuario);
+
+        app(CorreoTransaccional::class)->bienvenida($nuevoUsuario);
+
+        // La cuenta nace aquí, así que aquí sale también el correo de
+        // verificación. No bloquea nada: es para confirmar la dirección.
+        event(new Registered($nuevoUsuario));
 
         return redirect()
             ->route('publish.done', $actividad)

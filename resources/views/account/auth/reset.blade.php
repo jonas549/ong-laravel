@@ -22,7 +22,7 @@
 
             <label class="lbl">Correo electrónico
                 <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
-                       value="{{ old('email', $email) }}" required autocomplete="email">
+                       value="@viejo('email', $email)" required autocomplete="email">
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 

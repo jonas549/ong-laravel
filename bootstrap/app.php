@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,7 +34,23 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withEvents(discover: false)
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        /*
+         * El enlace de verificación caduca a los 60 minutos, y abrir el correo
+         * al día siguiente es lo normal. Sin esto se llegaba a un 403 en inglés
+         * del framework, sin ninguna salida. Ahora se vuelve a la pantalla de
+         * "revisa tu correo", que trae el botón de reenviar.
+         */
+        $exceptions->render(function (InvalidSignatureException $e, Request $request) {
+            if (! $request->routeIs('verification.verify')) {
+                return null;
+            }
+
+            return $request->user()
+                ? redirect()->route('verification.notice')
+                    ->with('error', 'Ese enlace ya caducó. Pulsa "Reenviar el correo" y te mandamos otro.')
+                : redirect()->route('account.login')
+                    ->with('error', 'Ese enlace ya caducó. Entra en tu cuenta y te enviamos otro.');
+        });
     })
     ->booted(function ($app) {
         // Registro de correos: al engancharse a los eventos del mailer,

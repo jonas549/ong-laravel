@@ -57,8 +57,14 @@
         <a href="{{ route('admin.settings.general') }}" class="{{ request()->routeIs('admin.settings.general*') ? 'on' : '' }}">Configuración</a>
         <a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'on' : '' }}">Correo (SMTP)</a>
         <a href="{{ route('admin.emails.index') }}" class="{{ request()->routeIs('admin.emails.*') ? 'on' : '' }}">Log de correos</a>
+        <a href="{{ route('admin.accesos.index') }}" class="{{ request()->routeIs('admin.accesos.*') ? 'on' : '' }}">Log de accesos</a>
 
-        <div style="margin-top:auto;padding:18px 22px 0;">
+        {{-- El perfil va abajo, separado del menú de gestión: es de la persona,
+             no del sitio. --}}
+        <div class="grp" style="margin-top:auto;">Mi cuenta</div>
+        <a href="{{ route('admin.perfil') }}" class="{{ request()->routeIs('admin.perfil*') ? 'on' : '' }}">Mi perfil</a>
+
+        <div style="padding:14px 22px 0;">
             <form method="POST" action="{{ route('admin.logout') }}">
                 @csrf
                 <button type="submit" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;">Cerrar sesión</button>

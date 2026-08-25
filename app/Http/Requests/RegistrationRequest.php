@@ -26,6 +26,6 @@ class RegistrationRequest extends FormRequest
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['correo' => 'correo', 'nombre' => 'nombre'];
+        return ['correo' => 'el correo', 'nombre' => 'el nombre'];
     }
 }

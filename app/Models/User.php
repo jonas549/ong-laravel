@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -9,12 +11,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     public const ROL_ADMIN = 'admin';
+
     public const ROL_ORGANIZER = 'organizer';
 
     /**
@@ -60,9 +63,28 @@ class User extends Authenticatable
      */
     public static function credencialesDeOtroRol(string $email, string $password, string $rolEsperado): ?self
     {
+        $usuario = static::porCredenciales($email, $password);
+
+        return $usuario && $usuario->role !== $rolEsperado ? $usuario : null;
+    }
+
+    /**
+     * El usuario al que pertenecen esas credenciales, sin mirar ni el rol ni
+     * si está activo.
+     *
+     * `Auth::attempt` lleva `is_active => true` entre las condiciones, así que
+     * una cuenta desactivada falla igual que una contraseña equivocada. Con
+     * esto se puede distinguir un caso del otro después del fallo, para
+     * registrarlo bien y dar un mensaje que sea verdad.
+     *
+     * Nunca responde a quien no sepa ya la contraseña, así que no sirve para
+     * averiguar qué cuentas existen.
+     */
+    public static function porCredenciales(string $email, string $password): ?self
+    {
         $usuario = static::where('email', $email)->first();
 
-        if (! $usuario || $usuario->role === $rolEsperado) {
+        if (! $usuario) {
             return null;
         }
 

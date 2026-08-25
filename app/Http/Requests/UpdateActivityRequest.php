@@ -109,9 +109,9 @@ class UpdateActivityRequest extends FormRequest
             // 2 MB y 1200×600 recomendado, como dice el propio formulario.
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
-            'temas' => ['required', 'array', 'min:1', 'max:' . TaxonomyTerm::limiteDe('tema')],
+            'temas' => ['required', 'array', 'min:1', 'max:'.TaxonomyTerm::limiteDe('tema')],
             'temas.*' => ['exists:taxonomy_terms,id'],
-            'caracteristicas' => ['nullable', 'array', 'max:' . TaxonomyTerm::limiteDe('caracteristica')],
+            'caracteristicas' => ['nullable', 'array', 'max:'.TaxonomyTerm::limiteDe('caracteristica')],
             'caracteristicas.*' => ['exists:taxonomy_terms,id'],
             'publicos' => ['required', 'array', 'min:1'],
             'publicos.*' => ['exists:taxonomy_terms,id'],
@@ -150,7 +150,7 @@ class UpdateActivityRequest extends FormRequest
     {
         return [
             'titulo' => 'nombre de la actividad',
-            'descripcion' => 'descripción',
+            'descripcion' => 'la descripción',
             'commune_id' => 'comuna',
             'direccion' => 'dirección',
             'imagen' => 'imagen de la actividad',

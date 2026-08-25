@@ -105,9 +105,9 @@ class PublishActivityRequest extends FormRequest
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
             // Los topes vienen del prototipo (3 temas, 5 características).
-            'temas' => ['required', 'array', 'min:1', 'max:' . TaxonomyTerm::limiteDe('tema')],
+            'temas' => ['required', 'array', 'min:1', 'max:'.TaxonomyTerm::limiteDe('tema')],
             'temas.*' => ['exists:taxonomy_terms,id'],
-            'caracteristicas' => ['required', 'array', 'min:1', 'max:' . TaxonomyTerm::limiteDe('caracteristica')],
+            'caracteristicas' => ['required', 'array', 'min:1', 'max:'.TaxonomyTerm::limiteDe('caracteristica')],
             'caracteristicas.*' => ['exists:taxonomy_terms,id'],
             'publicos' => ['required', 'array', 'min:1'],
             'publicos.*' => ['exists:taxonomy_terms,id'],
@@ -148,13 +148,13 @@ class PublishActivityRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'org_nombre' => 'nombre de la organización',
-            'org_tipo' => 'tipo de organización',
+            'org_nombre' => 'el nombre de la organización',
+            'org_tipo' => 'el tipo de organización',
             'org_logo' => 'logo de la organización',
-            'email' => 'correo',
-            'password' => 'contraseña',
+            'email' => 'el correo',
+            'password' => 'la contraseña',
             'titulo' => 'nombre de la actividad',
-            'descripcion' => 'descripción',
+            'descripcion' => 'la descripción',
             'region_id' => 'región',
             'commune_id' => 'comuna',
             'direccion' => 'dirección',
