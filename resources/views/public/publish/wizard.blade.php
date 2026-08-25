@@ -46,7 +46,7 @@
         <h1 style="font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 12px;color:var(--ink);text-wrap:pretty;">¿Necesitas convocar a personas voluntarias para esta actividad?</h1>
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:58ch;text-wrap:pretty;">Con esta respuesta sabremos si tu actividad necesita una convocatoria de voluntariado o solo difusión en el calendario.</p>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
             <button type="button" class="bigopt" x-on:click="redirigir = true">
                 <span style="display:grid;place-items:center;width:52px;height:52px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo);margin-bottom:16px;">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M19 8v6M22 11h-6"></path></svg>
@@ -73,7 +73,7 @@
             <h1 style="font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 12px;color:var(--ink);">¿Qué tipo de organización eres?</h1>
             <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:56ch;">Según tu respuesta te pediremos solo los datos que corresponden.</p>
 
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
+            <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
                 @foreach ($tiposOrg as $t)
                     <button type="button"
                             x-bind:class="tipo === {{ Js::from($t) }} ? 'tileopt on' : 'tileopt'"

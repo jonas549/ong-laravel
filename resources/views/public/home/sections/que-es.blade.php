@@ -9,7 +9,7 @@
         </div>
 
         <figure class="reveal" style="margin:0;position:relative;overflow:visible;">
-            <span style="position:absolute;top:-18px;right:-18px;width:72px;height:72px;border-radius:18px;background:var(--amarillo);z-index:-1;opacity:.9;"></span>
+            <span class="adorno" style="position:absolute;top:-18px;right:-18px;width:72px;height:72px;border-radius:18px;background:var(--amarillo);z-index:-1;opacity:.9;"></span>
             <div style="border-radius:26px;overflow:hidden;aspect-ratio:16/11;background:var(--gris-100);box-shadow:0 26px 50px -28px rgba(7,79,113,.4);">
                 <img loading="lazy" decoding="async" width="1376" height="771" src="{{ asset('img/group-people-shaking-hands-with-one-that-says-h-it.jpg') }}"
                      alt="Personas dándose la mano en una jornada solidaria"

@@ -40,7 +40,7 @@
         </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px;">
+    <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px;">
         @foreach ($metricas as $m)
             <div class="card" style="padding:22px 24px;">
                 <div style="font-family:var(--font-title);font-size:38px;font-weight:800;line-height:1;color:{{ $m['color'] }};margin-bottom:6px;font-variant-numeric:tabular-nums;">{{ $m['valor'] }}</div>

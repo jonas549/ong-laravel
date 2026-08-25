@@ -6,9 +6,11 @@
     <div style="position:absolute;left:0;right:0;bottom:0;height:280px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 45%,rgba(255,255,255,.92) 78%,#fff 100%);z-index:1;"></div>
 
     <div style="position:relative;z-index:2;max-width:900px;margin:0 auto;padding:72px 40px 210px;text-align:center;">
-        <div class="reveal" style="display:inline-flex;align-items:center;gap:9px;font-size:13.5px;letter-spacing:.02em;font-weight:600;color:#fff;background:var(--naranjo);padding:9px 20px;border-radius:999px;margin-bottom:26px;box-shadow:0 12px 26px -14px rgba(229,114,0,.9);">
-            <span style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.85);"></span>
-            Día del Patrimonio Social · <strong style="font-weight:800;">4 y 5 de diciembre</strong> · Chile 2026
+        <div class="hero-pildora reveal" style="display:inline-flex;align-items:center;gap:9px;font-size:13.5px;letter-spacing:.02em;font-weight:600;color:#fff;background:var(--naranjo);padding:9px 20px;border-radius:999px;margin-bottom:26px;box-shadow:0 12px 26px -14px rgba(229,114,0,.9);">
+            <span style="flex:none;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.85);"></span>
+            {{-- El texto va envuelto: suelto, cada trozo era un ítem del flex y
+                 en móvil se partía en columnas con los puntos separadores sueltos. --}}
+            <span>Día del Patrimonio Social · <strong style="font-weight:800;">4 y 5 de diciembre</strong> · Chile 2026</span>
         </div>
 
         <h1 class="hero-h1 reveal hero-glow" style="font-weight:800;font-size:62px;line-height:1.03;letter-spacing:-.02em;margin:0 auto;max-width:17ch;">

@@ -101,7 +101,7 @@
                              píldora, y el texto se lee al entrar a editar. --}}
                     </div>
 
-                    <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
+                    <div class="col-acciones" style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
                         <span style="font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:999px;background:{{ $tono['bg'] }};color:{{ $tono['ink'] }};border:1.5px solid {{ $tono['borde'] }};">{{ $a->estado_label }}</span>
 
                         <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end;opacity:{{ $a->estado === 'cancelada' ? '.45' : '1' }};">

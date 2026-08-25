@@ -1,6 +1,6 @@
 <section id="actividades" style="scroll-margin-top:90px;max-width:1180px;margin:0 auto;padding:88px 40px 92px;">
     <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:44px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:flex-start;gap:22px;max-width:700px;">
+        <div class="cabecera-seccion" style="display:flex;align-items:flex-start;gap:22px;max-width:700px;">
             <img loading="lazy" decoding="async" width="698" height="698" src="{{ asset('img/actividades-destacadas.png') }}" alt="" aria-hidden="true"
                  style="flex:none;width:210px;height:auto;margin-top:2px;">
             <div>

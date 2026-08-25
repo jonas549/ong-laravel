@@ -427,11 +427,50 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .actcard { transition: transform .2s ease, box-shadow .2s ease; }
 
-.logo-chip { transition: transform .2s ease; }
+/*
+ * Auspiciadores: todas las cajas iguales, el logo se escala dentro. Sustituye
+ * al ancho por contenido del fuente, donde ninguna medía lo mismo.
+ */
+.grid-logos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    align-items: stretch;
+}
+
+.grid-logos .logo-chip {
+    display: grid;
+    place-items: center;
+    height: 112px;
+    padding: 0 18px;
+    background: #fff;
+    border: 1px solid #eef0f1;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px -14px rgba(0, 0, 0, .25);
+    transition: transform .2s ease;
+}
+
+.grid-logos .logo-chip img {
+    max-height: 56px;
+    max-width: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
+.grid-logos .logo-chip span {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -.01em;
+    color: var(--gris-700);
+}
 
 .logo-chip:hover { transform: scale(1.05); }
 
 /* ── Carrusel y marquesina ──────────────────────────────── */
+
+/* El track mide más que la pantalla a propósito: se recorta aquí y no
+   depende del overflow-x del envoltorio de página. */
+.marquee { overflow: hidden; }
 
 .carousel { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -605,7 +644,12 @@ table.plist tr:hover td { background: #fdfcfb; }
  * prototipo: a menos de 900px se parten. Se apilan.
  */
 @media (max-width: 900px) {
+    /* Adornos que sobresalen del marco a propósito: dentro del viewport. */
+    .sticker { width: 96px !important; top: -24px !important; left: -14px !important; }
+    .adorno { top: -12px !important; right: -6px !important; width: 56px !important; height: 56px !important; }
+
     .grid-2 { grid-template-columns: 1fr !important; }
+    .grid-logos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* ── Panel admin ────────────────────────────────────────── */
@@ -663,13 +707,66 @@ table.plist tr:hover td { background: #fdfcfb; }
 
 .kpi .l { font-size: 12.5px; color: var(--gris); }
 
+.admin-topbar { display: none; }
+
 @media (max-width: 900px) {
+    /*
+     * Diecisiete enlaces en una tira con scroll horizontal son inusables, así
+     * que bajo 900px la barra lateral se pliega detrás de la hamburguesa de
+     * .admin-topbar y conserva sus grupos.
+     */
     .admin-shell { grid-template-columns: 1fr; }
-    .admin-side { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--linea); }
-    .admin-side .grp { display: none; }
+
+    .admin-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        padding: 10px 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--linea);
+    }
+
+    .admin-side { display: none; border-right: 0; border-bottom: 1px solid var(--linea); padding: 8px 0 16px; }
+
+    .admin-side.abierta { display: flex; }
+
+    /* El logo ya está en la barra superior. */
+    .admin-side > div:first-child { display: none; }
+
+    .admin-side a { padding: 12px 20px; }
+
+    .admin-main { padding: 20px 20px 48px; }
 }
 
 /* ── Responsive ─────────────────────────────────────────── */
+
+/*
+ * Los tres HTML fuente sólo traen 1180, 1020 y 760, y ni siquiera resuelven el
+ * menú: a 1020 esconden los enlaces y no ponen nada en su lugar. Se añaden 900
+ * (tablet, el que ya usaba el panel) y 560 (teléfono).
+ *
+ * Casi toda la maquetación de las vistas va en style inline, así que desde acá
+ * sólo se puede ganar con !important. Para no tener que marcarlo todo, las
+ * rejillas llevan clase (.grid-2, .grid-3, .grid-auto) y estas reglas actúan
+ * sobre la clase, no sobre el elemento.
+ */
+
+.nav-toggle { display: none; }
+
+.navlink-movil {
+    display: block;
+    padding: 11px 2px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gris-700);
+    border-bottom: 1px solid #f4f5f6;
+}
+
+.navlink-movil:hover { color: var(--naranjo); }
 
 @media (max-width: 1180px) {
     .nav-links { gap: 18px !important; font-size: 14px; }
@@ -678,12 +775,100 @@ table.plist tr:hover td { background: #fdfcfb; }
 }
 
 @media (max-width: 1020px) {
+    /* Sólo logo y hamburguesa: el resto baja al desplegable. */
     .nav-links { display: none !important; }
+    .nav-cta { display: none !important; }
+    .nav-toggle { display: grid; }
+}
+
+/* ── Tablet ─────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr !important; }
+    .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+    /* Contenedores anchos: el padding lateral del fuente ahoga a este ancho. */
+    .contenido { padding-left: 24px !important; padding-right: 24px !important; }
 }
 
 @media (max-width: 760px) {
     .hero-h1 { font-size: 38px !important; }
+
+    /* Cabeceras de sección con ilustración al costado: la imagen pasa arriba. */
+    .cabecera-seccion { flex-direction: column !important; gap: 14px !important; }
+    .cabecera-seccion > img { width: 128px !important; }
+
+    /* La píldora de estado es larga; deja de fijar el ancho de la tarjeta. */
+    .col-acciones { flex: 1 1 100% !important; align-items: stretch !important; }
+    .col-acciones > span { text-align: center; }
+    .col-acciones > div { justify-content: flex-start !important; }
     .hero-kpi { display: none !important; }
+
+    /* La píldora de la fecha: se encoge para no partirse en tres líneas. */
+    .hero-pildora { font-size: 12.5px !important; padding: 8px 16px !important; max-width: 100%; }
+
+    .grid-3 { grid-template-columns: 1fr !important; }
+    .grid-auto { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+    /*
+     * iOS Safari hace zoom al enfocar un campo cuya fuente baja de 16px, y
+     * deja la página descuadrada. A 14.5px pasaba en todos.
+     */
+    .fld { font-size: 16px; }
+
+    /* Mínimo táctil de 40px: los chips y los botones chicos no llegaban. */
+    .chip, .tab, .btn-sm {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 11px 16px;
+    }
+
+    .steplink { min-height: 42px; }
+
+    /* Alcanza también a los botones con padding propio en la vista. */
+    .btn { min-height: 42px; }
+
+    /* Las casillas del navegador miden 13px: no se pueden pulsar. */
+    input[type=checkbox], input[type=radio] {
+        width: 20px !important;
+        height: 20px !important;
+        accent-color: var(--naranjo);
+    }
+
+    .sqbtn { min-width: 44px; min-height: 44px; }
+
+    .icon-btn { width: 44px; height: 44px; }
+
+    /* Filas de acciones: dejan de competir por el ancho y se apilan. */
+    .fila-acciones { flex-direction: column !important; align-items: stretch !important; }
+    .fila-acciones > * { width: 100%; }
+    .fila-acciones .btn { justify-content: center; }
+}
+
+/* ── Teléfono ───────────────────────────────────────────── */
+
+@media (max-width: 560px) {
+    .grid-logos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .grid-logos .logo-chip { height: 88px; padding: 0 12px; }
+    .grid-logos .logo-chip img { max-height: 44px; }
+
+    .nav-sep, .nav-cos { display: none !important; }
+    .nav-logos img { height: 38px !important; }
+
+    .contenido { padding-left: 18px !important; padding-right: 18px !important; }
+
+    .grid-auto { grid-template-columns: 1fr !important; }
+
+    h1 { font-size: 28px !important; line-height: 1.15 !important; }
+    h2 { font-size: 24px !important; line-height: 1.2 !important; }
+
+    /* Los campos angostos del escritorio pasan a ancho completo. */
+    .lbl { max-width: none !important; }
+
+    /* Ningún medio se sale del contenedor, venga de donde venga. */
+    img, svg, video, iframe { max-width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

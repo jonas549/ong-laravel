@@ -9,15 +9,35 @@
 </head>
 <body>
 
-<div class="admin-shell">
-    <aside class="admin-side">
+<div class="admin-shell" x-data="{ nav: false }" x-on:keydown.escape.window="nav = false">
+    {{-- Sólo se ve bajo 900px: en escritorio manda la barra lateral. --}}
+    <div class="admin-topbar">
+        <a href="{{ route('admin.dashboard') }}" style="display:inline-flex;">
+            <img decoding="async" width="400" height="120" src="{{ asset('img/dps-logo-header.png') }}" alt="Panel" style="height:34px;width:auto;">
+        </a>
+
+        <button type="button" class="icon-btn"
+                x-on:click="nav = !nav"
+                x-bind:aria-expanded="nav ? 'true' : 'false'"
+                aria-controls="admin-nav"
+                x-bind:aria-label="nav ? 'Cerrar menú' : 'Abrir menú'">
+            <svg x-show="!nav" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path d="M4 7h16M4 12h16M4 17h16"></path>
+            </svg>
+            <svg x-show="nav" x-cloak width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path d="M6 6l12 12M18 6L6 18"></path>
+            </svg>
+        </button>
+    </div>
+
+    <aside id="admin-nav" class="admin-side" x-bind:class="nav ? 'abierta' : ''">
         <div style="padding:0 22px 14px;">
             <a href="{{ route('admin.dashboard') }}" style="display:inline-flex;">
                 <img loading="lazy" decoding="async" width="400" height="120" src="{{ asset('img/dps-logo-header.png') }}" alt="Panel" style="height:38px;width:auto;">
             </a>
         </div>
 
-        <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'on' : '' }}">Resumen</a>
+        <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'on' : '' }}" x-on:click="nav = false">Resumen</a>
 
         <div class="grp">Moderación</div>
         <a href="{{ route('admin.activities.index') }}" class="{{ request()->routeIs('admin.activities.*') ? 'on' : '' }}">Actividades</a>

@@ -1,5 +1,18 @@
+{{--
+    Header público.
+
+    En escritorio replica el de los tres HTML fuente. Por debajo de 1020px el
+    fuente sólo hace display:none a los enlaces y no pone nada en su lugar, así
+    que el menú desplegable y el reparto de qué queda visible son nuestros:
+    en móvil sólo logo y hamburguesa, y todo lo demás baja al desplegable.
+
+    Qué se ve a cada ancho lo deciden las clases (.nav-links, .nav-cta,
+    .nav-toggle) en app.css, no un matchMedia en JS: así responde al girar el
+    teléfono o al redimensionar.
+--}}
 <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-bottom:1px solid #eeeff0;"
-        x-data="{ abierto: false }">
+        x-data="{ abierto: false }"
+        x-on:keydown.escape.window="abierto = false">
     <nav style="max-width:1180px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;gap:20px;">
 
         <div class="nav-logos" style="flex:none;display:flex;align-items:center;gap:16px;min-width:0;">
@@ -7,8 +20,8 @@
                 <img decoding="async" width="400" height="120" src="{{ asset('img/dps-logo-header.png') }}" alt="Día del Patrimonio Social 2026"
                      style="height:46px;width:auto;object-fit:contain;">
             </a>
-            <span aria-hidden="true" style="width:1px;height:44px;background:#e4e5e7;"></span>
-            <a href="https://comunidad-org.cl" target="_blank" rel="noopener" style="display:inline-flex;">
+            <span class="nav-sep" aria-hidden="true" style="width:1px;height:44px;background:#e4e5e7;"></span>
+            <a class="nav-cos" href="https://comunidad-org.cl" target="_blank" rel="noopener" style="display:inline-flex;">
                 <img decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
                      style="height:58px;width:auto;object-fit:contain;">
             </a>
@@ -23,16 +36,66 @@
         </div>
 
         <div style="flex:none;display:flex;align-items:center;gap:12px;margin-left:auto;">
-            <a href="{{ route('publish.create') }}" class="btn btn-primary">Publica tu actividad</a>
+            <div class="nav-cta" style="display:flex;align-items:center;gap:12px;">
+                <a href="{{ route('publish.create') }}" class="btn btn-primary">Publica tu actividad</a>
 
-            <a href="{{ route('account.login') }}" class="icon-btn" aria-label="Accede a tu cuenta" title="Accede a tu cuenta">
+                <a href="{{ route('account.login') }}" class="icon-btn" aria-label="Accede a tu cuenta" title="Accede a tu cuenta">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="10" r="3.2"></circle>
+                        <path d="M6.6 19.2a6 6 0 0 1 10.8 0"></path>
+                    </svg>
+                </a>
+
+                <a href="https://instagram.com/diadelpatrimoniosocial" target="_blank" rel="noopener" class="icon-btn" aria-label="Instagram">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="20" x="2" y="2" rx="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+                    </svg>
+                </a>
+            </div>
+
+            <button type="button" class="icon-btn nav-toggle"
+                    x-bind:aria-expanded="abierto ? 'true' : 'false'"
+                    x-on:click="abierto = !abierto"
+                    aria-controls="menu-movil"
+                    x-bind:aria-label="abierto ? 'Cerrar menú' : 'Abrir menú'">
+                <svg x-show="!abierto" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M4 7h16M4 12h16M4 17h16"></path>
+                </svg>
+                <svg x-show="abierto" x-cloak width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M6 6l12 12M18 6L6 18"></path>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div id="menu-movil" x-show="abierto" x-cloak x-transition.opacity
+         style="border-top:1px solid #eeeff0;background:#fff;padding:18px 24px 24px;display:flex;flex-direction:column;gap:4px;max-height:calc(100vh - 82px);overflow-y:auto;">
+
+        {{-- La acción principal del sitio va primero y a ancho completo. --}}
+        <a href="{{ route('publish.create') }}" class="btn btn-primary"
+           style="justify-content:center;margin-bottom:14px;" x-on:click="abierto = false">Publica tu actividad</a>
+
+        @foreach ([
+            ['Actividades', route('activities.index')],
+            ['Voluntariado', route('publish.create')],
+            ['¿Qué es el Patrimonio Social?', route('home') . '#que-es'],
+            ['Ediciones', route('home') . '#ediciones'],
+            ['Noticias', route('posts.index')],
+        ] as [$texto, $destino])
+            <a class="navlink-movil" href="{{ $destino }}" x-on:click="abierto = false">{{ $texto }}</a>
+        @endforeach
+
+        <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--linea);">
+            <a href="{{ route('account.login') }}" class="icon-btn" aria-label="Accede a tu cuenta" x-on:click="abierto = false">
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <circle cx="12" cy="10" r="3.2"></circle>
                     <path d="M6.6 19.2a6 6 0 0 1 10.8 0"></path>
                 </svg>
             </a>
-
             <a href="https://instagram.com/diadelpatrimoniosocial" target="_blank" rel="noopener" class="icon-btn" aria-label="Instagram">
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                     <rect width="20" height="20" x="2" y="2" rx="5"></rect>
@@ -40,26 +103,7 @@
                     <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
                 </svg>
             </a>
-
-            {{-- El prototipo escondía el menú bajo 1020px sin alternativa. Acá hay botón. --}}
-            <button type="button" class="icon-btn" style="display:none;" x-cloak
-                    x-bind:aria-expanded="abierto ? 'true' : 'false'"
-                    x-on:click="abierto = !abierto"
-                    aria-label="Abrir menú"
-                    x-init="$el.style.display = window.matchMedia('(max-width:1020px)').matches ? 'grid' : 'none'">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                    <path d="M4 7h16M4 12h16M4 17h16"></path>
-                </svg>
-            </button>
+            <span class="helper" style="margin-left:auto;">Tu cuenta e Instagram</span>
         </div>
-    </nav>
-
-    <div x-show="abierto" x-cloak x-transition
-         style="border-top:1px solid #eeeff0;background:#fff;padding:14px 40px 20px;display:flex;flex-direction:column;gap:14px;">
-        <a class="navlink" href="{{ route('activities.index') }}">Actividades</a>
-        <a class="navlink" href="{{ route('publish.create') }}">Voluntariado</a>
-        <a class="navlink" href="{{ route('home') }}#que-es">¿Qué es el Patrimonio Social?</a>
-        <a class="navlink" href="{{ route('home') }}#ediciones">Ediciones</a>
-        <a class="navlink" href="{{ route('posts.index') }}">Noticias</a>
     </div>
 </header>
