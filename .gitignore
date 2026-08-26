@@ -21,3 +21,6 @@ yarn-error.log
 /.vscode
 /.zed
 .env.bak
+
+# El buzón del SMTP de pruebas: se regenera en cada tanda.
+/pruebas/buzon.jsonl
