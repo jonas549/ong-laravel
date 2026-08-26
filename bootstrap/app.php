@@ -10,6 +10,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -60,5 +61,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $events = $app['events'];
         $events->listen(MessageSending::class, [LogSentMail::class, 'sending']);
         $events->listen(MessageSent::class, [LogSentMail::class, 'sent']);
+
+        /*
+         * Y al de la cola. Todo el correo de este sistema es ShouldQueue, así
+         * que entre "el usuario pulsó el botón" y "el mailer lo entregó" hay un
+         * hueco que dura para siempre si el worker no corre. Sin esto, ese
+         * correo no aparecía en ninguna pantalla: desaparecía en silencio.
+         */
+        $events->listen(JobQueued::class, [LogSentMail::class, 'encolado']);
     })
     ->create();

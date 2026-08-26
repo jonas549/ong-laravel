@@ -113,6 +113,16 @@ class SettingsSeeder extends Seeder
                 'label' => 'Publicación de actividades abierta',
                 'descripcion' => 'Apagar oculta el formulario público de publicación.',
             ],
+            [
+                'grupo' => 'general', 'clave' => 'acceso_intentos', 'tipo' => 'int', 'valor' => '5',
+                'label' => 'Intentos de acceso antes de bloquear',
+                'descripcion' => 'Cuántas contraseñas erróneas seguidas se admiten antes de cerrar el acceso a esa cuenta desde esa IP.',
+            ],
+            [
+                'grupo' => 'general', 'clave' => 'acceso_bloqueo_minutos', 'tipo' => 'int', 'valor' => '15',
+                'label' => 'Duración del bloqueo, en minutos',
+                'descripcion' => 'Cuánto dura el bloqueo una vez agotados los intentos.',
+            ],
 
             // SEO
             [

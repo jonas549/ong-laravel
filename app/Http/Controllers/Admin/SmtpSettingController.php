@@ -4,17 +4,26 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\DiagnosticoCorreo;
 use App\Services\MailTestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SmtpSettingController extends Controller
 {
-    public function edit()
+    public function edit(DiagnosticoCorreo $diagnostico)
     {
         return view('admin.settings.smtp', [
             'ajustes' => Setting::grupo('smtp')->ordered()->get(),
             'valores' => Setting::todos(),
+            // Qué transporte se usa de verdad y si la cola avanza. Rellenar
+            // bien estos campos no sirve de nada si el worker no corre, y
+            // hasta ahora ninguna pantalla lo decía.
+            'salud' => [
+                'transporte' => $diagnostico->transporte(),
+                'cola' => $diagnostico->cola(),
+                'plantillas' => $diagnostico->plantillas(),
+            ],
         ]);
     }
 

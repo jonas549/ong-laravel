@@ -7,6 +7,10 @@
     $activo = (bool) ($v['smtp_activo'] ?? false);
 @endphp
 
+{{-- El mismo aviso que en el registro de correos: ésta es la otra pantalla a
+     la que se llega preguntándose por qué no llega nada. --}}
+@include('partials.admin.salud-correo')
+
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px;align-items:start;">
 
     <section class="card" style="padding:26px;">

@@ -237,8 +237,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/configuracion/smtp', [Admin\SmtpSettingController::class, 'update'])->name('settings.smtp.update');
         Route::post('/configuracion/smtp/probar', [Admin\SmtpSettingController::class, 'sendTest'])->name('settings.smtp.test');
 
-        // Plantillas de correo
+        // Plantillas de correo. Las claves las fija el código, así que no hay
+        // un "crear" libre: lo que hace falta es restaurar las que falten.
         Route::get('/plantillas', [Admin\EmailTemplateController::class, 'index'])->name('templates.index');
+        Route::post('/plantillas/restaurar', [Admin\EmailTemplateController::class, 'restaurar'])->name('templates.restore');
         Route::get('/plantillas/{template}', [Admin\EmailTemplateController::class, 'edit'])->name('templates.edit');
         Route::put('/plantillas/{template}', [Admin\EmailTemplateController::class, 'update'])->name('templates.update');
         Route::post('/plantillas/{template}/previa', [Admin\EmailTemplateController::class, 'preview'])->name('templates.preview');

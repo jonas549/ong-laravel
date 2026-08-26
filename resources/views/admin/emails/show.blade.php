@@ -9,10 +9,16 @@
     <dl style="display:grid;grid-template-columns:130px 1fr;gap:9px 16px;font-size:14px;margin:0 0 22px;">
         <dt class="helper" style="font-weight:700;">Estado</dt>
         <dd style="margin:0;">
-            <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:{{ $email->status === 'sent' ? '#eaf6f5' : '#fdeaf0' }};color:{{ $email->status === 'sent' ? '#0d6b64' : '#a82249' }};">
+            <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:{{ $email->status_fondo }};color:{{ $email->status_color }};">
                 {{ $email->status_label }}
             </span>
         </dd>
+
+        {{-- Qué transporte lo llevó. Es el dato que faltaba para distinguir un
+             envío real de uno que se quedó escrito en el servidor. --}}
+        @if ($email->transporte)
+            <dt class="helper" style="font-weight:700;">Salió por</dt><dd style="margin:0;"><code>{{ $email->transporte }}</code></dd>
+        @endif
 
         <dt class="helper" style="font-weight:700;">Para</dt><dd style="margin:0;">{{ $email->to }}</dd>
         @if ($email->cc)
@@ -20,8 +26,11 @@
         @endif
         <dt class="helper" style="font-weight:700;">Asunto</dt><dd style="margin:0;">{{ $email->subject }}</dd>
         <dt class="helper" style="font-weight:700;">Creado</dt><dd style="margin:0;">{{ $email->created_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+        @if ($email->encolado_at)
+            <dt class="helper" style="font-weight:700;">Encolado</dt><dd style="margin:0;">{{ $email->encolado_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+        @endif
         @if ($email->sent_at)
-            <dt class="helper" style="font-weight:700;">Enviado</dt><dd style="margin:0;">{{ $email->sent_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+            <dt class="helper" style="font-weight:700;">{{ $email->entregado ? 'Enviado' : 'Procesado' }}</dt><dd style="margin:0;">{{ $email->sent_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
         @endif
         @if ($email->reenviado_at)
             <dt class="helper" style="font-weight:700;">Reenviado</dt><dd style="margin:0;">{{ $email->reenviado_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
@@ -35,14 +44,37 @@
         <dt class="helper" style="font-weight:700;">Intentos</dt><dd style="margin:0;">{{ $email->attempts }}</dd>
     </dl>
 
-    <form method="POST" action="{{ route('admin.emails.resend', $email) }}" style="margin-bottom:22px;"
-          onsubmit="return confirm('¿Reenviar este correo a {{ $email->to }}?');">
-        @csrf
-        <button type="submit" class="btn btn-outline btn-sm">Reenviar</button>
-        <span class="helper" style="margin-left:10px;">Se reenvía el contenido tal como quedó registrado.</span>
-    </form>
+    {{-- El reenvío manda el HTML registrado, así que necesita que lo haya. Una
+         fila `en_cola` todavía no tiene cuerpo: el correo se compone al
+         enviarlo, y reenviarla mandaría un mensaje vacío. --}}
+    @if (filled($email->body_html))
+        <form method="POST" action="{{ route('admin.emails.resend', $email) }}" style="margin-bottom:22px;"
+              onsubmit="return confirm('¿Reenviar este correo a {{ $email->to }}?');">
+            @csrf
+            <button type="submit" class="btn btn-outline btn-sm">Reenviar ahora</button>
+            <span class="helper" style="margin-left:10px;">
+                Se reenvía el contenido tal como quedó registrado, sin pasar por la cola.
+            </span>
+        </form>
+    @else
+        <div class="alert alert-info" style="margin-bottom:22px;font-size:13px;">
+            Este correo todavía no se ha compuesto, así que no hay nada que reenviar.
+            Sigue esperando en la cola: en cuanto el worker lo procese aparecerá aquí su contenido.
+        </div>
+    @endif
 
-    @if ($email->error)
+    {{-- `motivo` explica en castellano por qué una fila no cuenta como
+         entregada; `error` es el texto crudo del servidor, que sólo aporta
+         cuando dice algo distinto. --}}
+    @if (! $email->entregado && $email->motivo)
+        <div class="alert alert-error" style="margin-bottom:22px;">
+            <strong>Por qué no llegó</strong>
+            <p style="margin:8px 0 0;font-size:13.5px;line-height:1.55;">{{ $email->motivo }}</p>
+            @if ($email->error && $email->error !== $email->motivo)
+                <pre style="margin:10px 0 0;font-size:12.5px;white-space:pre-wrap;">{{ $email->error }}</pre>
+            @endif
+        </div>
+    @elseif ($email->error)
         <div class="alert alert-error" style="margin-bottom:22px;">
             <strong>Error del servidor</strong>
             <pre style="margin:8px 0 0;font-size:12.5px;white-space:pre-wrap;">{{ $email->error }}</pre>

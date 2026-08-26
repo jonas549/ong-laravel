@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Listeners\LogSentMail;
 use App\Models\EmailLog;
 use App\Models\EmailTemplate;
+use App\Services\DiagnosticoCorreo;
 use App\Services\SmtpConfigService;
 use App\Support\Filtro;
 use Illuminate\Http\Request;
@@ -50,8 +51,30 @@ class EmailLogController extends Controller
             'filtros' => $filtros,
             'enviados' => EmailLog::enviados()->count(),
             'fallidos' => EmailLog::fallidos()->count(),
+            'enCola' => EmailLog::enCola()->count(),
             'plantillas' => EmailTemplate::orderBy('nombre')->pluck('nombre', 'clave'),
+            // Sin esto, una cola parada o un mailer que no entrega se leían en
+            // esta pantalla como "todavía no se ha enviado nada".
+            'salud' => $this->salud(),
         ]);
+    }
+
+    /**
+     * Lo que hay que saber antes de mirar la tabla: si el transporte entrega de
+     * verdad y si la cola avanza. Son los dos fallos que dejaban al panel
+     * enseñando una lista tranquilizadora mientras no salía un solo correo.
+     *
+     * @return array<string, mixed>
+     */
+    private function salud(): array
+    {
+        $diagnostico = app(DiagnosticoCorreo::class);
+
+        return [
+            'transporte' => $diagnostico->transporte(),
+            'cola' => $diagnostico->cola(),
+            'plantillas' => $diagnostico->plantillas(),
+        ];
     }
 
     public function show(EmailLog $email)

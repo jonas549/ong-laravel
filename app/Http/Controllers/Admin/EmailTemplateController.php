@@ -7,6 +7,7 @@ use App\Mail\PlantillaMail;
 use App\Models\EmailTemplate;
 use App\Services\EmailTemplateRenderer;
 use App\Services\SmtpConfigService;
+use Database\Seeders\EmailTemplateSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -21,9 +22,42 @@ class EmailTemplateController extends Controller
 
     public function index()
     {
+        $plantillas = EmailTemplate::orderBy('nombre')->get();
+
         return view('admin.templates.index', [
-            'plantillas' => EmailTemplate::orderBy('nombre')->get(),
+            'plantillas' => $plantillas,
+            // Las del catálogo que no están en la base de datos. Si falta
+            // alguna, el correo que la usa no se envía y no deja rastro: es un
+            // fallo mudo, así que esta pantalla tiene que enseñarlo.
+            'faltan' => collect(EmailTemplate::CATALOGO)
+                ->reject(fn ($meta, $clave) => $plantillas->contains('clave', $clave))
+                ->all(),
         ]);
+    }
+
+    /**
+     * Vuelve a crear las plantillas del catálogo que falten.
+     *
+     * Las claves las fija el código (`EmailTemplate::CATALOGO`) porque
+     * `CorreoTransaccional` pide cada una por su nombre: una plantilla
+     * inventada a mano desde el panel no la enviaría nadie, y por eso aquí se
+     * restaura en vez de crear libremente. Lo que ya existe no se toca: esos
+     * textos son de la ONG.
+     */
+    public function restaurar()
+    {
+        $antes = EmailTemplate::pluck('clave')->all();
+
+        (new EmailTemplateSeeder)->run();
+
+        $creadas = EmailTemplate::whereNotIn('clave', $antes ?: ['ninguna'])->pluck('nombre');
+
+        return back()->with(
+            $creadas->isEmpty() ? 'aviso' : 'ok',
+            $creadas->isEmpty()
+                ? 'No faltaba ninguna: las cinco plantillas ya estaban.'
+                : 'Restauradas '.$creadas->count().': '.$creadas->implode(', ').'.',
+        );
     }
 
     public function edit(EmailTemplate $template)

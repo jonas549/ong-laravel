@@ -6,9 +6,12 @@
 @endsection
 
 @section('content')
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;">
+@include('partials.admin.salud-correo')
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;">
     <div class="kpi"><span class="v" style="color:var(--turquesa);">{{ $enviados }}</span><span class="l">enviados</span></div>
-    <div class="kpi"><span class="v" style="color:{{ $fallidos ? 'var(--rosa)' : 'var(--gris-700)' }};">{{ $fallidos }}</span><span class="l">fallidos</span></div>
+    <div class="kpi"><span class="v" style="color:{{ $enCola ? '#8a6d1f' : 'var(--gris-700)' }};">{{ $enCola }}</span><span class="l">en cola</span></div>
+    <div class="kpi"><span class="v" style="color:{{ $fallidos ? 'var(--rosa)' : 'var(--gris-700)' }};">{{ $fallidos }}</span><span class="l">no llegaron</span></div>
 </div>
 
 <form method="GET" class="card" style="padding:18px;margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
@@ -20,7 +23,10 @@
         <select class="fld" name="status">
             <option value="">Todos</option>
             <option value="sent" @selected($filtros['status'] === 'sent')>Enviados</option>
+            <option value="en_cola" @selected($filtros['status'] === 'en_cola')>En cola</option>
             <option value="failed" @selected($filtros['status'] === 'failed')>Fallidos</option>
+            {{-- El mailer terminó sin error pero no entregó a nadie. --}}
+            <option value="no_entregado" @selected($filtros['status'] === 'no_entregado')>No salieron</option>
         </select>
     </label>
 
@@ -63,7 +69,7 @@
                     <td>{{ Str::limit($c->subject, 40) }}</td>
                     <td style="color:var(--gris);font-size:13px;">{{ $plantillas[$c->plantilla] ?? '—' }}</td>
                     <td>
-                        <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;background:{{ $c->status === 'sent' ? '#eaf6f5' : '#fdeaf0' }};color:{{ $c->status === 'sent' ? '#0d6b64' : '#a82249' }};">
+                        <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;background:{{ $c->status_fondo }};color:{{ $c->status_color }};">
                             {{ $c->status_label }}
                         </span>
                         @if ($c->reenviado_at)

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AccessLog;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -18,11 +19,28 @@ use Illuminate\Validation\ValidationException;
  */
 class ControlDeAcceso
 {
-    /** Intentos permitidos antes de bloquear. */
+    /** Valores de partida, para cuando el ajuste no esté en la base. */
     private const INTENTOS = 5;
+    private const MINUTOS_BLOQUEO = 15;
+
+    /**
+     * Intentos permitidos antes de bloquear.
+     *
+     * Se lee de Configuración porque cuál es el número correcto es una decisión
+     * de la ONG, no del código: 5 frena el rastreo de contraseñas sin castigar
+     * a quien simplemente no se acuerda de la suya, pero se puede bajar. El
+     * suelo de 1 evita que un 0 guardado por error deje a todos fuera.
+     */
+    private function intentos(): int
+    {
+        return max(1, (int) Setting::get('acceso_intentos', self::INTENTOS));
+    }
 
     /** Cuánto dura el bloqueo, en segundos. */
-    private const BLOQUEO = 900;
+    private function bloqueo(): int
+    {
+        return max(60, (int) Setting::get('acceso_bloqueo_minutos', self::MINUTOS_BLOQUEO) * 60);
+    }
 
     /**
      * ¿Está bloqueado este intento? Si lo está, lanza la excepción de
@@ -32,7 +50,7 @@ class ControlDeAcceso
     {
         $clave = $this->clave($request, $panel);
 
-        if (! RateLimiter::tooManyAttempts($clave, self::INTENTOS)) {
+        if (! RateLimiter::tooManyAttempts($clave, $this->intentos())) {
             return;
         }
 
@@ -48,7 +66,7 @@ class ControlDeAcceso
     /** Un intento fallido: cuenta para el bloqueo y queda registrado. */
     public function fallo(Request $request, string $panel, string $motivo, ?User $usuario = null): void
     {
-        RateLimiter::hit($this->clave($request, $panel), self::BLOQUEO);
+        RateLimiter::hit($this->clave($request, $panel), $this->bloqueo());
 
         $this->registrar($request, $panel, $motivo, $request->input('email'), $usuario);
     }
@@ -66,7 +84,7 @@ class ControlDeAcceso
     {
         $clave = $this->claveDe($panel, $email, $ip);
 
-        return RateLimiter::tooManyAttempts($clave, self::INTENTOS)
+        return RateLimiter::tooManyAttempts($clave, $this->intentos())
             ? RateLimiter::availableIn($clave)
             : 0;
     }
