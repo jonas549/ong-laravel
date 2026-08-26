@@ -199,6 +199,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/usuarios', [Admin\UserController::class, 'index'])->name('users.index');
         Route::post('/usuarios', [Admin\UserController::class, 'store'])->name('users.store');
+        Route::get('/usuarios/{user}/editar', [Admin\UserController::class, 'edit'])->name('users.edit');
+        Route::put('/usuarios/{user}', [Admin\UserController::class, 'update'])->name('users.update');
+        // Asignar contraseña a otra persona. Con freno: es la acción con más
+        // alcance del panel, y sin límite una sesión de admin robada podría
+        // recorrer la lista de usuarios entera.
+        Route::post('/usuarios/{user}/contrasena', [Admin\UserController::class, 'cambiarContrasena'])
+            ->middleware('throttle:10,1')
+            ->name('users.password');
         Route::post('/usuarios/{user}/estado', [Admin\UserController::class, 'toggleActive'])->name('users.toggle');
 
         // Buscador del panel

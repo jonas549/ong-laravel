@@ -6,7 +6,7 @@ use App\Models\AccessLog;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -16,6 +16,16 @@ use Illuminate\Validation\ValidationException;
  * Vive en un servicio y no en cada controlador porque los dos paneles tienen
  * que comportarse igual: si el bloqueo fuera distinto en uno y otro, bastaría
  * con probar por la puerta más floja.
+ *
+ * **El contador se lleva en `access_logs`, no en la caché.** Antes se apoyaba
+ * en `RateLimiter`, que guarda el contador en el almacén de caché, y en
+ * producción el cron de despliegue toca la caché cada cinco minutos: el
+ * contador podía vaciarse solo y el bloqueo no llegaba a saltar, mientras en
+ * local funcionaba siempre porque ahí nadie limpia nada. La tabla ya registraba
+ * cada intento y no la borra nadie, así que es el sitio correcto. De paso
+ * desaparece una incoherencia: la lista de sospechosos del panel salía de la
+ * tabla y el bloqueo de la caché, y podían decir cosas distintas de la misma
+ * cuenta.
  */
 class ControlDeAcceso
 {
@@ -31,13 +41,13 @@ class ControlDeAcceso
      * a quien simplemente no se acuerda de la suya, pero se puede bajar. El
      * suelo de 1 evita que un 0 guardado por error deje a todos fuera.
      */
-    private function intentos(): int
+    public function intentos(): int
     {
         return max(1, (int) Setting::get('acceso_intentos', self::INTENTOS));
     }
 
     /** Cuánto dura el bloqueo, en segundos. */
-    private function bloqueo(): int
+    public function bloqueo(): int
     {
         return max(60, (int) Setting::get('acceso_bloqueo_minutos', self::MINUTOS_BLOQUEO) * 60);
     }
@@ -48,13 +58,11 @@ class ControlDeAcceso
      */
     public function comprobarBloqueo(Request $request, string $panel): void
     {
-        $clave = $this->clave($request, $panel);
+        $segundos = $this->segundosRestantes($panel, (string) $request->input('email'), $request->ip());
 
-        if (! RateLimiter::tooManyAttempts($clave, $this->intentos())) {
+        if ($segundos <= 0) {
             return;
         }
-
-        $segundos = RateLimiter::availableIn($clave);
 
         $this->registrar($request, $panel, 'bloqueado', $request->input('email'));
 
@@ -66,55 +74,138 @@ class ControlDeAcceso
     /** Un intento fallido: cuenta para el bloqueo y queda registrado. */
     public function fallo(Request $request, string $panel, string $motivo, ?User $usuario = null): void
     {
-        RateLimiter::hit($this->clave($request, $panel), $this->bloqueo());
-
+        // El registro ES el contador: no hay nada más que incrementar.
         $this->registrar($request, $panel, $motivo, $request->input('email'), $usuario);
     }
 
-    /** Entrada correcta: se limpia el contador y se registra. */
+    /** Entrada correcta: la fila de éxito pone el contador a cero. */
     public function exito(Request $request, string $panel, User $usuario): void
     {
-        RateLimiter::clear($this->clave($request, $panel));
-
         $this->registrar($request, $panel, 'exito', $usuario->email, $usuario);
     }
 
-    /** Segundos que le quedan a un bloqueo, o 0 si no hay bloqueo. */
+    /**
+     * Segundos que le quedan a un bloqueo, o 0 si no hay bloqueo.
+     *
+     * Se cuentan los fallos posteriores al último reinicio —entrar bien, o que
+     * un admin levante el bloqueo— y dentro de la ventana. El bloqueo caduca a
+     * partir del último fallo, no del primero: así insistir mantiene la puerta
+     * cerrada, pero dejar de insistir la abre sola.
+     */
     public function segundosRestantes(string $panel, string $email, ?string $ip): int
     {
-        $clave = $this->claveDe($panel, $email, $ip);
+        if ($email === '') {
+            return 0;
+        }
 
-        return RateLimiter::tooManyAttempts($clave, $this->intentos())
-            ? RateLimiter::availableIn($clave)
-            : 0;
-    }
+        $duracion = $this->bloqueo();
+        $desde = $this->ultimoReinicio($panel, $email, $ip);
+        $ventana = now()->subSeconds($duracion);
 
-    /** Levanta el bloqueo a mano, desde el panel. */
-    public function liberar(string $panel, string $email, ?string $ip): void
-    {
-        RateLimiter::clear($this->claveDe($panel, $email, $ip));
+        $fallos = $this->consulta($panel, $email, $ip)
+            ->whereIn('resultado', AccessLog::FALLOS_QUE_CUENTAN)
+            ->where('created_at', '>=', $desde && $desde->greaterThan($ventana) ? $desde : $ventana)
+            ->orderByDesc('created_at')
+            ->limit($this->intentos())
+            ->pluck('created_at');
+
+        if ($fallos->count() < $this->intentos()) {
+            return 0;
+        }
+
+        $expira = Carbon::parse($fallos->first())->addSeconds($duracion);
+
+        return max(0, (int) ceil(now()->diffInSeconds($expira, false)));
     }
 
     /**
-     * La clave combina correo, IP y panel: así un atacante desde una IP no
-     * puede bloquear la cuenta de otra persona probando su correo desde otro
-     * sitio, y a la vez se frena el rastreo de contraseñas desde una misma IP.
+     * Levanta el bloqueo a mano, desde el panel.
+     *
+     * No se borra nada: se añade una fila que marca el punto a partir del cual
+     * se vuelve a contar. Borrar los intentos perdería justo el rastro que hace
+     * falta para saber que alguien estuvo probando contraseñas.
      */
-    private function clave(Request $request, string $panel): string
+    public function liberar(string $panel, string $email, ?string $ip, ?User $admin = null): void
     {
-        return $this->claveDe($panel, (string) $request->input('email'), $request->ip());
+        AccessLog::create([
+            // `user_id` es de quién es la cuenta afectada; `actor_id`, quién lo
+            // hizo. Antes se guardaba el admin en `user_id` y el registro decía
+            // que el bloqueo era suyo.
+            'user_id' => User::where('email', Str::lower($email))->value('id'),
+            'actor_id' => $admin?->id,
+            'email' => Str::lower(Str::limit($email, 255, '')),
+            'panel' => $panel,
+            'resultado' => 'desbloqueo',
+            'ip' => $ip,
+            'user_agent' => null,
+        ]);
     }
 
-    private function claveDe(string $panel, string $email, ?string $ip): string
+    /**
+     * Deja constancia de una acción que un administrador hace sobre la cuenta
+     * de otra persona. No cuenta para el bloqueo: no es un intento de entrar.
+     */
+    public function registrarAccionDeAdmin(
+        Request $request,
+        string $resultado,
+        User $afectado,
+        User $admin,
+    ): void {
+        AccessLog::create([
+            'user_id' => $afectado->id,
+            'actor_id' => $admin->id,
+            'email' => Str::lower($afectado->email),
+            'panel' => $afectado->esAdmin() ? AccessLog::PANEL_ADMIN : AccessLog::PANEL_ORGANIZADOR,
+            'resultado' => $resultado,
+            'ip' => $request->ip(),
+            'user_agent' => Str::limit((string) $request->userAgent(), 500, ''),
+        ]);
+    }
+
+    /** Cuántos fallos lleva acumulados ahora mismo. Para el panel. */
+    public function fallosAcumulados(string $panel, string $email, ?string $ip): int
     {
-        return 'acceso|'.$panel.'|'.Str::lower($email).'|'.$ip;
+        $desde = $this->ultimoReinicio($panel, $email, $ip);
+        $ventana = now()->subSeconds($this->bloqueo());
+
+        return $this->consulta($panel, $email, $ip)
+            ->whereIn('resultado', AccessLog::FALLOS_QUE_CUENTAN)
+            ->where('created_at', '>=', $desde && $desde->greaterThan($ventana) ? $desde : $ventana)
+            ->count();
+    }
+
+    /** Cuándo se puso el contador a cero por última vez, si es que pasó. */
+    private function ultimoReinicio(string $panel, string $email, ?string $ip): ?Carbon
+    {
+        $fecha = $this->consulta($panel, $email, $ip)
+            ->whereIn('resultado', AccessLog::REINICIOS)
+            ->max('created_at');
+
+        return $fecha ? Carbon::parse($fecha) : null;
+    }
+
+    /**
+     * La combinación que identifica un bloqueo: correo, panel e IP.
+     *
+     * Con la IP dentro, quien prueba contraseñas desde fuera no puede dejar
+     * bloqueada la cuenta de otro, y a la vez se frena el rastreo desde una
+     * misma máquina.
+     */
+    private function consulta(string $panel, string $email, ?string $ip)
+    {
+        return AccessLog::query()
+            ->where('email', Str::lower($email))
+            ->where('panel', $panel)
+            ->where('ip', $ip);
     }
 
     private function registrar(Request $request, string $panel, string $resultado, ?string $email, ?User $usuario = null): void
     {
         AccessLog::create([
             'user_id' => $usuario?->id,
-            'email' => $email ? Str::limit($email, 255, '') : null,
+            // En minúsculas siempre: el contador busca por este campo, y con
+            // "Jonas@" y "jonas@" mezclados cada variante llevaría su cuenta.
+            'email' => $email ? Str::lower(Str::limit($email, 255, '')) : null,
             'panel' => $panel,
             'resultado' => $resultado,
             'ip' => $request->ip(),

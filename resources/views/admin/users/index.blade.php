@@ -21,10 +21,17 @@
                             <td>{{ $u->esAdmin() ? 'Administración' : 'Organizador' }}</td>
                             <td>{{ $u->is_active ? 'Activo' : 'Inactivo' }}</td>
                             <td>
-                                <form method="POST" action="{{ route('admin.users.toggle', $u) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline btn-sm">{{ $u->is_active ? 'Desactivar' : 'Activar' }}</button>
-                                </form>
+                                <div style="display:flex;gap:8px;white-space:nowrap;">
+                                    {{-- El rol viaja en la URL para que el menú
+                                         sepa bajo qué nodo está la ficha:
+                                         "Administradores" y "Organizadores" son
+                                         la misma ruta con distinto parámetro. --}}
+                                    <a class="btn btn-outline btn-sm" href="{{ route('admin.users.edit', [$u, 'rol' => $u->role]) }}">Editar</a>
+                                    <form method="POST" action="{{ route('admin.users.toggle', $u) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-ghost btn-sm">{{ $u->is_active ? 'Desactivar' : 'Activar' }}</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

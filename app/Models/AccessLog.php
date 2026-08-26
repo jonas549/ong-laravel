@@ -22,18 +22,54 @@ class AccessLog extends Model
         'rol' => 'Cuenta de otro tipo',
         'bloqueado' => 'Bloqueado por intentos',
         'inactiva' => 'Cuenta desactivada',
+        'desbloqueo' => 'Bloqueo levantado a mano',
+        'clave_admin' => 'Contraseña cambiada por un administrador',
     ];
 
-    protected $fillable = ['user_id', 'email', 'panel', 'resultado', 'ip', 'user_agent'];
+    /** Lo que no es entrar bien. Para el resumen y el filtro del panel. */
+    public const FALLOS = ['credenciales', 'rol', 'bloqueado', 'inactiva'];
 
+    /**
+     * Los que cuentan para bloquear: intentos de contraseña de verdad.
+     *
+     * `bloqueado` queda fuera a propósito. Si contara, cada intento contra una
+     * cuenta ya bloqueada alargaría el bloqueo, y a quien esté probando
+     * contraseñas le bastaría con seguir dándole para dejar al dueño fuera
+     * indefinidamente.
+     */
+    public const FALLOS_QUE_CUENTAN = ['credenciales', 'rol', 'inactiva'];
+
+    /** Los que ponen el contador a cero: entrar bien, o que un admin lo levante. */
+    public const REINICIOS = ['exito', 'desbloqueo'];
+
+    protected $fillable = ['user_id', 'actor_id', 'email', 'panel', 'resultado', 'ip', 'user_agent'];
+
+    /** De quién es la cuenta afectada. */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Quién lo hizo, cuando no fue el titular: el administrador que levantó un
+     * bloqueo o cambió una contraseña ajena. Nulo en los intentos de entrar,
+     * donde titular y autor son la misma persona.
+     */
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    /**
+     * Los intentos que no salieron bien.
+     *
+     * Enumerados en vez de "todo lo que no sea exito": desde que hay
+     * resultados que no son intentos de entrar —levantar un bloqueo, cambiar
+     * una contraseña desde el panel— ese `!=` los contaba como fallos.
+     */
     public function scopeFallidos($query)
     {
-        return $query->where('resultado', '!=', 'exito');
+        return $query->whereIn('resultado', self::FALLOS);
     }
 
     public function getResultadoLabelAttribute(): string
@@ -44,6 +80,32 @@ class AccessLog extends Model
     public function getExitosoAttribute(): bool
     {
         return $this->resultado === 'exito';
+    }
+
+    /**
+     * Tres colores, no dos.
+     *
+     * Verde para entrar, rojo para los fallos, y ámbar para las acciones que un
+     * administrador hace sobre una cuenta ajena: no son un fallo, pero tampoco
+     * son rutina, y son justamente las que hay que poder localizar de un
+     * vistazo cuando se revisa el registro.
+     */
+    public function getColorFondoAttribute(): string
+    {
+        return match (true) {
+            $this->exitoso => '#eaf6f5',
+            in_array($this->resultado, self::FALLOS, true) => '#fdeaf0',
+            default => '#fdf6e3',
+        };
+    }
+
+    public function getColorTextoAttribute(): string
+    {
+        return match (true) {
+            $this->exitoso => '#0d6b64',
+            in_array($this->resultado, self::FALLOS, true) => '#a82249',
+            default => '#8a6d1f',
+        };
     }
 
     /** Navegador y sistema, en corto. */

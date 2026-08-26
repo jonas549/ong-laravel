@@ -30,7 +30,7 @@ class AccessLogController extends Controller
         ];
 
         $accesos = AccessLog::query()
-            ->with('user:id,name,email,role')
+            ->with(['user:id,name,email,role', 'actor:id,name'])
             ->when($filtros['resultado'] === 'fallidos', fn ($q) => $q->fallidos())
             ->when(
                 $filtros['resultado'] && $filtros['resultado'] !== 'fallidos',
@@ -65,6 +65,7 @@ class AccessLogController extends Controller
             ->get()
             ->map(function ($fila) use ($control) {
                 $fila->bloqueado = $control->segundosRestantes($fila->panel, $fila->email, $fila->ip);
+                $fila->acumulados = $control->fallosAcumulados($fila->panel, $fila->email, $fila->ip);
 
                 return $fila;
             });
@@ -76,6 +77,11 @@ class AccessLogController extends Controller
             'exitos24h' => AccessLog::where('resultado', 'exito')->where('created_at', '>=', $desde24h)->count(),
             'fallos24h' => AccessLog::fallidos()->where('created_at', '>=', $desde24h)->count(),
             'sospechosos' => $sospechosos,
+            // La regla que se aplica de verdad, leída del ajuste. Sin esto no
+            // había forma de saber desde el panel con cuántos intentos bloquea:
+            // sólo cabía suponerlo.
+            'intentos' => $control->intentos(),
+            'minutosBloqueo' => (int) round($control->bloqueo() / 60),
         ]);
     }
 
@@ -88,12 +94,11 @@ class AccessLogController extends Controller
             'ip' => ['nullable', 'ip'],
         ], [], ['email' => 'el correo', 'panel' => 'el panel', 'ip' => 'la IP']);
 
-        // Se mira antes de limpiar: `RateLimiter::clear` no dice si había algo
-        // que limpiar, y antes la pantalla confirmaba haber levantado bloqueos
-        // que no existían.
+        // Se mira antes de levantarlo: si no, la pantalla confirmaba haber
+        // levantado bloqueos que no existían.
         $habiaBloqueo = $control->segundosRestantes($datos['panel'], $datos['email'], $datos['ip'] ?? null) > 0;
 
-        $control->liberar($datos['panel'], $datos['email'], $datos['ip'] ?? null);
+        $control->liberar($datos['panel'], $datos['email'], $datos['ip'] ?? null, $request->user());
 
         // Queda constancia de quién lo levantó: es una acción del panel que
         // afecta a la seguridad de una cuenta ajena.
