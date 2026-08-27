@@ -137,3 +137,17 @@ Lo que conviene comprobar ahí, y no aquí:
 - El arrastrar y soltar, con `page.setDragInterception(true)` y
   `elemento.dragAndDrop(destino)`: son eventos de ratón reales.
 - Las animaciones, capturando los valores intermedios con un `MutationObserver`.
+- **Que una regla de CSS no haya alcanzado a la interfaz.** Un
+  `overflow-wrap: anywhere` pensado para el contenido editable se puso en el
+  `<body>` y empezó a partir los enlaces del menú: «Actividade s»,
+  «Voluntariad o». Los 74 casos por HTTP pasaban igual, porque el HTML era
+  correcto y lo que fallaba era cómo se pintaba.
+
+  Dos comprobaciones lo cazan. Una, leer el estilo calculado de cada elemento de
+  interfaz —menú, migas, botones, chips, cabeceras de tabla— y exigir que
+  ninguno tenga la regla. Y dos, la directa: contar las líneas que ocupa el texto
+  con `Range.getClientRects()`, que devuelve un rectángulo por línea. Si una
+  palabra suelta ocupa dos, se partió.
+
+  Ojo con medir la altura contra el interlineado en vez de usar `Range`: da
+  falso positivo en cualquier enlace con relleno.

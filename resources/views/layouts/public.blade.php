@@ -50,13 +50,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-{{--
-    `home-editable` marca las páginas cuyos textos salen del panel. La regla que
-    lleva asociada parte las palabras larguisimas sin espacios; sin ella, un
-    titular de cien letras cruza la pantalla y se sube encima de la fotografía
-    de al lado. Lo pidió el testing en producción del bloque F.
---}}
-<body @class(['fondo-calido' => $footerCompacto, 'home-editable' => $homeEditable ?? false])>
+<body @class(['fondo-calido' => $footerCompacto])>
 <div @class(['escala-form' => $footerCompacto])
      style="overflow-x:hidden;@if ($footerCompacto) min-height:100vh;display:flex;flex-direction:column; @endif">
 

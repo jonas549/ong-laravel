@@ -4,8 +4,8 @@
     <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.94) 0%,rgba(255,255,255,.7) 42%,rgba(255,255,255,.9) 100%);"></div>
 
     <div style="position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:92px 40px 84px;text-align:center;">
-        <h2 class="reveal" style="font-weight:800;font-size:38px;line-height:1.12;margin:0 auto;max-width:22ch;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
-        <p class="reveal" style="font-size:15px;margin:18px 0 48px;color:var(--gris);">{{ $seccion->texto('bajada', $b) }}</p>
+        <h2 class="reveal dato-editable" style="font-weight:800;font-size:38px;line-height:1.12;margin:0 auto;max-width:22ch;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
+        <p class="reveal dato-editable" style="font-size:15px;margin:18px 0 48px;color:var(--gris);">{{ $seccion->texto('bajada', $b) }}</p>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:28px;">
             @foreach ($cifras as $s)

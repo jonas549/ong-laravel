@@ -2,10 +2,6 @@
 
 @section('title', 'Día del Patrimonio Social — 4 y 5 de diciembre, Chile 2026')
 
-{{-- Todos los textos de esta página pueden venir del panel, así que se marca
-     entera para que ninguna palabra sin espacios pueda desbordar. --}}
-@php $homeEditable = true; @endphp
-
 {{--
     El orden y qué secciones se ven salen de la base. Lo que NO sale de la base
     es cómo se ven: cada sección sigue siendo su propio parcial, con la

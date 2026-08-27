@@ -263,15 +263,28 @@ a.textlink:hover { color: var(--naranjo-600); }
  * cada sitio nuevo es una regla que algún día no se pone.
  */
 /*
- * Los botones son el caso que se escapo del primer arreglo: `.btn` lleva
- * `white-space: nowrap` —correcto para «Conoce mas»— y con nowrap el
- * `overflow-wrap` no tiene nada que hacer. Un texto de botón de cien letras
- * medía 1.354 px dentro de una columna de 470 y se salía por el lado.
+ * `.dato-editable` va en CADA elemento que pinta un texto salido del panel, y en
+ * ninguno más.
  *
- * Sólo dentro del home, que es donde ese texto lo escribe la ONG: en el resto
- * del sitio los botones siguen sin partirse, que es como deben verse.
+ * El primer arreglo puso la clase en el `<body>` del home y la regla alcanzó a
+ * todo: el menú de cabecera empezó a partir palabras —«Actividade s»,
+ * «Voluntariad o»— porque `anywhere` parte donde le dejen, y a un enlace de
+ * navegación hay que dejarle su palabra entera. La regla no es «el home»: es
+ * «esto lo escribe la ONG y puede ser cualquier cosa».
+ *
+ * Al añadir un campo editable nuevo, su elemento lleva esta clase. Si se olvida,
+ * lo peor que pasa es que una palabra sin espacios desborde —que es lo que había
+ * antes— y no que se rompa la navegación del sitio entero.
  */
-.home-editable .btn {
+.dato-editable { overflow-wrap: anywhere; }
+
+/*
+ * Un botón cuyo texto viene del panel también tiene que poder partir: `.btn`
+ * lleva `white-space: nowrap` —correcto para «Conoce más»— y con nowrap el
+ * `overflow-wrap` no tiene nada que hacer. Los demás botones del sitio siguen
+ * sin partirse, que es como deben verse.
+ */
+.btn.dato-editable {
     white-space: normal;
     max-width: 100%;
 }
@@ -288,23 +301,7 @@ a.textlink:hover { color: var(--naranjo-600); }
     text-align: center;
 }
 
-.home-editable .hero-cta {
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
-
-.home-editable h1,
-.home-editable h2,
-.home-editable h3,
-.home-editable p,
-.home-editable blockquote,
-.home-editable figcaption,
-.home-editable li,
-.home-editable a,
-.home-editable span,
-.home-editable div {
-    overflow-wrap: anywhere;
-}
+.hero-cta.dato-editable { white-space: normal; }
 
 .texto-editable > :first-child { margin-top: 0; }
 

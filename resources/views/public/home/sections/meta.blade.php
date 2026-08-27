@@ -30,15 +30,15 @@
         <img loading="lazy" decoding="async" width="840" height="388" src="{{ asset('img/construyamos-crop.png') }}" alt="" aria-hidden="true"
              style="display:block;width:100%;max-width:420px;height:auto;margin:0 auto 18px;">
 
-        <div style="font-size:13px;letter-spacing:.04em;font-weight:700;color:var(--naranjo);margin-bottom:14px;text-transform:uppercase;">{{ $seccion->texto('antetitulo', $b) }}</div>
-        <h2 style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
-        <p style="font-size:16px;margin:12px 0 0;color:var(--gris);">{{ $seccion->texto('bajada', $b) }}</p>
+        <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;font-weight:700;color:var(--naranjo);margin-bottom:14px;text-transform:uppercase;">{{ $seccion->texto('antetitulo', $b) }}</div>
+        <h2 class="dato-editable" style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
+        <p class="dato-editable" style="font-size:16px;margin:12px 0 0;color:var(--gris);">{{ $seccion->texto('bajada', $b) }}</p>
 
         <div style="margin-top:44px;text-align:left;">
             @foreach ($barras as $barra)
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin:{{ $barra['margen'] }};">
-                    <span style="font-size:15px;font-weight:600;">{{ $barra['label'] }}</span>
-                    <span style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--gris);"><span class="count">{{ $barra['actual'] }}</span> de {{ $barra['meta'] }}</span>
+                    <span class="dato-editable" style="font-size:15px;font-weight:600;">{{ $barra['label'] }}</span>
+                    <span class="dato-editable" style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--gris);"><span class="count">{{ $barra['actual'] }}</span> de {{ $barra['meta'] }}</span>
                 </div>
                 <div style="height:10px;border-radius:999px;background:{{ $barra['fondo'] }};overflow:hidden;">
                     <div class="barfill" style="width:{{ $porcentaje($barra['actual'], $barra['meta']) }}%;height:100%;border-radius:999px;background:{{ $barra['color'] }};"></div>
@@ -46,8 +46,8 @@
             @endforeach
         </div>
 
-        <p style="font-size:15px;margin:44px 0 18px;color:var(--gris);">{{ $seccion->texto('pregunta', $b) }}</p>
-        <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#kit' }}" class="btn btn-primary">{{ $seccion->texto('cta_texto', $b) }}</a>
-        <p style="font-size:13px;margin:16px 0 0;color:#9a9ca0;">{{ $seccion->texto('nota', $b) }}</p>
+        <p class="dato-editable" style="font-size:15px;margin:44px 0 18px;color:var(--gris);">{{ $seccion->texto('pregunta', $b) }}</p>
+        <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#kit' }}" class="btn btn-primary dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+        <p class="dato-editable" style="font-size:13px;margin:16px 0 0;color:#9a9ca0;">{{ $seccion->texto('nota', $b) }}</p>
     </div>
 </section>

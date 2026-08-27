@@ -7,8 +7,8 @@
         <div class="reveal cabecera-seccion" style="display:flex;align-items:center;gap:28px;text-align:left;margin-bottom:40px;">
             <img loading="lazy" decoding="async" width="388" height="541" src="{{ asset('img/voces-crop.png') }}" alt="" aria-hidden="true" style="flex:none;width:112px;height:auto;">
             <div>
-                <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>
-                <h2 style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
+                <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>
+                <h2 class="dato-editable" style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
             </div>
         </div>
 

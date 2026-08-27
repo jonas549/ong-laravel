@@ -6,9 +6,9 @@
             <img loading="lazy" decoding="async" width="698" height="698" src="{{ asset('img/actividades-destacadas.png') }}" alt="" aria-hidden="true"
                  style="flex:none;width:210px;height:auto;margin-top:2px;">
             <div>
-                <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:14px;">{{ $seccion->texto('antetitulo', $b) }}</div>
-                <h2 style="font-weight:800;font-size:38px;line-height:1.08;margin:0 0 14px;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
-                <p style="font-size:16px;line-height:1.55;margin:0;color:var(--gris);max-width:52ch;">{{ $seccion->texto('bajada', $b) }}</p>
+                <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:14px;">{{ $seccion->texto('antetitulo', $b) }}</div>
+                <h2 class="dato-editable" style="font-weight:800;font-size:38px;line-height:1.08;margin:0 0 14px;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
+                <p class="dato-editable" style="font-size:16px;line-height:1.55;margin:0;color:var(--gris);max-width:52ch;">{{ $seccion->texto('bajada', $b) }}</p>
             </div>
         </div>
 
@@ -25,7 +25,7 @@
     </div>
 
     @if ($actividades->isEmpty())
-        <p style="color:var(--gris);font-size:15px;">{{ $seccion->texto('vacio', $b) }}</p>
+        <p class="dato-editable" style="color:var(--gris);font-size:15px;">{{ $seccion->texto('vacio', $b) }}</p>
     @else
         <div class="carousel" data-carousel="act" style="display:flex;gap:26px;overflow-x:auto;padding-bottom:8px;">
             @foreach ($actividades as $act)
@@ -35,6 +35,6 @@
     @endif
 
     <div class="reveal" style="text-align:center;margin-top:48px;">
-        <a href="{{ route('activities.index') }}" class="btn btn-primary">{{ $seccion->texto('cta_texto', $b) }}</a>
+        <a href="{{ route('activities.index') }}" class="btn btn-primary dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
     </div>
 </section>

@@ -2,7 +2,7 @@
 
 @if ($participantes->isNotEmpty())
     <section class="reveal" style="max-width:1180px;margin:0 auto;padding:30px 0 92px;text-align:center;overflow:hidden;">
-        <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--gris);margin-bottom:34px;padding:0 40px;">
+        <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--gris);margin-bottom:34px;padding:0 40px;">
             {{ $seccion->texto('antetitulo', $b) }}
         </div>
 

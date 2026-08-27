@@ -13,7 +13,7 @@
             @continue($logos->isEmpty())
 
             <div>
-                <div style="font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--naranjo);margin-bottom:16px;">{{ $etiqueta }}</div>
+                <div class="dato-editable" style="font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--naranjo);margin-bottom:16px;">{{ $etiqueta }}</div>
 
                 <div class="grid-logos">
                     @foreach ($logos as $lg)

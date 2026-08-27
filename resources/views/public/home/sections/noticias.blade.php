@@ -3,14 +3,14 @@
 <section id="noticias" style="scroll-margin-top:90px;max-width:1180px;margin:0 auto;padding:88px 40px;">
     <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:36px;flex-wrap:wrap;">
         <div>
-            <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>
-            <h2 style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
+            <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>
+            <h2 class="dato-editable" style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
         </div>
-        <a href="{{ route('posts.index') }}" class="btn btn-outline">{{ $seccion->texto('cta_texto', $b) }}</a>
+        <a href="{{ route('posts.index') }}" class="btn btn-outline dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
     </div>
 
     @if ($noticias->isEmpty())
-        <p style="color:var(--gris);font-size:15px;">{{ $seccion->texto('vacio', $b) }}</p>
+        <p class="dato-editable" style="color:var(--gris);font-size:15px;">{{ $seccion->texto('vacio', $b) }}</p>
     @else
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
             @foreach ($noticias as $post)

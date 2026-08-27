@@ -9,6 +9,11 @@
     como estaba antes de que existiera este campo: así vaciar el campo no deja
     media sección en blanco.
 
+    La columna de texto es la misma en los dos casos y vive en su propio parcial.
+    Estaba escrita dos veces, y la segunda copia se quedó sin la clase del
+    desbordamiento al acotar la regla: duplicar el marcado es duplicar los
+    sitios donde hay que acordarse de algo.
+
     El iframe se construye aquí a partir del identificador, y el identificador
     lo valida SanitizadorHtml::idDeYoutube(). Nunca se guarda ni se pinta un
     iframe que venga escrito desde el panel: por ahí es por donde entraría
@@ -35,24 +40,10 @@
                  style="--rot:-6deg;position:absolute;top:-56px;left:-56px;width:150px;height:auto;">
         </figure>
 
-        <div class="reveal" style="position:relative;">
-            <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:14px;">{{ $seccion->texto('antetitulo', $b) }}</div>
-            <h2 style="font-weight:800;font-size:34px;line-height:1.12;margin:0 0 20px;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
-            <div class="texto-editable" style="font-size:16px;line-height:1.65;margin:0 0 18px;color:var(--gris-700);">{!! $seccion->rico('cuerpo', $b) !!}</div>
-            <p style="font-size:19px;line-height:1.4;margin:0;font-weight:700;color:var(--ink);">{{ $seccion->texto('remate', $b) }}</p>
-            <img loading="lazy" decoding="async" width="665" height="403" src="{{ asset('img/por-que-celebramos-crop.png') }}" alt="" aria-hidden="true"
-                 style="display:block;width:380px;max-width:100%;height:auto;margin:22px 0 -30px auto;">
-        </div>
+        @include('public.home.partials.por-que-texto')
     </section>
 @else
     <section style="max-width:1180px;margin:0 auto;padding:88px 40px 40px;">
-        <div class="reveal" style="position:relative;">
-            <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:14px;">{{ $seccion->texto('antetitulo', $b) }}</div>
-            <h2 style="font-weight:800;font-size:34px;line-height:1.12;margin:0 0 20px;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
-            <div class="texto-editable" style="font-size:16px;line-height:1.65;margin:0 0 18px;color:var(--gris-700);">{!! $seccion->rico('cuerpo', $b) !!}</div>
-            <p style="font-size:19px;line-height:1.4;margin:0;font-weight:700;color:var(--ink);">{{ $seccion->texto('remate', $b) }}</p>
-            <img loading="lazy" decoding="async" width="665" height="403" src="{{ asset('img/por-que-celebramos-crop.png') }}" alt="" aria-hidden="true"
-                 style="display:block;width:380px;max-width:100%;height:auto;margin:22px 0 -30px auto;">
-        </div>
+        @include('public.home.partials.por-que-texto')
     </section>
 @endif

@@ -64,8 +64,11 @@ campos, no sólo ese, era el aviso correcto: el `overflow-wrap` del bloque F
 sólo cubría `.texto-editable`, es decir el cuerpo rico, y no los titulares ni
 las bajadas ni los botones.
 
-Se resolvió marcando el `<body>` del home con `home-editable` y aplicando la
-regla a todo lo que hay dentro. Pero al probarlo apareció **una segunda capa**:
+El primer intento fue marcar el `<body>` del home y aplicar la regla a todo lo
+que hay dentro. **Ese primer intento rompió el menú de cabecera; ver §8 bis.**
+La versión que quedó marca cada elemento editable, uno a uno.
+
+Y al probarlo apareció además **una segunda capa**:
 
 - `.btn` lleva `white-space: nowrap` —correcto para «Conoce más»— y con nowrap
   el `overflow-wrap` no tiene nada que hacer.
@@ -177,6 +180,52 @@ con una comprobación nueva para la cifra de personas distintas).
    prueba, no del código. Convenía comprobarlo antes de tocar nada.
 3. El triple clic de Puppeteer no selecciona el texto de un campo, así que la
    prueba concatenaba en vez de reemplazar. Se cambió por Ctrl+A.
+
+---
+
+## 8 bis. Regresión: el arreglo del fallo 2 rompió el menú
+
+**Corregido después, el mismo día.** El arreglo del desbordamiento puso
+`overflow-wrap: anywhere` en el `<body>` del home, y desde ahí alcanzó a todo:
+los enlaces de la cabecera empezaron a partir palabras —«Actividade s»,
+«Voluntariad o», «Edicione s», «Noticia s»—.
+
+`anywhere` parte donde le dejen. A un texto que escribe la ONG hay que dejarle
+partirse; a un enlace de navegación, no: es mejor que se corte a que se lea
+«Actividade s».
+
+**La regla no era «el home», era «esto lo escribe la ONG y puede ser cualquier
+cosa».** Ahora es una clase, `dato-editable`, puesta en cada elemento que pinta
+un texto salido del panel —treinta y tantos— y en ninguno más. Ningún nodo
+nuevo en el DOM: la clase va en el elemento que ya estaba.
+
+**De paso apareció un segundo hueco.** La sección «¿Por qué celebramos?» tiene
+dos ramas —con video y sin video— y la columna de texto estaba escrita dos
+veces. Al poner la clase, la segunda copia se quedó sin ella. Se extrajo a
+`public/home/partials/por-que-texto.blade.php`: duplicar el marcado es duplicar
+los sitios donde hay que acordarse de algo, y esa duplicación la había escrito
+yo el día anterior.
+
+### Lo que de verdad enseña esta regresión
+
+**Estaba en una captura que yo mismo revisé.** Al verificar el fallo 2 tomé una
+foto del home con la palabra de cien letras, la miré, y comprobé lo que iba
+buscando —que el texto largo no desbordara— sin leer el menú que tenía encima,
+donde ya ponía «Actividade s». Mirar una captura buscando una cosa concreta no
+es revisarla.
+
+De ahí sale la comprobación que ahora existe y antes no: **recorrer la interfaz
+entera —menú del sitio, footer, menú del panel, migas, botones, chips,
+cabeceras de tabla— y exigir que ninguno de esos elementos tenga la regla**, más
+una segunda que cuenta las líneas que ocupa cada palabra suelta con
+`Range.getClientRects()`. **18 comprobaciones, 18 en verde**, a 1440, 900 y
+390 px, con el contenido normal y con la palabra de cien letras.
+
+Un detalle de esa prueba, anotado porque costó: medir la altura del elemento
+contra su interlineado **no sirve** para saber si el texto se partió —cualquier
+enlace con relleno da alto de sobra— y llenaba la prueba de falsos positivos.
+`Range.getClientRects()` devuelve un rectángulo por línea, que es la medida
+buena.
 
 ---
 
