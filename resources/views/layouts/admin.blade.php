@@ -83,34 +83,15 @@
             @yield('actions')
         </div>
 
-        @if (session('ok'))
-            <div class="alert alert-ok" style="margin-bottom:18px;">{{ session('ok') }}</div>
-        @endif
-        {{-- Sin esto, un formulario del panel sin su propio bloque de errores
-             --el de desbloquear un acceso, por ejemplo-- recargaba la página
-             igual que estaba y no se sabía qué había fallado. --}}
-        @if ($errors->any())
-            <div class="alert alert-error" style="margin-bottom:18px;">
-                <ul style="margin:0;padding-left:18px;">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div class="alert alert-error" style="margin-bottom:18px;">
-                {{ session('error') }}
-                @if (session('detalle_smtp'))
-                    <pre style="margin:10px 0 0;font-size:12px;white-space:pre-wrap;opacity:.85;">{{ session('detalle_smtp') }}</pre>
-                @endif
-            </div>
-        @endif
+        <x-panel.flash />
 
         @yield('content')
     </main>
 </div>
+
+{{-- Un solo dialogo de confirmacion para toda la pagina. Los botones
+     `<x-panel.confirmar>` lo rellenan a traves del almacen de Alpine. --}}
+<x-panel.dialogo-confirmar />
 
 @stack('scripts')
 </body>

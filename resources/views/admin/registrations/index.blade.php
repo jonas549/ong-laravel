@@ -1,41 +1,57 @@
 @extends('layouts.admin')
 @section('title', 'Inscripciones')
 
+@section('actions')
+    <a href="{{ route('admin.registrations.exportar') }}" class="btn btn-outline btn-sm">Exportar con filtros</a>
+@endsection
+
+{{--
+    Listado de inscripciones, con los componentes del bloque H.
+
+    No lleva selección múltiple: sobre una inscripción no hay ninguna acción
+    masiva que tenga sentido todavía —no se borran ni se cambian de estado desde
+    aquí— y unas casillas que no llevan a ninguna parte son ruido. El día que
+    haya una acción, se le pasan `acciones-en` y `acciones` y aparecen.
+--}}
+
 @section('content')
-<form method="GET" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-    <input class="fld" style="max-width:280px;" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar nombre o correo…">
-    <select class="fld" style="max-width:180px;" name="estado">
-        <option value="">Todos</option>
-        @foreach (\App\Models\Registration::ESTADOS as $e)
-            <option value="{{ $e }}" @selected(request('estado') === $e)>{{ ucfirst($e) }}</option>
+
+<x-panel.filtros buscar="Buscar por nombre o correo…">
+    <select class="fld" name="estado" x-on:change="enviar()" aria-label="Estado de la inscripción">
+        <option value="">Todos los estados</option>
+        <option value="activas" @selected(request('estado') === 'activas')>Sin las canceladas</option>
+        @foreach ($estados as $e)
+            <option value="{{ $e }}" @selected($estado === $e)>{{ ucfirst($e) }}</option>
         @endforeach
     </select>
-    <button type="submit" class="btn btn-outline btn-sm">Filtrar</button>
-</form>
+</x-panel.filtros>
 
-<div class="tabla-wrap">
-    <table class="tabla">
-        <thead><tr><th>Persona</th><th>Correo</th><th>Actividad</th><th>Fecha</th><th>Estado</th></tr></thead>
-        <tbody>
-            @forelse ($inscritos as $i)
-                @php $c = $i->estado_color; @endphp
-                <tr>
-                    <td style="font-weight:600;">{{ $i->nombre }}</td>
-                    <td>{{ $i->correo }}</td>
-                    <td>{{ Str::limit($i->activity?->titulo, 38) }}</td>
-                    <td style="white-space:nowrap;">{{ $i->created_at->locale('es')->isoFormat('D MMM YYYY') }}</td>
-                    <td>
-                        <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:{{ $c['bg'] }};color:{{ $c['ink'] }};">
-                            {{ $i->estado_label }}
-                        </span>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="5" style="color:var(--gris);">Sin inscripciones.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+<x-panel.tabla
+    :filas="$inscritos"
+    :columnas="5"
+    :vacio="request()->hasAny(['q', 'estado']) ? 'Ninguna inscripción coincide con el filtro.' : 'Todavía no hay inscripciones.'">
 
-<div style="margin-top:22px;">{{ $inscritos->links() }}</div>
+    <x-slot:cabecera>
+        <x-panel.columna campo="nombre">Persona</x-panel.columna>
+        <x-panel.columna campo="correo">Correo</x-panel.columna>
+        <th>Actividad</th>
+        <x-panel.columna campo="created_at">Fecha</x-panel.columna>
+        <x-panel.columna campo="estado">Estado</x-panel.columna>
+    </x-slot:cabecera>
+
+    @foreach ($inscritos as $i)
+        @php $c = $i->estado_color; @endphp
+        <tr>
+            <td style="font-weight:600;">{{ $i->nombre }}</td>
+            <td>{{ $i->correo }}</td>
+            <td>{{ Str::limit($i->activity?->titulo, 38) }}</td>
+            <td style="white-space:nowrap;">{{ $i->created_at->locale('es')->isoFormat('D MMM YYYY') }}</td>
+            <td>
+                <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:{{ $c['bg'] }};color:{{ $c['ink'] }};">
+                    {{ $i->estado_label }}
+                </span>
+            </td>
+        </tr>
+    @endforeach
+</x-panel.tabla>
 @endsection

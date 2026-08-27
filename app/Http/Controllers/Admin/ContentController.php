@@ -10,7 +10,11 @@ use App\Models\Partner;
 use App\Models\Post;
 use App\Models\Stat;
 use App\Models\Testimonial;
+use App\Services\Exportador;
+use App\Support\Filtro;
+use App\Support\Listado;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * CRUD genérico para el contenido editable del home.
@@ -120,16 +124,99 @@ class ContentController extends Controller
         ],
     ];
 
-    public function index(string $tipo)
+    public function index(Request $request, string $tipo)
     {
         $def = $this->definicion($tipo);
         $modelo = $def['modelo'];
+        $campos = array_keys($def['campos']);
+
+        $consulta = $modelo::query();
+
+        // El buscador mira los campos de texto de este tipo, que cambian de uno
+        // a otro: en noticias es el titulo y en cifras la etiqueta.
+        if ($termino = Filtro::texto($request, 'q')) {
+            $textos = collect($def['campos'])
+                ->filter(fn ($m) => in_array($m['tipo'], ['text', 'textarea'], true))
+                ->keys();
+
+            $consulta->where(function ($q) use ($textos, $termino) {
+                foreach ($textos as $campo) {
+                    $q->orWhere($campo, 'like', '%'.Filtro::like($termino).'%');
+                }
+            });
+        }
+
+        if (in_array('activo', $campos, true) && ($estado = Filtro::texto($request, 'estado')) !== '') {
+            $consulta->where('activo', $estado === 'si');
+        }
+
+        $ordenables = array_values(array_intersect(['orden', 'titulo', 'nombre', 'autor', 'etiqueta', 'anio', 'activo', 'created_at'], $campos));
+        $ordenables[] = 'created_at';
+        $porDefecto = in_array('orden', $campos, true) ? 'orden' : 'created_at';
 
         return view('admin.content.index', [
             'tipo' => $tipo,
             'def' => $def,
-            'filas' => $modelo::orderBy(in_array('orden', array_keys($def['campos']), true) ? 'orden' : 'id')->get(),
+            'ordenables' => $ordenables,
+            'tieneActivo' => in_array('activo', $campos, true),
+            'filas' => Listado::ordenar($consulta, $request, $ordenables, $porDefecto, $porDefecto === 'created_at' ? 'desc' : 'asc')
+                ->paginate(Listado::porPagina($request))
+                ->withQueryString(),
         ]);
+    }
+
+    /**
+     * Las acciones masivas del listado.
+     *
+     * Los ids se leen con `Listado::ids()`, que devuelve enteros y descarta lo
+     * que no lo sea: la casilla de una tabla es una entrada de usuario como
+     * cualquier otra, y llega en bloque.
+     */
+    public function masivas(Request $request, string $tipo)
+    {
+        $def = $this->definicion($tipo);
+        $ids = Listado::ids($request);
+        $accion = Filtro::texto($request, 'accion');
+
+        if (! $ids) {
+            return back()->with('error', 'No habia ninguna fila seleccionada.');
+        }
+
+        $filas = $def['modelo']::whereIn('id', $ids)->get();
+        $tieneActivo = array_key_exists('activo', $def['campos']);
+
+        $hechas = match (true) {
+            $accion === 'activar' && $tieneActivo => $this->cambiarVisible($filas, true),
+            $accion === 'desactivar' && $tieneActivo => $this->cambiarVisible($filas, false),
+            $accion === 'eliminar' => $this->eliminar($filas),
+            default => null,
+        };
+
+        if ($hechas === null) {
+            return back()->with('error', 'Esa accion no existe para este contenido.');
+        }
+
+        return back()->with('ok', match ($accion) {
+            'activar' => $hechas.' '.Str::plural('registro', $hechas).' '.Str::plural('visible', $hechas).' en el sitio.',
+            'desactivar' => $hechas.' '.Str::plural('registro', $hechas).' escondidos del sitio.',
+            default => $hechas.' '.Str::plural('registro', $hechas).' '.Str::plural('eliminado', $hechas).'.',
+        });
+    }
+
+    /** @param  \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>  $filas */
+    private function cambiarVisible($filas, bool $visible): int
+    {
+        $filas->each(fn ($f) => $f->update(['activo' => $visible]));
+
+        return $filas->count();
+    }
+
+    /** @param  \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>  $filas */
+    private function eliminar($filas): int
+    {
+        $filas->each(fn ($f) => $f->delete());
+
+        return $filas->count();
     }
 
     public function create(string $tipo)
@@ -186,6 +273,55 @@ class ContentController extends Controller
         return redirect()
             ->route('admin.content.index', $tipo)
             ->with('ok', 'Registro eliminado.');
+    }
+
+    /**
+     * Exporta el listado tal como se esta viendo.
+     *
+     * Respeta los filtros de la URL: exportar «lo que hay en pantalla» y que
+     * salga otra cosa es la forma mas rapida de que nadie vuelva a fiarse del
+     * boton. Se usa un cursor y no un `get()` porque el exportador va en
+     * streaming y no hace falta traerse la tabla entera a memoria.
+     */
+    public function exportar(Request $request, string $tipo, Exportador $exportador)
+    {
+        $def = $this->definicion($tipo);
+        $formato = Filtro::texto($request, 'formato') === 'csv' ? 'csv' : 'xlsx';
+
+        $campos = collect($def['campos'])->reject(fn ($m) => $m['tipo'] === 'textarea');
+
+        $consulta = $def['modelo']::query();
+
+        if ($termino = Filtro::texto($request, 'q')) {
+            $textos = collect($def['campos'])->filter(fn ($m) => in_array($m['tipo'], ['text', 'textarea'], true))->keys();
+
+            $consulta->where(function ($q) use ($textos, $termino) {
+                foreach ($textos as $campo) {
+                    $q->orWhere($campo, 'like', '%'.Filtro::like($termino).'%');
+                }
+            });
+        }
+
+        if (array_key_exists('activo', $def['campos']) && ($estado = Filtro::texto($request, 'estado')) !== '') {
+            $consulta->where('activo', $estado === 'si');
+        }
+
+        $filas = (function () use ($consulta, $campos) {
+            foreach ($consulta->cursor() as $fila) {
+                yield $campos->map(function ($meta, $campo) use ($fila) {
+                    $valor = $fila->{$campo};
+
+                    return match ($meta['tipo']) {
+                        'bool' => $valor ? 'Si' : 'No',
+                        'datetime' => $valor?->format('Y-m-d'),
+                        'select' => $meta['opciones'][$valor] ?? $valor,
+                        default => $valor,
+                    };
+                })->values()->all();
+            }
+        })();
+
+        return $exportador->descargar($formato, $def['titulo'], $campos->pluck('label')->all(), $filas);
     }
 
     /** @return array<string, mixed> */

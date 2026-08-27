@@ -244,6 +244,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Contenido editable (CRUD genérico)
         Route::get('/contenido/{tipo}', [Admin\ContentController::class, 'index'])->name('content.index');
+        // Antes que `/{tipo}/{id}`: si no, el comodin se traga «exportar».
+        Route::get('/contenido/{tipo}/exportar', [Admin\ContentController::class, 'exportar'])->name('content.exportar');
+        Route::post('/contenido/{tipo}/acciones', [Admin\ContentController::class, 'masivas'])->name('content.masivas');
         Route::get('/contenido/{tipo}/nuevo', [Admin\ContentController::class, 'create'])->name('content.create');
         Route::post('/contenido/{tipo}', [Admin\ContentController::class, 'store'])->name('content.store');
         Route::get('/contenido/{tipo}/{id}/editar', [Admin\ContentController::class, 'edit'])->name('content.edit');

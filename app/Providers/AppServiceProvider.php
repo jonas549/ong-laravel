@@ -12,6 +12,7 @@ use App\Services\SmtpConfigService;
 use App\Support\Formulario;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 
@@ -37,6 +38,14 @@ class AppServiceProvider extends ServiceProvider
          * comprobaciones pasan a devolver «no hay policy» y todo queda abierto.
          * Escritas aquí, un nombre que no cuadre revienta al arrancar.
          */
+        /*
+         * Laravel 12 trae las vistas de paginacion en Tailwind, y este proyecto
+         * no carga Tailwind: `->links()` pintaba su marcado sin ninguno de sus
+         * estilos. Funcionaba, pero se veia roto.
+         */
+        Paginator::defaultView('vendor.pagination.dps');
+        Paginator::defaultSimpleView('vendor.pagination.dps');
+
         Gate::policy(Activity::class, ActivityPolicy::class);
         Gate::policy(Organization::class, OrganizationPolicy::class);
         Gate::policy(User::class, UserPolicy::class);

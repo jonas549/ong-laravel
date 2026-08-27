@@ -1,5 +1,14 @@
 import Alpine from 'alpinejs';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
+import {
+    almacenConfirmacion,
+    barraFiltros,
+    campoValidado,
+    dialogoConfirmar,
+    flash,
+    iniciarEstadosDeCarga,
+    tablaSeleccion,
+} from './panel';
 
 /*
  * Barra de pasos del wizard (publicar-actividad.html).
@@ -88,8 +97,20 @@ Alpine.data('editorSeccion', editorSeccion);
 Alpine.data('ordenSecciones', ordenSecciones);
 Alpine.data('buscadorPanel', buscadorPanel);
 
+// Componentes transversales del panel (bloque H).
+Alpine.store('confirmacion', almacenConfirmacion);
+Alpine.data('tablaSeleccion', tablaSeleccion);
+Alpine.data('barraFiltros', barraFiltros);
+Alpine.data('dialogoConfirmar', dialogoConfirmar);
+Alpine.data('flash', flash);
+Alpine.data('campoValidado', campoValidado);
+
 window.Alpine = Alpine;
 Alpine.start();
+
+// Va fuera de Alpine: se engancha al documento y vale para todo formulario del
+// panel, incluidos los que se escriban despues.
+iniciarEstadosDeCarga();
 
 /*
  * Interacciones rescatadas del componentDidMount de index.html.

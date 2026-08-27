@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Registration;
 use App\Support\Filtro;
+use App\Support\Listado;
 use Illuminate\Http\Request;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Style;
@@ -16,7 +17,7 @@ class RegistrationController extends Controller
 {
     public function index(Request $request)
     {
-        $inscritos = Registration::with('activity')
+        $inscritos = Registration::query()
             ->when(Filtro::texto($request, 'q'), function ($q, $b) {
                 $q->where(function ($w) use ($b) {
                     $w->where('nombre', 'like', "%{$b}%")->orWhere('correo', 'like', "%{$b}%");
@@ -33,8 +34,12 @@ class RegistrationController extends Controller
                 in_array(Filtro::texto($request, 'estado'), Registration::ESTADOS, true),
                 fn ($q) => $q->where('estado', Filtro::texto($request, 'estado')),
             )
-            ->latest('id')
-            ->paginate(30)
+            ->with('activity');
+
+        $inscritos = Listado::ordenar($inscritos, $request, [
+            'nombre', 'correo', 'estado', 'created_at',
+        ], 'created_at', 'desc')
+            ->paginate(Listado::porPagina($request))
             ->withQueryString();
 
         return view('admin.registrations.index', [
