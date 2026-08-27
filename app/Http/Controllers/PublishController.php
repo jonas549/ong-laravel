@@ -17,6 +17,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -157,8 +158,22 @@ class PublishController extends Controller
             ->with('ok', 'Recibimos tu actividad. Te avisaremos por correo cuando esté revisada.');
     }
 
+    /**
+     * El paso 5, «tu actividad fue enviada».
+     *
+     * La ruta es pública porque el wizard llega aquí recién creada la cuenta,
+     * pero la pantalla es del dueño: enseña el nombre de la organización, el
+     * título, la fecha y el lugar de una ficha que todavía está en revisión.
+     * Sin esta línea bastaba con acertar el slug —que sale del título— para
+     * leer actividades que nadie ha publicado aún.
+     *
+     * `update` es el permiso que ya significa «esta ficha es tuya»; y 404 en
+     * vez de 403 para no confirmarle a nadie que esa dirección existe.
+     */
     public function done(Activity $activity)
     {
+        abort_unless(Gate::allows('update', $activity), 404);
+
         $activity->load(['organization', 'commune']);
 
         return view('public.publish.done', compact('activity'));

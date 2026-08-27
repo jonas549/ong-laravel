@@ -20,7 +20,7 @@ class ParticipantController extends Controller
 
     public function index(Request $request, Activity $activity)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('manageParticipants', $activity);
 
         $busqueda = Filtro::texto($request, 'q');
         $estado = Filtro::texto($request, 'estado');
@@ -48,7 +48,7 @@ class ParticipantController extends Controller
     /** "Exportar lista" — el .xlsx que anuncia el propio botón. */
     public function export(Request $request, Activity $activity): StreamedResponse
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('manageParticipants', $activity);
 
         $inscritos = $this->consulta(
             $activity,
@@ -85,7 +85,7 @@ class ParticipantController extends Controller
 
     public function updateCupos(Request $request, Activity $activity)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('manageParticipants', $activity);
 
         $datos = $request->validate([
             'cupos_disponibles' => ['required', 'integer', 'min:0', 'max:100000'],
@@ -110,14 +110,5 @@ class ParticipantController extends Controller
                 fn ($q) => $q->where('estado', $estado),
             )
             ->latest('created_at');
-    }
-
-    private function autorizar(Request $request, Activity $activity): void
-    {
-        abort_unless(
-            $activity->organization_id === $request->user()->organization?->id,
-            403,
-            'Esta actividad no es de tu organización.',
-        );
     }
 }

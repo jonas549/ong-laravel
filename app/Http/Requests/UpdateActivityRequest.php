@@ -6,7 +6,9 @@ use App\Models\Activity;
 use App\Models\ActivityCollaborator;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
@@ -23,9 +25,21 @@ use Illuminate\Validation\Rule;
  */
 class UpdateActivityRequest extends FormRequest
 {
-    public function authorize(): bool
+    /**
+     * El permiso se comprueba **aquí** y no en el controlador.
+     *
+     * `authorize()` corre antes que las reglas; `$this->authorize()` dentro del
+     * método del controlador corre después. Con la comprobación allá, un
+     * organizador que mandara un formulario incompleto contra la actividad de
+     * otro recibía los errores de validación de una ficha que no es suya —un
+     * 302 de vuelta al formulario— en vez del 403 que corresponde: la
+     * autorización no llegaba a ejecutarse nunca. Lo detectó permisos.mjs.
+     */
+    public function authorize(): Response
     {
-        return true;
+        // `inspect` y no `allows`: devuelve la Response de la policy, con su
+        // mensaje. Con un bool el 403 saldría en inglés y sin explicar nada.
+        return Gate::inspect('update', $this->route('activity'));
     }
 
     /**

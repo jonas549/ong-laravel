@@ -8,6 +8,7 @@ use App\Models\Region;
 use App\Models\TaxonomyTerm;
 use App\Support\Filtro;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ActivityController extends Controller
 {
@@ -38,9 +39,10 @@ class ActivityController extends Controller
     {
         // La ficha es pública sólo si está publicada; su organización puede
         // verla igual, que es lo que hace el botón "Vista previa" del editor.
-        $suya = $activity->organization_id === $request->user()?->organization?->id;
-
-        abort_unless($activity->estado === 'publicada' || $suya, 404);
+        //
+        // 404 y no 403: un 403 confirmaría que esa dirección existe, y una ficha
+        // sin publicar no debería ni asomar para quien no es de la casa.
+        abort_unless(Gate::allows('view', $activity), 404);
 
         $activity->load(['organization', 'region', 'commune', 'terms', 'collaborators']);
 

@@ -74,7 +74,7 @@ class MyActivityController extends Controller
 
     public function edit(Request $request, Activity $activity, ActivityCatalogService $catalogos)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('update', $activity);
 
         $activity->load(['terms', 'collaborators', 'commune']);
 
@@ -84,10 +84,11 @@ class MyActivityController extends Controller
         ]);
     }
 
+    // El permiso lo comprueba UpdateActivityRequest::authorize(), que corre
+    // antes que las reglas de validación. Repetirlo aquí sería una segunda
+    // verdad que mantener, y la de aquí llegaría tarde.
     public function update(UpdateActivityRequest $request, Activity $activity)
     {
-        $this->autorizar($request, $activity);
-
         $datos = $request->validated();
         $comuna = Commune::find($datos['commune_id'] ?? null);
 
@@ -151,7 +152,7 @@ class MyActivityController extends Controller
     /** La pantalla "¡Tus cambios ya están publicados!" del prototipo. */
     public function saved(Request $request, Activity $activity)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('update', $activity);
 
         return view('account.activities.saved', compact('activity'));
     }
@@ -162,7 +163,7 @@ class MyActivityController extends Controller
      */
     public function duplicate(Request $request, Activity $activity)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('duplicate', $activity);
 
         $activity->load(['terms', 'collaborators']);
 
@@ -198,7 +199,7 @@ class MyActivityController extends Controller
 
     public function cancel(Request $request, Activity $activity, ActivityModerationService $moderacion)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('cancel', $activity);
 
         $moderacion->cambiar($activity, 'cancelada', $request->user(), 'Cancelada por el organizador.');
 
@@ -209,7 +210,7 @@ class MyActivityController extends Controller
 
     public function submitForReview(Request $request, Activity $activity, ActivityModerationService $moderacion)
     {
-        $this->autorizar($request, $activity);
+        $this->authorize('submit', $activity);
 
         $moderacion->cambiar($activity, 'revision', $request->user());
 
@@ -264,14 +265,5 @@ class MyActivityController extends Controller
         if ($ruta && str_starts_with($ruta, 'storage/')) {
             Storage::disk('public')->delete(substr($ruta, strlen('storage/')));
         }
-    }
-
-    private function autorizar(Request $request, Activity $activity): void
-    {
-        abort_unless(
-            $activity->organization_id === $request->user()->organization?->id,
-            403,
-            'Esta actividad no es de tu organización.',
-        );
     }
 }

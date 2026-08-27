@@ -45,6 +45,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `clave-admin.mjs` | Un admin le cambia la contraseña a un organizador: que la nueva sirva, que la anterior no, que quede en el registro con el autor, que salga el correo y que se cierren las sesiones. |
 | `flujos.mjs` | Registro y «olvidé mi contraseña» de punta a punta. Deja los correos encolados; hay que correr `queue:work` después para ver si llegan. |
 | `menu.mjs` | Que la ficha de usuario marque el nodo correcto del menú y pinte las migas. |
+| `permisos.mjs` | Que un organizador **no** llegue a los datos de otro cambiando el número de la URL, y que ningún rol entre en el panel del otro. Sesenta segundos y 29 comprobaciones; el que hay que correr al añadir cualquier pantalla que reciba un id. |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---
@@ -73,6 +74,23 @@ cola. Para volver al punto de partida:
 ```bash
 php artisan dps:instalar        # replantar lo que falte
 php artisan queue:flush         # tirar los trabajos fallidos
+```
+
+`permisos.mjs` deja dos organizadores de prueba con su organización y su
+actividad. Para borrarlos:
+
+```bash
+php artisan tinker
+>>> Activity::whereIn('slug', ['actividad-de-prueba-a', 'actividad-de-prueba-b'])->forceDelete();
+>>> Organization::whereIn('slug', ['organizacion-prueba-a', 'organizacion-prueba-b'])->delete();
+>>> User::whereIn('email', ['org-a@prueba.test', 'org-b@prueba.test'])->delete();
+```
+
+Y `clave-admin.mjs` le cambia la contraseña al organizador sembrado; para
+dejarla como estaba:
+
+```bash
+>>> User::where('email', 'organizador@ong-laravel.test')->first()->forceFill(['password' => 'organizador1234'])->save();
 ```
 
 `buzon.jsonl` se puede borrar sin más.

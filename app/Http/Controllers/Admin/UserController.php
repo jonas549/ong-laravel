@@ -10,6 +10,7 @@ use App\Services\SesionesActivas;
 use App\Services\SmtpConfigService;
 use App\Support\Filtro;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -111,9 +112,10 @@ class UserController extends Controller
             'role' => ['required', Rule::in([User::ROL_ADMIN, User::ROL_ORGANIZER])],
         ], [], ['name' => 'el nombre', 'email' => 'el correo', 'role' => 'el rol']);
 
-        // Quitarse a uno mismo el rol de administración es quedarse fuera del
-        // panel sin forma de volver a entrar.
-        if ($user->id === $request->user()->id && $datos['role'] !== User::ROL_ADMIN) {
+        // La regla vive en UserPolicy; aquí se consulta con `denies` en vez de
+        // con `authorize` para responder con un error de validación junto al
+        // campo, que es lo útil en un formulario, y no con un 403 sin salida.
+        if (Gate::denies('changeRole', [$user, $datos['role']])) {
             throw ValidationException::withMessages([
                 'role' => 'No puedes quitarte a ti mismo el rol de administración: te quedarías fuera del panel.',
             ]);
@@ -137,15 +139,12 @@ class UserController extends Controller
      */
     public function cambiarContrasena(Request $request, User $user, SmtpConfigService $smtp)
     {
-        /*
-         * La propia no: para eso está el perfil, que pide la contraseña actual.
-         * Permitirlo aquí reabriría el agujero que se cerró allí, porque una
-         * sesión de admin robada podría cambiarla sin conocer la anterior.
-         */
-        if ($user->id === $request->user()->id) {
-            return redirect()
-                ->route('admin.perfil')
-                ->with('error', 'Tu propia contraseña se cambia desde tu perfil, con la actual delante.');
+        // El porqué está en UserPolicy::changePassword. Se redirige al perfil en
+        // vez de abortar: ahí está el formulario que sí sirve para esto.
+        $permiso = Gate::inspect('changePassword', $user);
+
+        if ($permiso->denied()) {
+            return redirect()->route('admin.perfil')->with('error', $permiso->message());
         }
 
         $datos = $request->validate([
@@ -188,8 +187,10 @@ class UserController extends Controller
 
     public function toggleActive(Request $request, User $user)
     {
-        if ($user->id === $request->user()->id) {
-            return back()->with('error', 'No puedes desactivar tu propia cuenta.');
+        $permiso = Gate::inspect('toggleActive', $user);
+
+        if ($permiso->denied()) {
+            return back()->with('error', $permiso->message());
         }
 
         $user->update(['is_active' => ! $user->is_active]);
