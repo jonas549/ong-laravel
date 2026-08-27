@@ -30,7 +30,7 @@
             <img decoding="async" class="floaty" width="486" height="375" src="{{ asset('img/logo-corazon-15f12e4a.png') }}"
                  alt="Día del Patrimonio Social — dar está en nuestra naturaleza"
                  style="display:block;width:100%;height:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.22)) drop-shadow(0 4px 10px rgba(0,0,0,.12));">
-            <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#voluntariado' }}" style="position:absolute;left:50%;bottom:64px;transform:translateX(-50%);white-space:nowrap;background:var(--naranjo);color:#fff;font-weight:700;font-size:17px;padding:13px 30px;border-radius:999px;box-shadow:0 12px 26px -12px rgba(229,114,0,.85);">
+            <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#voluntariado' }}" class="hero-cta" style="position:absolute;left:50%;bottom:64px;transform:translateX(-50%);background:var(--naranjo);color:#fff;font-weight:700;font-size:17px;padding:13px 30px;border-radius:999px;box-shadow:0 12px 26px -12px rgba(229,114,0,.85);">
                 {{ $seccion->texto('cta_texto', $b) }}
             </a>
         </div>

@@ -125,11 +125,24 @@ export const editorSeccion = (urlBorrador) => ({
     aviso: '',
     reloj: null,
     enVuelo: false,
+    formulario: null,
 
     init() {
+        /*
+         * La raíz se guarda AQUÍ, y no se lee de `this.$el` cuando hace falta.
+         *
+         * En Alpine, `$el` es el elemento del manejador que se esté ejecutando,
+         * no la raíz del componente. Como `x-on:input` está en cada campo, al
+         * saltar el temporizador `this.$el` era el textarea recién escrito, y
+         * `new FormData(textarea)` revienta: el autoguardado no llegó a llamar
+         * al servidor ni una sola vez, y de paso la vista previa se quedaba sin
+         * nada que previsualizar. Dentro de `init()` sí es la raíz.
+         */
+        this.formulario = this.$el;
+
         // Los editores ricos avisan por un evento que sube por el DOM: así el
         // formulario no tiene que conocerlos uno a uno.
-        this.$el.addEventListener('editor-cambiado', () => this.tocado());
+        this.formulario.addEventListener('editor-cambiado', () => this.tocado());
 
         // Si alguien se va con cambios sin guardar, el navegador pregunta. El
         // autoguardado corre cada tres segundos, así que esto sólo salta en esa
@@ -148,28 +161,41 @@ export const editorSeccion = (urlBorrador) => ({
         this.reloj = setTimeout(() => this.guardar(), 3000);
     },
 
-    sincronizarRicos() {
-        // Al publicar hay que asegurarse de que los ocultos llevan lo último;
-        // el input de un contenteditable no se actualiza solo.
-        this.$el.querySelectorAll('.editor-rico').forEach((editor) => {
+    /** El botón «Guardar borrador»: lo mismo, pero ahora y a mano. */
+    guardarAhora() {
+        clearTimeout(this.reloj);
+        this.guardar();
+    },
+
+    /**
+     * Vuelca el HTML de cada editor rico en su input oculto.
+     *
+     * Hace falta porque un `contenteditable` no actualiza ningún campo por su
+     * cuenta: lo que se envía es el input oculto, no el div que se ve.
+     */
+    volcarRicos() {
+        this.formulario.querySelectorAll('.editor-rico').forEach((editor) => {
             const campo = editor.querySelector('.editor-rico-campo');
             const oculto = editor.querySelector('input[type=hidden]');
             if (campo && oculto) oculto.value = campo.innerHTML;
         });
+    },
 
-        // Se publica: ya no hay nada pendiente que avisar al salir.
+    /** Al publicar: vuelca y da por saldado lo que hubiera pendiente. */
+    sincronizarRicos() {
+        this.volcarRicos();
         clearTimeout(this.reloj);
         this.reloj = null;
     },
 
     async guardar() {
         this.reloj = null;
-        this.sincronizarRicosSinTocarReloj();
+        this.volcarRicos();
         this.enVuelo = true;
         this.aviso = 'Guardando…';
 
         try {
-            const cuerpo = new FormData(this.$el);
+            const cuerpo = new FormData(this.formulario);
             // El borrador es un POST propio; el _method=PUT del formulario
             // haría que Laravel lo tomara por la ruta de publicar.
             cuerpo.delete('_method');
@@ -194,13 +220,6 @@ export const editorSeccion = (urlBorrador) => ({
         }
     },
 
-    sincronizarRicosSinTocarReloj() {
-        this.$el.querySelectorAll('.editor-rico').forEach((editor) => {
-            const campo = editor.querySelector('.editor-rico-campo');
-            const oculto = editor.querySelector('input[type=hidden]');
-            if (campo && oculto) oculto.value = campo.innerHTML;
-        });
-    },
 });
 
 /* ──────────────────────────────────────────── arrastre de la lista ── */
@@ -210,6 +229,19 @@ export const ordenSecciones = (claves, urlOrden) => ({
     arrastrando: null,
     guardando: false,
     error: '',
+    lista: null,
+
+    init() {
+        /*
+         * La misma trampa que en editorSeccion, y por eso está escrita dos
+         * veces: `$el` es el elemento del manejador, no la raíz. Como
+         * `x-on:dragend` va en cada `<li>`, `this.$el.querySelector('ul')`
+         * devolvía null —un `li` no contiene el `ul`— y `this.orden` acababa
+         * vacío: el POST salía sin un solo `orden[]` y el servidor contestaba
+         * 422 «Falta orden». En `init()` sí es la raíz.
+         */
+        this.lista = this.$el.querySelector('ul');
+    },
 
     empezar(evento, clave) {
         this.arrastrando = clave;
@@ -228,9 +260,8 @@ export const ordenSecciones = (claves, urlOrden) => ({
     sobre(evento, clave) {
         if (!this.arrastrando || clave === this.arrastrando) return;
 
-        const lista = this.$el.closest('ul') || this.$el.parentElement;
-        const origen = lista.querySelector('[data-clave="' + this.arrastrando + '"]');
-        const destino = lista.querySelector('[data-clave="' + clave + '"]');
+        const origen = this.lista.querySelector('[data-clave="' + this.arrastrando + '"]');
+        const destino = this.lista.querySelector('[data-clave="' + clave + '"]');
 
         if (!origen || !destino) return;
 
@@ -249,8 +280,14 @@ export const ordenSecciones = (claves, urlOrden) => ({
 
         this.arrastrando = null;
 
-        const lista = this.$el.querySelector('ul') || this.$el;
-        this.orden = [...lista.querySelectorAll('[data-clave]')].map((li) => li.getAttribute('data-clave'));
+        this.orden = [...this.lista.querySelectorAll('[data-clave]')].map((li) => li.getAttribute('data-clave'));
+
+        // Sin esto, un fallo silencioso mandaba un POST vacío y el 422 sólo se
+        // veía abriendo la consola.
+        if (!this.orden.length) {
+            this.error = 'No se pudo leer el orden nuevo. Recarga la página.';
+            return;
+        }
 
         this.guardar();
     },
@@ -275,5 +312,51 @@ export const ordenSecciones = (claves, urlOrden) => ({
         } finally {
             this.guardando = false;
         }
+    },
+});
+
+/* ─────────────────────────────────────────────── buscador del panel ── */
+
+/**
+ * Filtra al escribir, pero sólo cuando ya estás en la pantalla de resultados.
+ *
+ * Es un envío del formulario con retardo, no una búsqueda por AJAX: reutiliza
+ * la misma pantalla y el mismo controlador, y no hay una segunda forma de
+ * pintar los resultados que mantener de acuerdo con la primera.
+ *
+ * Fuera de la pantalla de resultados no se dispara: llevarte a otra página a
+ * media palabra sería peor que pedirte Enter.
+ */
+export const buscadorPanel = (enResultados) => ({
+    reloj: null,
+    formulario: null,
+
+    init() {
+        // Y otra vez lo mismo: `$el` dentro de `tecleo()` es el input, no el
+        // formulario, asi que `this.$el.submit()` no existia. La trampa se cuela
+        // sola cada vez que un manejador vive en un hijo; por eso los tres
+        // componentes de este archivo guardan su raiz en `init()`.
+        this.formulario = this.$el;
+
+        if (!enResultados) return;
+
+        // Al recargar, el foco vuelve al buscador con el cursor al final: si no,
+        // hay que volver a pinchar en el campo después de cada filtrado.
+        const v = this.$refs.campo.value;
+        this.$refs.campo.focus();
+        this.$refs.campo.setSelectionRange(v.length, v.length);
+    },
+
+    tecleo() {
+        if (!enResultados) return;
+
+        clearTimeout(this.reloj);
+
+        const q = this.$refs.campo.value.trim();
+
+        // Dos caracteres es lo que ya exige el servidor para buscar nada.
+        if (q.length && q.length < 2) return;
+
+        this.reloj = setTimeout(() => this.formulario.submit(), 450);
     },
 });

@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs';
-import { editorRico, editorSeccion, ordenSecciones } from './home-editor';
+import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 
 /*
  * Barra de pasos del wizard (publicar-actividad.html).
@@ -86,6 +86,7 @@ Alpine.data('seccionMenu', (clave, contieneLaPantallaActual) => ({
 Alpine.data('editorRico', editorRico);
 Alpine.data('editorSeccion', editorSeccion);
 Alpine.data('ordenSecciones', ordenSecciones);
+Alpine.data('buscadorPanel', buscadorPanel);
 
 window.Alpine = Alpine;
 Alpine.start();
@@ -302,15 +303,46 @@ const initCounters = () => {
         return;
     }
 
+    const fin = (c) => {
+        c.el.textContent = c.prefix + fmt(c.target, c.miles) + c.suffix;
+    };
+
     const run = (c) => {
+        if (c.corriendo) return;
+        c.corriendo = true;
+
         const dur = 1500;
         const t0 = performance.now();
+
+        /*
+         * Red de seguridad: si la animación no llega a terminar —requestAnimationFrame
+         * no corre en una pestaña de fondo, ni cuando el navegador la pausa— el
+         * contador se quedaba en cero para siempre. Con esto acaba siempre en su
+         * número, que es lo único que no puede fallar.
+         */
+        const red = setTimeout(() => fin(c), dur + 400);
+
         const tick = (now) => {
-            const p = Math.min((now - t0) / dur, 1);
+            /*
+             * `p` se acota por ABAJO además de por arriba. El instante que recibe
+             * requestAnimationFrame es el del comienzo del fotograma, y puede ser
+             * anterior al `performance.now()` de dos líneas más arriba: con `p`
+             * negativo, la cúbica `1-(1-p)^3` sale negativa y el contador enseñaba
+             * números en rojo tipo «-11.631 de 100.000» durante un fotograma.
+             * Lo pilló el testing en producción.
+             */
+            const p = Math.min(Math.max((now - t0) / dur, 0), 1);
             const val = Math.round((1 - Math.pow(1 - p, 3)) * c.target);
+
             c.el.textContent = c.prefix + fmt(val, c.miles) + c.suffix;
-            if (p < 1) requestAnimationFrame(tick);
+
+            if (p < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                clearTimeout(red);
+            }
         };
+
         requestAnimationFrame(tick);
     };
 
@@ -326,6 +358,31 @@ const initCounters = () => {
     }, { rootMargin: '0px 0px -10% 0px' });
 
     counters.forEach((c) => io.observe(c.el));
+
+    /*
+     * Y un empujón para quien no llega bajando.
+     *
+     * El observador se dispara al entrar en pantalla, pero llegar por un ancla
+     * —#ediciones desde el menú— o por un scroll programático dejaba los
+     * contadores en cero: el elemento ya estaba dentro antes de que el
+     * observador empezara a mirar, o el salto fue tan directo que no hubo
+     * fotograma intermedio. Al cambiar el ancla se revisa quién está visible y
+     * se arranca lo que falte.
+     */
+    const arrancarVisibles = () => {
+        counters.forEach((c) => {
+            if (c.corriendo) return;
+
+            const r = c.el.getBoundingClientRect();
+            if (r.top < window.innerHeight && r.bottom > 0) {
+                run(c);
+                io.unobserve(c.el);
+            }
+        });
+    };
+
+    window.addEventListener('hashchange', () => setTimeout(arrancarVisibles, 400));
+    setTimeout(arrancarVisibles, 600);
 };
 
 // ── Igualar altura de las tarjetas de participación ──────────

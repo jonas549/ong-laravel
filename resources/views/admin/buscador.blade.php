@@ -1,5 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Buscar')
+@section('migaPadre', 'Buscar')
+@section('miga', 'Resultados')
 
 @section('content')
 <form method="GET" class="card" style="padding:20px;margin-bottom:20px;max-width:720px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">

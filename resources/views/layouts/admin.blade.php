@@ -40,11 +40,18 @@
 
         {{-- Buscador del panel: con el árbol ya crecido, cuesta más recordar
              dónde estaba una pantalla que encontrar el registro. --}}
-        <form method="GET" action="{{ route('admin.buscar') }}" class="nav-buscador">
+        {{--
+            Ya en la pantalla de resultados, el buscador filtra solo al dejar de
+            escribir. Fuera de ella sigue haciendo falta Enter: navegar a otra
+            página a media palabra sería peor que esperar.
+        --}}
+        <form method="GET" action="{{ route('admin.buscar') }}" class="nav-buscador"
+              x-data="buscadorPanel({{ Js::from(request()->routeIs('admin.buscar')) }})">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
             </svg>
-            <input type="search" name="q" value="@viejo('q', request()->routeIs('admin.buscar') ? request()->query('q') : '')"
+            <input type="search" name="q" x-ref="campo" x-on:input="tecleo()"
+                   value="@viejo('q', request()->routeIs('admin.buscar') ? request()->query('q') : '')"
                    placeholder="Buscar en el panel…" aria-label="Buscar en el panel">
         </form>
 

@@ -15,6 +15,15 @@ class OrganizationController extends Controller
             ->withCount('activities')
             ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('nombre', 'like', '%'.Filtro::like($b).'%'))
             ->when($soloPendientes, fn ($q) => $q->where('verificada', false))
+            /*
+             * «Activas» es la definición del KPI de la portada: con al menos una
+             * actividad publicada. La tarjeta decía 1 y llevaba a un listado de
+             * 3 filas, que es peor que no enlazar nada.
+             */
+            ->when(
+                Filtro::texto($request, 'filtro') === 'activas',
+                fn ($q) => $q->whereHas('activities', fn ($a) => $a->where('estado', 'publicada')),
+            )
             ->orderBy('nombre')
             ->paginate(20)
             ->withQueryString();
@@ -22,6 +31,7 @@ class OrganizationController extends Controller
         return view('admin.organizations.index', [
             'organizaciones' => $organizaciones,
             'soloPendientes' => $soloPendientes,
+            'soloActivas' => Filtro::texto($request, 'filtro') === 'activas',
             'pendientes' => Organization::where('verificada', false)->count(),
         ]);
     }

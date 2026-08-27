@@ -249,6 +249,63 @@ a.textlink:hover { color: var(--naranjo-600); }
  */
 .texto-editable { overflow-wrap: anywhere; }
 
+/*
+ * Y lo mismo para TODO lo que sale del panel, no sólo para el texto rico.
+ *
+ * El primer intento sólo protegió `.texto-editable`, y el testing en producción
+ * encontró el hueco: un titular de 100 letras sin espacios medía 2.507 px dentro
+ * de un contenedor de 560, cruzaba la pantalla y se metía por encima de la
+ * fotografía de la sección. El límite de 500 caracteres no lo evita, porque el
+ * problema no es el largo sino el ancho: una sola palabra no tiene dónde partir.
+ *
+ * Se aplica al home entero y no campo por campo: cualquier texto de esa página
+ * puede venir de la base ahora, y una regla que hay que acordarse de poner en
+ * cada sitio nuevo es una regla que algún día no se pone.
+ */
+/*
+ * Los botones son el caso que se escapo del primer arreglo: `.btn` lleva
+ * `white-space: nowrap` —correcto para «Conoce mas»— y con nowrap el
+ * `overflow-wrap` no tiene nada que hacer. Un texto de botón de cien letras
+ * medía 1.354 px dentro de una columna de 470 y se salía por el lado.
+ *
+ * Sólo dentro del home, que es donde ese texto lo escribe la ONG: en el resto
+ * del sitio los botones siguen sin partirse, que es como deben verse.
+ */
+.home-editable .btn {
+    white-space: normal;
+    max-width: 100%;
+}
+
+/*
+ * El botón sobre el logo del hero. En el HTML fuente lleva `white-space:nowrap`
+ * en el propio atributo `style`, y desde ahí le gana a cualquier hoja: con el
+ * texto editable, cien letras sin espacios cruzaban la pantalla. El nowrap se
+ * mueve aquí, donde sí se puede levantar, y el ancho se acota al del logo.
+ */
+.hero-cta {
+    white-space: nowrap;
+    max-width: 90%;
+    text-align: center;
+}
+
+.home-editable .hero-cta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.home-editable h1,
+.home-editable h2,
+.home-editable h3,
+.home-editable p,
+.home-editable blockquote,
+.home-editable figcaption,
+.home-editable li,
+.home-editable a,
+.home-editable span,
+.home-editable div {
+    overflow-wrap: anywhere;
+}
+
 .texto-editable > :first-child { margin-top: 0; }
 
 .texto-editable > :last-child { margin-bottom: 0; }
@@ -386,6 +443,44 @@ a.textlink:hover { color: var(--naranjo-600); }
 .fila-seccion:active { cursor: grabbing; }
 
 .fila-seccion-fija:active { cursor: default; }
+
+/* ── Barra de vista previa ───────────────────────────────────
+ *
+ * Sticky y no fixed: así ocupa sitio en el flujo y no tapa la cabecera del
+ * sitio, que es justo lo primero que se quiere revisar.
+ */
+.aviso-previa {
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 24px;
+    background: #33363a;
+    color: #fff;
+    font-size: 13.5px;
+    line-height: 1.4;
+}
+
+.aviso-previa strong {
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-size: 11.5px;
+    background: var(--naranjo);
+    padding: 4px 10px;
+    border-radius: 999px;
+    flex: none;
+}
+
+.aviso-previa span { flex: 1; min-width: 220px; opacity: .92; }
+
+.aviso-previa a { color: #fff; text-decoration: underline; text-underline-offset: 3px; flex: none; }
+
+.aviso-previa a:hover { color: var(--naranjo-100); }
+
 
 
 

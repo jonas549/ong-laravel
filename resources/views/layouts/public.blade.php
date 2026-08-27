@@ -50,7 +50,13 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-<body @class(['fondo-calido' => $footerCompacto])>
+{{--
+    `home-editable` marca las páginas cuyos textos salen del panel. La regla que
+    lleva asociada parte las palabras larguisimas sin espacios; sin ella, un
+    titular de cien letras cruza la pantalla y se sube encima de la fotografía
+    de al lado. Lo pidió el testing en producción del bloque F.
+--}}
+<body @class(['fondo-calido' => $footerCompacto, 'home-editable' => $homeEditable ?? false])>
 <div @class(['escala-form' => $footerCompacto])
      style="overflow-x:hidden;@if ($footerCompacto) min-height:100vh;display:flex;flex-direction:column; @endif">
 
@@ -64,6 +70,23 @@
             @if (session('error'))
                 <div class="alert alert-error">{{ session('error') }}</div>
             @endif
+        </div>
+    @endif
+
+    @if ($vistaPrevia ?? false)
+        {{--
+            Distintivo de vista previa.
+
+            Sin él, la pantalla es indistinguible del sitio publicado —el testing
+            en producción lo reportó así— y no hay forma de saber si lo que se
+            está mirando es el borrador o lo que ve la gente. Va fijo arriba y
+            empuja la página hacia abajo en vez de flotar sobre ella, para no
+            tapar justo lo que se ha venido a revisar.
+        --}}
+        <div class="aviso-previa">
+            <strong>Vista previa</strong>
+            <span>Estás viendo los borradores sin publicar. El público sigue viendo lo anterior.</span>
+            <a href="{{ route('admin.home.index') }}">Volver al editor</a>
         </div>
     @endif
 

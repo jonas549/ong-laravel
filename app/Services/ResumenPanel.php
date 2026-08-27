@@ -46,11 +46,22 @@ class ResumenPanel
             'pendientes' => $porEstado['revision'] ?? 0,
             'publicadas' => $porEstado['publicada'] ?? 0,
 
-            // Sin las canceladas: una inscripción cancelada no es una persona
-            // que vaya a presentarse, y este número se lee como aforo.
-            'inscritos' => Registration::activas()->count(),
-            'inscritosConfirmados' => Registration::confirmadas()->count(),
-            'inscritosCancelados' => Registration::where('estado', 'cancelado')->count(),
+            /*
+             * **Inscripciones, no personas.** Una misma persona puede apuntarse
+             * a varias actividades, y eso cuenta como varias inscripciones: son
+             * 24 inscripciones de 8 personas distintas en la base de prueba.
+             * La etiqueta decía «personas inscritas» y eso inducía a error,
+             * así que ahora se cuentan las dos cosas y se dicen por su nombre.
+             *
+             * Sin las canceladas: una inscripción cancelada no es alguien que
+             * vaya a presentarse, y este número se lee como aforo.
+             */
+            'inscripciones' => Registration::activas()->count(),
+            'inscripcionesConfirmadas' => Registration::confirmadas()->count(),
+            'inscripcionesCanceladas' => Registration::where('estado', 'cancelado')->count(),
+
+            // Correos distintos: es la cifra de «cuánta gente», que no es la misma.
+            'personas' => Registration::activas()->distinct()->count('correo'),
 
             /*
              * «Activa» = tiene al menos una actividad publicada. Es la lectura
@@ -222,11 +233,14 @@ class ResumenPanel
             ->count();
 
         if ($atrasadas) {
+            // Con el plazo en 1 decía «hace más de 1 días». Lo reportó el testing.
+            $plazo = $dias === 1 ? 'un día' : $dias.' días';
+
             $alertas[] = [
                 'nivel' => 'error',
                 'titulo' => $atrasadas === 1
-                    ? 'Hay una actividad esperando revisión hace más de '.$dias.' días.'
-                    : 'Hay '.$atrasadas.' actividades esperando revisión hace más de '.$dias.' días.',
+                    ? 'Hay una actividad esperando revisión hace más de '.$plazo.'.'
+                    : 'Hay '.$atrasadas.' actividades esperando revisión hace más de '.$plazo.'.',
                 'texto' => 'Quien las envió no tiene forma de saber si llegaron. El plazo se cambia en Configuración → General.',
                 'accion' => ['Revisarlas', route('admin.activities.pendientes')],
             ];

@@ -7,6 +7,7 @@
 --}}
 @extends($esAdmin ? 'layouts.admin' : 'layouts.public')
 @section('title', 'Mi perfil')
+@section('miga', 'Mi perfil')
 
 @php $footerCompacto = ! $esAdmin; @endphp
 

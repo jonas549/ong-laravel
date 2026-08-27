@@ -17,7 +17,7 @@ const sql = (q) => execFileSync(MYSQL, ['-uroot', 'ong_laravel', '-N', '-B', '-e
 
 let ok = 0, mal = 0;
 const veredicto = (bien) => { bien ? ok++ : mal++; return bien ? 'OK' : '*** MAL ***'; };
-const di = (que, bien) => console.log(`  ${que.padEnd(62)} ${veredicto(bien)}`);
+const di = (que, bien, extra = '') => console.log(`  ${que.padEnd(62)} ${veredicto(bien)} ${extra}`);
 
 /* ---------------------------------------------------------------- sesión */
 
@@ -252,6 +252,113 @@ const sinSesion = await fetch(`${BASE}/admin/paginas/home`, { redirect: 'manual'
 di('sin sesión, el editor redirige al login', sinSesion.status === 302);
 const previaSinSesion = await fetch(`${BASE}/admin/paginas/home/vista-previa`, { redirect: 'manual' });
 di('la vista previa tampoco es pública', previaSinSesion.status === 302);
+
+/* ------------------------------------ 9) los fallos del testing en produccion */
+
+console.log('');
+console.log('=== 9) Los cinco fallos que encontro Cowork ===');
+console.log('');
+
+// FALLO 1 - la negrita y la cursiva se perdian al publicar.
+await publicar('que-es', { cuerpo: '<p>Primer parrafo con<b> negrit</b><i>a y cursiv</i>a de prueba.</p>' });
+let guardado = sql(`SELECT contenido->>'$.cuerpo' FROM home_sections WHERE clave='que-es'`);
+di('F1: <b> se guarda como <strong>', guardado.includes('<strong> negrit</strong>'));
+di('F1: <i> se guarda como <em>', guardado.includes('<em>a y cursiv</em>'));
+home = await html('/');
+di('F1: la negrita llega al sitio', home.includes('<strong> negrit</strong>'));
+
+await publicar('que-es', { cuerpo: '<p>Con <strong>strong</strong> y <em>em</em> directos.</p>' });
+guardado = sql(`SELECT contenido->>'$.cuerpo' FROM home_sections WHERE clave='que-es'`);
+di('F1: strong y em de siempre siguen pasando', guardado.includes('<strong>strong</strong>') && guardado.includes('<em>em</em>'));
+
+// Los <p></p> huerfanos que deja el editor al meter una lista.
+await publicar('que-es', { cuerpo: '<p><ul><li>Uno</li><li>Dos</li></ul></p><p><br></p><p>Texto</p>' });
+guardado = sql(`SELECT contenido->>'$.cuerpo' FROM home_sections WHERE clave='que-es'`);
+di('parrafos vacios de las listas: fuera', !guardado.includes('<p></p>') && guardado.includes('<li>Uno</li>') && guardado.includes('<p>Texto</p>'));
+
+// FALLO 3 - el endpoint de orden ya funcionaba; se comprueba que sigue.
+const _tk3 = await token('/admin/paginas/home');
+let r3 = await pedir('/admin/paginas/home/orden', {
+  method: 'POST',
+  headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+  body: new URLSearchParams([['_token', _tk3]]).toString(),
+});
+di('F3: un POST de orden sin campos da 422', r3.status === 422, `(${r3.status})`);
+
+// Y con campos, 200: es lo que el arreglo del JavaScript tiene que conseguir.
+const _tk3b = await token('/admin/paginas/home');
+const r3b = await pedir('/admin/paginas/home/orden', {
+  method: 'POST',
+  headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+  body: new URLSearchParams([['_token', _tk3b], ...['hero', 'participar', 'meta', 'actividades', 'que-es', 'por-que', 'voces', 'cifras', 'noticias', 'iniciativa', 'partners', 'participantes'].map((c) => ['orden[]', c])]).toString(),
+});
+di('F3: con los campos puestos, 200', r3b.status === 200, `(${r3b.status})`);
+
+// FALLO 4 - el borrador guarda y DEVUELVE la hora.
+const cs = await camposDe('voces');
+const rb = await pedir(`/admin/paginas/home/voces/borrador`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+  body: new URLSearchParams({ _token: await token('/admin/paginas/home'), ...cs, titulo: 'BORRADOR CON HORA' }).toString(),
+});
+const cuerpo = await rb.json().catch(() => ({}));
+di('F4: el borrador responde 200', rb.status === 200);
+di('F4: y devuelve la hora, no undefined', typeof cuerpo.cuando === 'string' && /^\d{2}:\d{2}$/.test(cuerpo.cuando), cuerpo.cuando ?? '(nada)');
+
+// FALLO 5 - la vista previa ensena el borrador y se distingue.
+const previa = await html('/admin/paginas/home/vista-previa');
+di('F5: la vista previa ensena el borrador', previa.includes('BORRADOR CON HORA'));
+di('F5: y lleva su distintivo', previa.includes('aviso-previa') && previa.includes('Vista previa'));
+di('F5: el sitio publico sigue sin el borrador', !(await html('/')).includes('BORRADOR CON HORA'));
+
+await enviar('/admin/paginas/home/voces/borrador', {}, 'DELETE');
+
+/* ---------------------------------------- 10) correcciones menores */
+
+console.log('');
+console.log('=== 10) Correcciones menores ===');
+console.log('');
+
+const panel = await html('/admin');
+di('el KPI dice "inscripciones", no "personas inscritas"', panel.includes('>inscripciones<') && !panel.includes('personas inscritas'));
+di('y dice de cuantas personas distintas son', /de \d+ personas?/.test(panel));
+di('el KPI de inscripciones filtra el listado', panel.includes('inscripciones?estado=activas') || panel.includes('estado=activas'));
+di('el KPI de organizaciones activas filtra', panel.includes('filtro=activas'));
+di('el acceso rapido a Usuarios lleva ?rol', panel.includes('usuarios?rol='));
+
+// El listado filtrado tiene que ensenar lo que dice el KPI.
+const kpiInscripciones = Number(sql("SELECT COUNT(*) FROM registrations WHERE estado<>'cancelado'"));
+const listado = await html('/admin/inscripciones?estado=activas');
+const canceladas = sql("SELECT COALESCE((SELECT correo FROM registrations WHERE estado='cancelado' LIMIT 1),'')");
+di('el listado filtrado no trae canceladas', !canceladas || !listado.includes(canceladas), canceladas ? `(${canceladas})` : '(no hay canceladas)');
+
+const orgsActivas = Number(sql("SELECT COUNT(DISTINCT o.id) FROM organizations o JOIN activities a ON a.organization_id=o.id AND a.estado='publicada' AND a.deleted_at IS NULL"));
+const listaOrgs = await html('/admin/organizaciones?filtro=activas');
+const filasOrgs = (listaOrgs.match(/\/admin\/organizaciones\/\d+\/verificar/g) ?? []).length;
+di(`el listado de organizaciones activas trae ${orgsActivas}`, filasOrgs === orgsActivas, `${filasOrgs} filas`);
+
+// Migas en las tres pantallas que no las tenian.
+for (const [etq, ruta, texto] of [
+  ['perfil', '/admin/perfil', 'Mi perfil'],
+  ['buscador', '/admin/buscar?q=dps', 'Resultados'],
+  ['usuarios sin ?rol', '/admin/usuarios', 'Todos'],
+]) {
+  const h = await html(ruta);
+  const nav = (h.split('class="migas"')[1] ?? '').split('</nav>')[0];
+  di(`migas en ${etq}`, nav.includes(texto), nav ? '' : '(sin nav de migas)');
+}
+
+// La errata del plural en la alerta.
+sql("UPDATE settings SET valor='1' WHERE clave='alerta_revision_dias'; DELETE FROM cache;");
+const idAct = sql("SELECT COALESCE((SELECT id FROM activities WHERE deleted_at IS NULL ORDER BY id LIMIT 1),0)");
+const estadoPrev = sql(`SELECT estado FROM activities WHERE id=${idAct}`);
+sql(`UPDATE activities SET estado='revision', updated_at=(UTC_TIMESTAMP() - INTERVAL 5 DAY) WHERE id=${idAct}`);
+sql(`DELETE FROM activity_status_logs WHERE activity_id=${idAct} AND a_estado='revision'`);
+const conAlerta = await html('/admin');
+di('con el plazo en 1 dice «un día», no «1 días»', /hace m.s de un d.a/.test(conAlerta));
+di('y no dice "1 dias"', !/hace m.s de 1 d.as/.test(conAlerta));
+sql(`UPDATE activities SET estado='${estadoPrev}', updated_at=UTC_TIMESTAMP() WHERE id=${idAct}`);
+sql("UPDATE settings SET valor='3' WHERE clave='alerta_revision_dias'; DELETE FROM cache;");
 
 /* ---------------------------------------------------------- limpieza */
 

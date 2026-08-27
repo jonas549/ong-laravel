@@ -22,12 +22,26 @@ class RegistrationController extends Controller
                     $w->where('nombre', 'like', "%{$b}%")->orWhere('correo', 'like', "%{$b}%");
                 });
             })
-            ->when(Filtro::texto($request, 'estado'), fn ($q, $e) => $q->where('estado', $e))
+            /*
+             * `estado=activas` no es un estado de la tabla: es «todas menos las
+             * canceladas», que es justo lo que cuenta el KPI de la portada. Sin
+             * esto, la tarjeta llevaba al listado completo y enseñaba más filas
+             * que el número que se acababa de pulsar.
+             */
+            ->when(Filtro::texto($request, 'estado') === 'activas', fn ($q) => $q->where('estado', '!=', 'cancelado'))
+            ->when(
+                in_array(Filtro::texto($request, 'estado'), Registration::ESTADOS, true),
+                fn ($q) => $q->where('estado', Filtro::texto($request, 'estado')),
+            )
             ->latest('id')
             ->paginate(30)
             ->withQueryString();
 
-        return view('admin.registrations.index', compact('inscritos'));
+        return view('admin.registrations.index', [
+            'inscritos' => $inscritos,
+            'estado' => Filtro::texto($request, 'estado'),
+            'estados' => Registration::ESTADOS,
+        ]);
     }
 
     /**

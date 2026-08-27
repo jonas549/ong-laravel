@@ -43,13 +43,15 @@
         <span class="l" style="opacity:.75;">de {{ $actividades }} en total</span>
     </a>
 
-    <a class="kpi" href="{{ route('admin.registrations.index') }}">
-        <span class="v" style="color:var(--turquesa);">{{ $inscritos }}</span>
-        <span class="l">personas inscritas</span>
-        <span class="l" style="opacity:.75;">{{ $inscritosConfirmados }} confirmadas · sin contar {{ $inscritosCancelados }} canceladas</span>
+    {{-- Decía «personas inscritas» y contaba inscripciones: una misma persona
+         puede apuntarse a varias actividades. Ahora se dicen las dos cifras. --}}
+    <a class="kpi" href="{{ route('admin.registrations.index', ['estado' => 'activas']) }}">
+        <span class="v" style="color:var(--turquesa);">{{ $inscripciones }}</span>
+        <span class="l">inscripciones</span>
+        <span class="l" style="opacity:.75;">de {{ $personas }} {{ Str::plural('persona', $personas) }} · {{ $inscripcionesConfirmadas }} confirmadas · sin contar {{ $inscripcionesCanceladas }} canceladas</span>
     </a>
 
-    <a class="kpi" href="{{ route('admin.organizations.index') }}">
+    <a class="kpi" href="{{ route('admin.organizations.index', ['filtro' => 'activas']) }}">
         <span class="v">{{ $organizacionesActivas }}</span>
         <span class="l">organizaciones activas</span>
         <span class="l" style="opacity:.75;">con actividad publicada, de {{ $organizaciones }} registradas</span>
@@ -70,7 +72,9 @@
         <a class="btn btn-primary btn-sm" href="{{ route('admin.activities.pendientes') }}">Revisar actividades</a>
         <a class="btn btn-outline btn-sm" href="{{ route('admin.organizations.verificacion') }}">Verificar organizaciones</a>
         <a class="btn btn-outline btn-sm" href="{{ route('admin.registrations.exportar') }}">Exportar inscripciones</a>
-        <a class="btn btn-outline btn-sm" href="{{ route('admin.users.index') }}">Usuarios</a>
+        {{-- Con `?rol`: sin él la pantalla carga pero el menú no sabe qué nodo
+             marcar y las migas se quedan a medias. --}}
+        <a class="btn btn-outline btn-sm" href="{{ route('admin.users.index', ['rol' => 'organizer']) }}">Usuarios</a>
         <a class="btn btn-outline btn-sm" href="{{ route('admin.templates.index') }}">Plantillas de correo</a>
         <a class="btn btn-outline btn-sm" href="{{ route('admin.emails.index') }}">Registro de correos</a>
         <a class="btn btn-outline btn-sm" href="{{ route('admin.settings.general') }}">Configuración</a>

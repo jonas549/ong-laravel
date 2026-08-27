@@ -1,6 +1,14 @@
 @extends('layouts.admin')
 @section('title', 'Usuarios')
 
+{{-- Sin `?rol` el menú no sabe qué nodo marcar —ese parámetro es lo que
+     distingue «Administradores» de «Organizadores»— y la pantalla se quedaba
+     sin migas. Con esto al menos dice dónde estás. --}}
+@if (! request('rol'))
+    @section('migaPadre', 'Usuarios')
+    @section('miga', 'Todos')
+@endif
+
 @section('content')
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;align-items:start;">
 

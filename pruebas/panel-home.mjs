@@ -70,7 +70,7 @@ let html = await portada();
 const casos = [
   ['esperando revisión',        'esperando revisión',        "SELECT COUNT(*) FROM activities WHERE estado='revision' AND deleted_at IS NULL"],
   ['actividades publicadas',    'actividades publicadas',    "SELECT COUNT(*) FROM activities WHERE estado='publicada' AND deleted_at IS NULL"],
-  ['personas inscritas',        'personas inscritas',        "SELECT COUNT(*) FROM registrations WHERE estado<>'cancelado'"],
+  ['inscripciones',             '>inscripciones<',           "SELECT COUNT(*) FROM registrations WHERE estado<>'cancelado'"],
   ['organizaciones activas',    'organizaciones activas',    "SELECT COUNT(DISTINCT o.id) FROM organizations o JOIN activities a ON a.organization_id=o.id AND a.estado='publicada' AND a.deleted_at IS NULL"],
   ['organizaciones verificadas','organizaciones verificadas', 'SELECT COUNT(*) FROM organizations WHERE verificada=1'],
 ];
@@ -111,6 +111,11 @@ console.log(`  ${'Total'.padEnd(20)} pantalla ${String(totalPantalla).padStart(4
 
 console.log('\n=== 3) Tablas, gráfico y accesos ===\n');
 
+// Inscripciones y personas son cosas distintas, y la pantalla las dice aparte.
+const personasBase = num("SELECT COUNT(DISTINCT correo) FROM registrations WHERE estado<>'cancelado'");
+const personasPantalla = parseInt((html.split('>inscripciones<')[1] ?? '').match(/de (\d+) personas?/)?.[1] ?? 'NaN', 10);
+console.log(`  personas distintas          pantalla ${String(personasPantalla).padStart(4)}  base ${String(personasBase).padStart(4)}  ${veredicto(personasPantalla === personasBase)}`);
+
 const pendientesBase = num("SELECT COUNT(*) FROM activities WHERE estado='revision' AND deleted_at IS NULL");
 const filasPendientes = (html.match(/Revisar<\/a>/g) ?? []).length;
 console.log(`  filas en «Esperando revisión»: ${filasPendientes} (tope 8, hay ${pendientesBase})  ${veredicto(filasPendientes === Math.min(8, pendientesBase))}`);
@@ -150,7 +155,7 @@ console.log('    (es la parte que distingue un número real de uno que acierta p
 
 const antes = {
   publicadas: kpi(html, 'actividades publicadas'),
-  inscritos: kpi(html, 'personas inscritas'),
+  inscritos: kpi(html, '>inscripciones<'),
   activas: kpi(html, 'organizaciones activas'),
 };
 
@@ -177,16 +182,16 @@ const idActividad = num('SELECT COALESCE((SELECT id FROM activities WHERE delete
 if (idActividad) {
   sql(`INSERT INTO registrations (activity_id,nombre,correo,es_mayor_edad,estado,token,created_at,updated_at) VALUES (${idActividad},'Prueba Panel','prueba-panel@ejemplo.test',1,'pendiente','tok-panel-prueba',UTC_TIMESTAMP(),UTC_TIMESTAMP())`);
   html = await portada();
-  console.log(`  una inscripción nueva sube «inscritas» en 1: ${antes.inscritos} → ${kpi(html, 'personas inscritas')}  ${veredicto(kpi(html, 'personas inscritas') === antes.inscritos + 1)}`);
+  console.log(`  una inscripción nueva sube «inscripciones» en 1: ${antes.inscritos} → ${kpi(html, '>inscripciones<')}  ${veredicto(kpi(html, '>inscripciones<') === antes.inscritos + 1)}`);
   console.log(`  …y aparece en «Últimas inscripciones»: ${veredicto(html.includes('Prueba Panel'))}`);
 
   sql("UPDATE registrations SET estado='cancelado' WHERE token='tok-panel-prueba'");
   html = await portada();
-  console.log(`  cancelarla la descuenta otra vez: ${veredicto(kpi(html, 'personas inscritas') === antes.inscritos)}`);
+  console.log(`  cancelarla la descuenta otra vez: ${veredicto(kpi(html, '>inscripciones<') === antes.inscritos)}`);
 
   sql("DELETE FROM registrations WHERE token='tok-panel-prueba'");
   html = await portada();
-  console.log(`  borrarla deja el número como estaba: ${veredicto(kpi(html, 'personas inscritas') === antes.inscritos)}`);
+  console.log(`  borrarla deja el número como estaba: ${veredicto(kpi(html, '>inscripciones<') === antes.inscritos)}`);
 } else {
   console.log('  (sin actividades en la base; me salto este caso)');
 }

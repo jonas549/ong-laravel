@@ -45,7 +45,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `clave-admin.mjs` | Un admin le cambia la contraseña a un organizador: que la nueva sirva, que la anterior no, que quede en el registro con el autor, que salga el correo y que se cierren las sesiones. |
 | `flujos.mjs` | Registro y «olvidé mi contraseña» de punta a punta. Deja los correos encolados; hay que correr `queue:work` después para ver si llegan. |
 | `menu.mjs` | Que la ficha de usuario marque el nodo correcto del menú y pinte las migas. |
-| `home-editor.mjs` | El editor de contenido del home: que lo publicado se vea en el sitio, que **vaciar un campo devuelva el texto original**, que siete ataques distintos no sobrevivan al guardado, y que el texto larguisimo, la palabra de 600 letras y lo pegado desde Word no rompan nada. |
+| `home-editor.mjs` | El editor de contenido del home: que lo publicado se vea en el sitio, que **vaciar un campo devuelva el texto original**, que siete ataques distintos no sobrevivan al guardado, y que el texto larguisimo, la palabra de 600 letras y lo pegado desde Word no rompan nada. Incluye los cinco fallos que encontró el testing en producción del 2026-08-27. |
 | `panel-home.mjs` | Que cada número de la portada del panel coincida con su consulta en MySQL, y que **cambie cuando cambia la base**: publica una actividad, inscribe a alguien, lo cancela y lo borra, mirando la pantalla en cada paso. |
 | `panel-vacio.php` | Que con la base **vacía** todo dé cero. Corre dentro de una transacción que se deshace: `php artisan tinker --execute="require base_path('pruebas/panel-vacio.php');"` |
 | `permisos.mjs` | Que un organizador **no** llegue a los datos de otro cambiando el número de la URL, y que ningún rol entre en el panel del otro. Sesenta segundos y 29 comprobaciones; el que hay que correr al añadir cualquier pantalla que reciba un id. |
@@ -105,3 +105,35 @@ dejarla como estaba:
 ```
 
 `buzon.jsonl` se puede borrar sin más.
+
+---
+
+## Lo que estos scripts NO cubren
+
+Conducen la aplicación por HTTP, así que ven lo que responde el servidor pero no
+lo que hace el navegador. **Tres de los cinco fallos del testing en producción
+del bloque F vivían justo ahí**: el autoguardado que nunca llamaba al servidor,
+el arrastre que mandaba el cuerpo vacío y una palabra larga que desbordaba su
+caja —con la página sin desbordar, así que ni siquiera se veía mirando el ancho
+total—.
+
+Para eso hace falta un navegador de verdad. No está en el repositorio porque
+`puppeteer-core` es una dependencia grande y estos scripts no tienen ninguna,
+pero se monta en un minuto:
+
+```bash
+mkdir /tmp/pruebas-navegador && cd /tmp/pruebas-navegador
+npm install puppeteer-core
+# y se apunta al Chrome instalado:
+#   puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' })
+```
+
+Lo que conviene comprobar ahí, y no aquí:
+
+- Que una petición sale de verdad (`page.on('request')`), no sólo que el endpoint
+  responde bien cuando se le llama a mano.
+- Que ningún **elemento** se sale de su contenedor, midiendo cada uno contra su
+  padre. Que la página no desborde no basta.
+- El arrastrar y soltar, con `page.setDragInterception(true)` y
+  `elemento.dragAndDrop(destino)`: son eventos de ratón reales.
+- Las animaciones, capturando los valores intermedios con un `MutationObserver`.

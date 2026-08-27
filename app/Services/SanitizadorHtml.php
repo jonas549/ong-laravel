@@ -42,6 +42,11 @@ class SanitizadorHtml
         'br' => [],
         'strong' => [],
         'em' => [],
+        // `b` e `i` se admiten porque son lo que produce `execCommand` en
+        // varios navegadores, pero no se guardan así: se renombran a
+        // `strong`/`em` en cuanto pasan el filtro. Ver `equivalentes()`.
+        'b' => [],
+        'i' => [],
         'u' => [],
         's' => [],
         'ul' => [],
@@ -61,7 +66,8 @@ class SanitizadorHtml
             return '';
         }
 
-        $limpio = trim($this->sanitizador()->sanitize($html));
+        $limpio = $this->equivalentes(trim($this->sanitizador()->sanitize($html)));
+        $limpio = $this->sinParrafosVacios($limpio);
 
         /*
          * Un editor `contenteditable` vacío no deja la cadena vacía: deja
@@ -70,6 +76,41 @@ class SanitizadorHtml
          * defecto del catálogo, que es lo que pide la regla 5.
          */
         return $this->soloHuecos($limpio) ? '' : $limpio;
+    }
+
+    /**
+     * `<b>` → `<strong>` e `<i>` → `<em>`.
+     *
+     * `document.execCommand('bold')` produce `<b>` en unos navegadores y
+     * `<strong>` en otros, y no hay forma de pedirle uno concreto. Antes `b` no
+     * estaba en la lista blanca, así que el filtro lo desenvolvía: **la negrita
+     * se perdía al publicar** aunque el editor la hubiera aplicado bien. Ahora
+     * pasan las dos formas y se guarda siempre la semántica, que es la que
+     * anuncia un lector de pantalla y la que espera el CSS del sitio.
+     *
+     * El reemplazo es textual, y aquí sí es seguro: a estas alturas el HTML ya
+     * pasó la lista blanca, así que `b` e `i` sólo pueden venir sin atributos y
+     * en la forma exacta que escribe el serializador.
+     */
+    private function equivalentes(string $html): string
+    {
+        return strtr($html, [
+            '<b>' => '<strong>', '</b>' => '</strong>',
+            '<i>' => '<em>', '</i>' => '</em>',
+        ]);
+    }
+
+    /**
+     * Quita los párrafos que no dicen nada.
+     *
+     * Al meter una lista, el editor deja `<p><ul>...</ul></p>`, que es HTML
+     * inválido: el analizador lo corrige sacando la lista fuera y dejando un
+     * `<p></p>` huérfano que en pantalla es un hueco vertical sin motivo. Pasa
+     * lo mismo con el `<p><br></p>` que deja un contenteditable recién vaciado.
+     */
+    private function sinParrafosVacios(string $html): string
+    {
+        return (string) preg_replace('~<p>(?:\s|<br\s*/?>|&nbsp;|\x{00A0})*</p>~u', '', $html);
     }
 
     /**
