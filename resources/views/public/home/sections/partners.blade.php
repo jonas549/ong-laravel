@@ -1,3 +1,4 @@
+{{-- Sin textos propios: su contenido sale de su CRUD. --}}
 {{--
     Auspiciadores y participantes.
 

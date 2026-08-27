@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import { editorRico, editorSeccion, ordenSecciones } from './home-editor';
 
 /*
  * Barra de pasos del wizard (publicar-actividad.html).
@@ -79,6 +80,12 @@ Alpine.data('seccionMenu', (clave, contieneLaPantallaActual) => ({
         guardarMenu(estado);
     },
 }));
+
+// El editor de contenido del home (bloque F). Vive en su propio archivo: son
+// doscientas líneas que sólo usa el panel, y aquí sólo hace falta el registro.
+Alpine.data('editorRico', editorRico);
+Alpine.data('editorSeccion', editorSeccion);
+Alpine.data('ordenSecciones', ordenSecciones);
 
 window.Alpine = Alpine;
 Alpine.start();

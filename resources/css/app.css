@@ -232,6 +232,164 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .helper { font-size: 12.5px; line-height: 1.55; color: var(--gris); }
 
+/* ── Texto escrito desde el panel ────────────────────────────
+ *
+ * Lo que la ONG escribe en el editor rico cae dentro de .texto-editable. Estas
+ * reglas son la regla 2 del bloque F hecha CSS: el contenido puede ser
+ * cualquier cosa, pero la sección tiene que aguantar.
+ *
+ * - Los encabezados que ofrece el editor se quedan por debajo del titular de
+ *   la sección. Sin esto, un h3 heredaba el tamaño del navegador y competía
+ *   con el h2 de la cabecera, que es el que manda en el diseño.
+ * - `overflow-wrap:anywhere` parte una palabra sin espacios de 300 caracteres
+ *   —una URL pegada, lo que sale de copiar desde Word— en vez de estirar la
+ *   columna y desbordar la sección entera a lo ancho.
+ * - El último bloque no lleva margen inferior: el hueco lo pone el contenedor,
+ *   y sumar los dos descuadraba el ritmo vertical de la sección.
+ */
+.texto-editable { overflow-wrap: anywhere; }
+
+.texto-editable > :first-child { margin-top: 0; }
+
+.texto-editable > :last-child { margin-bottom: 0; }
+
+.texto-editable p { margin: 0 0 16px; }
+
+.texto-editable h3 {
+    font-size: 1.15em;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 26px 0 10px;
+    letter-spacing: -.01em;
+    color: var(--ink);
+}
+
+.texto-editable h4 {
+    font-size: 1em;
+    font-weight: 700;
+    margin: 22px 0 8px;
+    color: var(--ink);
+}
+
+.texto-editable ul,
+.texto-editable ol { margin: 0 0 16px; padding-left: 1.35em; }
+
+.texto-editable li { margin-bottom: 6px; }
+
+.texto-editable a { color: var(--naranjo); text-decoration: underline; text-underline-offset: 2px; }
+
+.texto-editable a:hover { color: var(--naranjo-600); }
+
+.texto-editable blockquote {
+    margin: 0 0 16px;
+    padding-left: 16px;
+    border-left: 3px solid var(--naranjo-100);
+    color: var(--gris);
+}
+
+.texto-editable strong { font-weight: 700; }
+
+/* ── Editor de texto del panel ───────────────────────────────
+ *
+ * El campo hereda .texto-editable, así que lo que se escribe se ve con las
+ * mismas medidas con las que va a salir publicado: si un encabezado se ve
+ * enorme aquí y discreto en el sitio, el editor está mintiendo.
+ *
+ * `min-height` y `max-height` con scroll: un texto largo no puede empujar el
+ * botón de publicar fuera de la pantalla.
+ */
+.editor-rico {
+    border: 1.5px solid var(--linea);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.editor-rico:focus-within { border-color: var(--naranjo); }
+
+.editor-rico-barra {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 7px 9px;
+    border-bottom: 1px solid var(--linea);
+    background: #fcfcfc;
+}
+
+.editor-rico-barra button {
+    min-width: 32px;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--gris-700);
+    font-size: 13.5px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.editor-rico-barra button:hover {
+    background: var(--naranjo-100);
+    border-color: #f6ddc2;
+    color: var(--naranjo-600);
+}
+
+.editor-rico-barra button:focus-visible { outline: 2px solid var(--naranjo); outline-offset: 1px; }
+
+.editor-rico-limpiar { font-size: 12px !important; color: var(--gris) !important; }
+
+.editor-rico-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--linea);
+    margin: 0 4px;
+}
+
+.editor-rico-campo {
+    padding: 14px 16px;
+    min-height: 120px;
+    max-height: 420px;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--gris-700);
+}
+
+.editor-rico-campo:focus { outline: none; }
+
+/* ── Lista de secciones del home (bloque F) ──────────────────
+ *
+ * Las clases existen porque el realce del arrastre no puede ir por :style:
+ * Alpine reemplaza el atributo entero cuando el valor es un string, y se
+ * llevaba por delante el style estático de la fila. La misma trampa que está
+ * anotada en app.js para los círculos del wizard.
+ */
+.fila-seccion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--linea);
+    border-radius: 14px;
+    background: #fff;
+    cursor: grab;
+}
+
+.fila-seccion-apagada { background: #fafafa; }
+
+.fila-seccion-fija { cursor: default; }
+
+.fila-seccion.arrastrando { opacity: .4; border-style: dashed; border-color: var(--naranjo); }
+
+.fila-seccion:active { cursor: grabbing; }
+
+.fila-seccion-fija:active { cursor: default; }
+
+
+
+
 .note { font-size: 12.5px; line-height: 1.55; color: #9a9ea3; font-style: italic; }
 
 .seclabel {

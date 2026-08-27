@@ -24,17 +24,6 @@ class MenuPanel
      * Sub-secciones del home. Son las mismas que pinta la portada, en el
      * mismo orden en que aparecen ahí.
      */
-    public const SECCIONES_HOME = [
-        'hero' => 'Hero',
-        'como-participar' => '¿Cómo participar?',
-        'actividades-destacadas' => 'Actividades destacadas',
-        'que-es' => '¿Qué es el Patrimonio Social?',
-        'ediciones' => 'Ediciones',
-        'voces' => 'Voces del movimiento',
-        'cifras' => 'Cifras',
-        'noticias' => 'Noticias',
-        'partners' => 'Partners',
-    ];
 
     /** @return array<int, array<string, mixed>> */
     public static function arbol(): array
@@ -171,10 +160,20 @@ class MenuPanel
     /** @return array<int, array<string, mixed>> */
     private static function seccionesHome(): array
     {
-        return collect(self::SECCIONES_HOME)
-            ->map(fn (string $texto, string $slug) => self::nodo($texto, 'admin.home.seccion', ['seccion' => $slug]))
-            ->values()
-            ->all();
+        /*
+         * La lista sale de CatalogoHome, que es quien sabe qué secciones
+         * existen y cómo se llaman. Antes había aquí una constante propia con
+         * los mismos nombres; dos listas que hay que mantener de acuerdo acaban
+         * desincronizadas, y ésta ya se quedó corta cuando el bloque F pasó de
+         * nueve secciones a doce.
+         */
+        $nodos = [self::nodo('Todas las secciones', 'admin.home.index')];
+
+        foreach (\App\Support\CatalogoHome::secciones() as $slug => $meta) {
+            $nodos[] = self::nodo($meta['titulo'], 'admin.home.editar', ['seccion' => $slug]);
+        }
+
+        return $nodos;
     }
 
     /**

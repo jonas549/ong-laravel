@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\EmailTemplate;
 use App\Models\Setting;
+use App\Models\HomeSection;
+use App\Support\CatalogoHome;
 use Database\Seeders\EmailTemplateSeeder;
 use Database\Seeders\RegionCommuneSeeder;
 use Database\Seeders\SettingsSeeder;
@@ -47,6 +49,7 @@ class Instalar extends Command
         $this->line('  <options=bold>Estado antes de sembrar</>');
         $this->line(sprintf('     <fg=gray>%-28s</> %s', 'Plantillas de correo', EmailTemplate::count().' de '.count(EmailTemplate::CATALOGO)));
         $this->line(sprintf('     <fg=gray>%-28s</> %s', 'Ajustes', (string) $ajustes));
+        $this->line(sprintf('     <fg=gray>%-28s</> %s', 'Secciones del home', HomeSection::count().' de '.count(CatalogoHome::orden())));
 
         if ($faltanPlantillas->isNotEmpty()) {
             $this->line('     <fg=yellow>!</> Faltan: '.$faltanPlantillas->implode(', '));
@@ -72,6 +75,15 @@ class Instalar extends Command
             (new $seeder)->setContainer(app())->setCommand($this)->run();
             $this->line("     <fg=green>✓</> {$etiqueta}");
         }
+
+        /*
+         * Las secciones del home no llevan seeder porque no siembran contenido:
+         * sólo crean la fila que hace falta para poder ordenarlas y apagarlas.
+         * Los textos viven en CatalogoHome, así que el home se ve bien aunque
+         * esto no llegue a correrse nunca.
+         */
+        $creadas = HomeSection::sembrarLasQueFalten();
+        $this->line("     <fg=green>✓</> Secciones del home".($creadas ? " ({$creadas} nuevas)" : ' (ya estaban)'));
 
         // Los ajustes se leen de una caché que vive para siempre; sin esto, el
         // proceso siguiente seguiría viendo la foto anterior.

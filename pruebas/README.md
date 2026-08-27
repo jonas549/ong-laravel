@@ -45,6 +45,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `clave-admin.mjs` | Un admin le cambia la contraseña a un organizador: que la nueva sirva, que la anterior no, que quede en el registro con el autor, que salga el correo y que se cierren las sesiones. |
 | `flujos.mjs` | Registro y «olvidé mi contraseña» de punta a punta. Deja los correos encolados; hay que correr `queue:work` después para ver si llegan. |
 | `menu.mjs` | Que la ficha de usuario marque el nodo correcto del menú y pinte las migas. |
+| `home-editor.mjs` | El editor de contenido del home: que lo publicado se vea en el sitio, que **vaciar un campo devuelva el texto original**, que siete ataques distintos no sobrevivan al guardado, y que el texto larguisimo, la palabra de 600 letras y lo pegado desde Word no rompan nada. |
 | `panel-home.mjs` | Que cada número de la portada del panel coincida con su consulta en MySQL, y que **cambie cuando cambia la base**: publica una actividad, inscribe a alguien, lo cancela y lo borra, mirando la pantalla en cada paso. |
 | `panel-vacio.php` | Que con la base **vacía** todo dé cero. Corre dentro de una transacción que se deshace: `php artisan tinker --execute="require base_path('pruebas/panel-vacio.php');"` |
 | `permisos.mjs` | Que un organizador **no** llegue a los datos de otro cambiando el número de la URL, y que ningún rol entre en el panel del otro. Sesenta segundos y 29 comprobaciones; el que hay que correr al añadir cualquier pantalla que reciba un id. |
@@ -76,6 +77,14 @@ cola. Para volver al punto de partida:
 ```bash
 php artisan dps:instalar        # replantar lo que falte
 php artisan queue:flush         # tirar los trabajos fallidos
+```
+
+`home-editor.mjs` publica contenido de prueba en las secciones del home. Para
+dejarlas como estaban —y que el home vuelva a los textos del diseño—:
+
+```sql
+DELETE FROM home_section_versions;
+UPDATE home_sections SET contenido=NULL, borrador=NULL, borrador_at=NULL, borrador_por=NULL, activo=1, orden=id;
 ```
 
 `permisos.mjs` deja dos organizadores de prueba con su organización y su

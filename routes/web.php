@@ -212,9 +212,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Buscador del panel
         Route::get('/buscar', Admin\BuscadorController::class)->name('buscar');
 
-        // Secciones del home. El editor es el bloque F; aquí existen para que
-        // el árbol esté completo y se pueda navegar.
-        Route::get('/paginas/home/{seccion}', [Admin\HomeSectionController::class, 'show'])->name('home.seccion');
+        /*
+         * Editor de contenido del home (bloque F). El orden importa: la ruta
+         * de la vista previa tiene que declararse ANTES que `/{seccion}`, o el
+         * comodín se tragaría «vista-previa» como si fuera una sección.
+         */
+        Route::get('/paginas/home', [Admin\HomeSectionController::class, 'index'])->name('home.index');
+        Route::post('/paginas/home/orden', [Admin\HomeSectionController::class, 'reordenar'])->name('home.orden');
+        Route::get('/paginas/home/vista-previa', [Admin\HomeSectionController::class, 'vistaPrevia'])->name('home.vista-previa');
+
+        Route::get('/paginas/home/{seccion}', [Admin\HomeSectionController::class, 'edit'])->name('home.editar');
+        Route::put('/paginas/home/{seccion}', [Admin\HomeSectionController::class, 'update'])->name('home.actualizar');
+        Route::post('/paginas/home/{seccion}/estado', [Admin\HomeSectionController::class, 'alternar'])->name('home.alternar');
+        // El autoguardado dispara cada pocos segundos mientras se escribe, así
+        // que lleva su propio freno, más ancho que el de un formulario normal.
+        Route::post('/paginas/home/{seccion}/borrador', [Admin\HomeSectionController::class, 'borrador'])
+            ->middleware('throttle:120,1')
+            ->name('home.borrador');
+        Route::delete('/paginas/home/{seccion}/borrador', [Admin\HomeSectionController::class, 'descartarBorrador'])->name('home.borrador.descartar');
+        Route::post('/paginas/home/{seccion}/versiones/{version}/restaurar', [Admin\HomeSectionController::class, 'restaurar'])->name('home.restaurar');
         Route::get('/paginas/privacidad', [Admin\PaginaLegalController::class, 'privacidad'])->name('paginas.privacidad');
 
         // Regiones y comunas (sólo consulta)

@@ -1,3 +1,5 @@
+@php $b = $borrador ?? false; @endphp
+
 <section style="background:var(--bg-warm);position:relative;overflow:hidden;">
     <img loading="lazy" decoding="async" class="linework" width="1045" height="721" src="{{ asset('img/manos.png') }}" alt="" aria-hidden="true">
 
@@ -5,8 +7,8 @@
         <div class="reveal cabecera-seccion" style="display:flex;align-items:center;gap:28px;text-align:left;margin-bottom:40px;">
             <img loading="lazy" decoding="async" width="388" height="541" src="{{ asset('img/voces-crop.png') }}" alt="" aria-hidden="true" style="flex:none;width:112px;height:auto;">
             <div>
-                <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">Participantes del Día del Patrimonio Social</div>
-                <h2 style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">Voces del movimiento</h2>
+                <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>
+                <h2 style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
             </div>
         </div>
 
