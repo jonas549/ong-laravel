@@ -279,29 +279,59 @@ a.textlink:hover { color: var(--naranjo-600); }
 .dato-editable { overflow-wrap: anywhere; }
 
 /*
- * Un botón cuyo texto viene del panel también tiene que poder partir: `.btn`
- * lleva `white-space: nowrap` —correcto para «Conoce más»— y con nowrap el
- * `overflow-wrap` no tiene nada que hacer. Los demás botones del sitio siguen
- * sin partirse, que es como deben verse.
+ * LOS BOTONES NO LLEVAN `dato-editable`, y esto es la tercera vuelta al tema.
+ *
+ * Primero la regla se puso en el `<body>` del home y rompio el menu. Se acoto a
+ * los elementos editables, y entonces rompio el boton del hero: a 375 px medía
+ * 140x106 px en cuatro lineas, con «participa / r hoy?» partido y tapando el
+ * logo del corazon; a 1440 px, dos lineas donde el diseño tiene una.
+ *
+ * La leccion, ya en firme: **partir una palabra arregla un parrafo y estropea
+ * un control**. Un titular largo que se parte sigue leyendose; un boton que se
+ * parte deja de parecer un boton. Los otros cuatro botones editables aguantaban
+ * solo porque les sobraba ancho, no porque estuviera bien.
+ *
+ * La clase va unicamente en texto corrido: titulares, bajadas, parrafos y
+ * etiquetas. Los botones conservan su `white-space: nowrap`.
  */
-.btn.dato-editable {
-    white-space: normal;
+
+/*
+ * `boton-editable`: el boton NO parte la palabra, pero tampoco puede romper la
+ * pagina.
+ *
+ * Es la otra mitad de la decision de arriba. Sin partir, un texto de boton de
+ * cien letras se sale de su caja y empuja lo que tenga al lado; con
+ * `max-width` y `overflow:hidden` se queda dentro y se recorta por el borde.
+ *
+ * Recortar tampoco es bonito, pero un texto de boton de cien letras ya es el
+ * problema: entre recortarlo y cruzar la pantalla partido en cuatro lineas,
+ * esto se lee y aquello no. Y va SOLO en los cinco botones cuyo texto viene del
+ * panel: los demas botones del sitio no se tocan.
+ */
+.boton-editable {
+    /*
+     * `box-sizing` aqui no es rutina: este proyecto NO tiene el reset global de
+     * `border-box` —se quito el dia 25 porque el HTML fuente no lo tiene y
+     * restaba el padding al ancho de cada contenedor—. Sin esta linea,
+     * `max-width` acota solo la caja de contenido y el boton acababa midiendo
+     * 483 px dentro de un hueco de 470: los 60 px de padding se sumaban por
+     * fuera del tope.
+     */
+    box-sizing: border-box;
     max-width: 100%;
+    overflow: hidden;
 }
 
 /*
- * El botón sobre el logo del hero. En el HTML fuente lleva `white-space:nowrap`
- * en el propio atributo `style`, y desde ahí le gana a cualquier hoja: con el
- * texto editable, cien letras sin espacios cruzaban la pantalla. El nowrap se
- * mueve aquí, donde sí se puede levantar, y el ancho se acota al del logo.
+ * El boton sobre el logo del hero. En el HTML fuente lleva `white-space:nowrap`
+ * en el propio atributo `style`, y desde ahi le gana a cualquier hoja; se movio
+ * aqui para poder acotarle el ancho al del logo.
  */
 .hero-cta {
     white-space: nowrap;
     max-width: 90%;
     text-align: center;
 }
-
-.hero-cta.dato-editable { white-space: normal; }
 
 .texto-editable > :first-child { margin-top: 0; }
 
@@ -1609,6 +1639,27 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
 
 @keyframes girar { to { transform: rotate(360deg); } }
 
+/*
+ * La tabla mientras se recarga. Se atenua y deja de admitir clics, para que no
+ * se pulse dos veces la misma columna creyendo que no ha respondido.
+ */
+.tabla-cargando { position: relative; opacity: .55; pointer-events: none; transition: opacity .12s ease; }
+
+.tabla-cargando::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
+    margin-left: -11px;
+    border: 2.5px solid var(--naranjo);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: girar .7s linear infinite;
+}
+
 .esqueleto { display: flex; flex-direction: column; gap: 12px; padding: 6px 0; }
 
 .esqueleto-fila { display: flex; gap: 16px; }
@@ -1627,5 +1678,6 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
  * bucle: se quedan quietas, que siguen diciendo lo mismo. */
 @media (prefers-reduced-motion: reduce) {
     .esta-cargando::after,
+    .tabla-cargando::before,
     .esqueleto-celda { animation: none; }
 }

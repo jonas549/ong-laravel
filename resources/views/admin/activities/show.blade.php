@@ -106,7 +106,7 @@
             @forelse ($activity->statusLogs as $log)
                 <div style="font-size:13.5px;color:var(--gris-700);padding:9px 0;border-bottom:1px solid var(--linea);">
                     <strong>{{ $log->de_estado ?? 'nueva' }} → {{ $log->a_estado }}</strong>
-                    <div class="helper">{{ $log->user?->name ?? 'Sistema' }} · {{ $log->created_at->diffForHumans() }}</div>
+                    <div class="helper">{{ $log->user?->name ?? 'Sistema' }} · {{ \App\Support\Fecha::relativa($log->created_at) }}</div>
                     @if ($log->comentario)
                         <div style="margin-top:5px;font-style:italic;">{{ $log->comentario }}</div>
                     @endif

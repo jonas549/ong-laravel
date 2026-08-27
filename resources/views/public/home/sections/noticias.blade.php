@@ -6,7 +6,7 @@
             <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>
             <h2 class="dato-editable" style="font-weight:800;font-size:38px;margin:0;letter-spacing:-.01em;">{{ $seccion->texto('titulo', $b) }}</h2>
         </div>
-        <a href="{{ route('posts.index') }}" class="btn btn-outline dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+        <a href="{{ route('posts.index') }}" class="btn btn-outline boton-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
     </div>
 
     @if ($noticias->isEmpty())

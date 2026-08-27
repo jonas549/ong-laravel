@@ -63,7 +63,7 @@
 
     @if ($errors->any())
         <div class="alert alert-error" style="margin-bottom:24px;">
-            Revisa los campos marcados: hay {{ $errors->count() }} {{ Str::plural('dato', $errors->count()) }} por corregir.
+            Revisa los campos marcados: hay {{ $errors->count() }} {{ \App\Support\Texto::plural('dato', $errors->count()) }} por corregir.
         </div>
     @endif
 
@@ -408,7 +408,7 @@
 
             @if ($activity->inscritos_count > 0)
                 <p style="font-size:14px;line-height:1.6;color:#7a5e00;background:#fff8e6;border:1.5px solid #f6e0c6;border-radius:14px;padding:13px 16px;margin:0 0 24px;text-wrap:pretty;">
-                    Hay {{ $activity->inscritos_count }} {{ Str::plural('persona', $activity->inscritos_count) }} {{ Str::plural('inscrita', $activity->inscritos_count) }}. Les enviaremos automáticamente un correo informando la cancelación.
+                    Hay {{ $activity->inscritos_count }} {{ \App\Support\Texto::plural('persona', $activity->inscritos_count) }} {{ \App\Support\Texto::plural('inscrita', $activity->inscritos_count) }}. Les enviaremos automáticamente un correo informando la cancelación.
                 </p>
             @endif
 

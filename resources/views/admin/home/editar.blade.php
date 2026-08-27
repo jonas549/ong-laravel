@@ -26,7 +26,7 @@
         <div style="flex:1;min-width:240px;">
             <strong style="display:block;margin-bottom:4px;">Hay un borrador sin publicar.</strong>
             <span style="font-size:13px;">
-                Guardado {{ $seccion->borrador_at?->diffForHumans() }}. Lo que se ve abajo es el borrador;
+                Guardado {{ \App\Support\Fecha::relativa($seccion->borrador_at) }}. Lo que se ve abajo es el borrador;
                 el sitio sigue mostrando lo último que se publicó.
             </span>
         </div>
@@ -65,7 +65,7 @@
         <button type="button" x-on:click="abierto = ! abierto"
                 style="width:100%;display:flex;align-items:center;gap:10px;padding:14px 22px;background:none;border:0;cursor:pointer;text-align:left;">
             <span style="font-size:15px;font-weight:700;color:var(--ink);flex:1;">
-                Historial · {{ $versiones->count() }} {{ Str::plural('versión', $versiones->count()) }}
+                Historial · {{ $versiones->count() }} {{ \App\Support\Texto::plural('versión', $versiones->count()) }}
             </span>
             <span class="helper" x-text="abierto ? 'Ocultar' : 'Ver'"></span>
         </button>
@@ -82,7 +82,7 @@
                     <tbody>
                         @foreach ($versiones as $v)
                             <tr>
-                                <td style="white-space:nowrap;">{{ $v->created_at->locale('es')->isoFormat('D MMM YYYY, HH:mm') }}</td>
+                                <td style="white-space:nowrap;">{{ \App\Support\Fecha::conHora($v->created_at) }}</td>
                                 <td>{{ $v->quien() }}</td>
                                 <td class="helper">{{ $v->nota }}</td>
                                 <td style="text-align:right;white-space:nowrap;">

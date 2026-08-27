@@ -34,8 +34,8 @@
                  */
                 $valor = \App\Support\Formulario::viejoCrudo($campo, $fila->{$campo} ?? null);
 
-                if ($meta['tipo'] === 'datetime' && $valor instanceof \Illuminate\Support\Carbon) {
-                    $valor = $valor->format('Y-m-d\TH:i');
+                if ($meta['tipo'] === 'datetime') {
+                    $valor = \App\Support\Fecha::paraInput($valor);
                 }
             @endphp
 

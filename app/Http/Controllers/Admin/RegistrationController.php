@@ -71,7 +71,7 @@ class RegistrationController extends Controller
     {
         $inscritos = $this->consulta($request)->with('activity.organization')->get();
 
-        $archivo = 'inscripciones-'.now()->format('Y-m-d').'.xlsx';
+        $archivo = 'inscripciones-'.\App\Support\Fecha::iso(now()).'.xlsx';
 
         return response()->streamDownload(function () use ($inscritos) {
             $writer = new Writer;
@@ -88,7 +88,7 @@ class RegistrationController extends Controller
                     $i->correo,
                     $i->activity?->titulo ?? '(actividad borrada)',
                     $i->activity?->organization?->nombre ?? '',
-                    $i->created_at->locale('es')->isoFormat('D MMM YYYY HH:mm'),
+                    \App\Support\Fecha::conHora($i->created_at),
                     $i->estado,
                 ]));
             }

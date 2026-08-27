@@ -197,9 +197,9 @@ class ContentController extends Controller
         }
 
         return back()->with('ok', match ($accion) {
-            'activar' => $hechas.' '.Str::plural('registro', $hechas).' '.Str::plural('visible', $hechas).' en el sitio.',
-            'desactivar' => $hechas.' '.Str::plural('registro', $hechas).' escondidos del sitio.',
-            default => $hechas.' '.Str::plural('registro', $hechas).' '.Str::plural('eliminado', $hechas).'.',
+            'activar' => $hechas.' '.\App\Support\Texto::plural('registro', $hechas).' '.\App\Support\Texto::plural('visible', $hechas).' en el sitio.',
+            'desactivar' => $hechas.' '.\App\Support\Texto::plural('registro', $hechas).' escondidos del sitio.',
+            default => $hechas.' '.\App\Support\Texto::plural('registro', $hechas).' '.\App\Support\Texto::plural('eliminado', $hechas).'.',
         });
     }
 
@@ -313,7 +313,7 @@ class ContentController extends Controller
 
                     return match ($meta['tipo']) {
                         'bool' => $valor ? 'Si' : 'No',
-                        'datetime' => $valor?->format('Y-m-d'),
+                        'datetime' => \App\Support\Fecha::iso($valor),
                         'select' => $meta['opciones'][$valor] ?? $valor,
                         default => $valor,
                     };

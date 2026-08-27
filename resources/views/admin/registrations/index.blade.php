@@ -45,7 +45,7 @@
             <td style="font-weight:600;">{{ $i->nombre }}</td>
             <td>{{ $i->correo }}</td>
             <td>{{ Str::limit($i->activity?->titulo, 38) }}</td>
-            <td style="white-space:nowrap;">{{ $i->created_at->locale('es')->isoFormat('D MMM YYYY') }}</td>
+            <td style="white-space:nowrap;">{{ \App\Support\Fecha::corta($i->created_at) }}</td>
             <td>
                 <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:{{ $c['bg'] }};color:{{ $c['ink'] }};">
                     {{ $i->estado_label }}

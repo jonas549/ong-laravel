@@ -48,7 +48,7 @@
     <a class="kpi" href="{{ route('admin.registrations.index', ['estado' => 'activas']) }}">
         <span class="v" style="color:var(--turquesa);">{{ $inscripciones }}</span>
         <span class="l">inscripciones</span>
-        <span class="l" style="opacity:.75;">de {{ $personas }} {{ Str::plural('persona', $personas) }} · {{ $inscripcionesConfirmadas }} confirmadas · sin contar {{ $inscripcionesCanceladas }} canceladas</span>
+        <span class="l" style="opacity:.75;">de {{ $personas }} {{ \App\Support\Texto::plural('persona', $personas) }} · {{ $inscripcionesConfirmadas }} confirmadas · sin contar {{ $inscripcionesCanceladas }} canceladas</span>
     </a>
 
     <a class="kpi" href="{{ route('admin.organizations.index', ['filtro' => 'activas']) }}">
@@ -142,7 +142,7 @@
                             <td style="white-space:nowrap;">
                                 {{-- El color avisa antes de que haya que leer el número --}}
                                 <span style="color:{{ $a->dias_esperando >= 3 ? 'var(--rosa)' : 'var(--gris)' }};">
-                                    {{ $a->esperando_desde->diffForHumans(null, true) }}
+                                    {{ \App\Support\Fecha::relativa($a->esperando_desde, true) }}
                                 </span>
                             </td>
                             <td style="text-align:right;white-space:nowrap;">
@@ -198,7 +198,7 @@
                                 {{ $i->estado_label }}
                             </span>
                         </td>
-                        <td style="white-space:nowrap;">{{ $i->created_at->diffForHumans() }}</td>
+                        <td style="white-space:nowrap;">{{ \App\Support\Fecha::relativa($i->created_at) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" style="color:var(--gris);">Todavía no hay inscripciones.</td></tr>

@@ -69,6 +69,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Zona horaria de la pantalla
+    |--------------------------------------------------------------------------
+    |
+    | La aplicacion GUARDA en UTC —arriba— y eso no se toca: cambiarlo dejaria
+    | todo lo ya escrito leyendose con cuatro horas de corrimiento. Esta es la
+    | zona en la que se PINTAN las fechas del panel, que es cosa distinta.
+    |
+    | Sin esto, el panel enseñaba la hora cruda: el aviso del autoguardado decia
+    | «21:36» cuando en Chile eran las 17:36. La usa App\Support\Fecha.
+    |
+    */
+
+    'zona_horaria' => env('APP_ZONA_HORARIA', 'America/Santiago'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

@@ -64,7 +64,7 @@
         <tbody>
             @forelse ($correos as $c)
                 <tr>
-                    <td style="white-space:nowrap;">{{ $c->created_at->locale('es')->isoFormat('D MMM HH:mm') }}</td>
+                    <td style="white-space:nowrap;">{{ \App\Support\Fecha::diaYHora($c->created_at) }}</td>
                     <td>{{ Str::limit($c->to, 30) }}</td>
                     <td>{{ Str::limit($c->subject, 40) }}</td>
                     <td style="color:var(--gris);font-size:13px;">{{ $plantillas[$c->plantilla] ?? '—' }}</td>

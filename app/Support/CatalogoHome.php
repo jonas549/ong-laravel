@@ -18,6 +18,14 @@ namespace App\Support;
  * fuera un editor libre, la primera negrita que alguien pusiera cambiaría el
  * peso del titular. Partido, la ONG cambia las palabras y el diseño no se mueve.
  *
+ * **`vaciable`**: por defecto, vaciar un campo lo devuelve a su texto original
+ * —es lo que espera quien lo borra sin querer—. Pero hay campos donde vacío es
+ * una respuesta válida y no un descuido: el video de «¿por qué celebramos?», que
+ * al quitarlo devuelve la sección a una columna, o la parte naranja de un
+ * titular. En esos, la regla del valor por defecto dejaba un estado legítimo
+ * fuera del alcance del panel: la ayuda decía «déjalo vacío» y al publicar
+ * volvía a salir lo de antes. Se marcan con `'vaciable' => true`.
+ *
  * Tipos de campo:
  *   texto      una línea
  *   parrafo    varias líneas, sin formato
@@ -50,7 +58,7 @@ class CatalogoHome
                     'pildora_fechas' => ['label' => 'Píldora — las fechas', 'tipo' => 'texto', 'defecto' => '4 y 5 de diciembre', 'ayuda' => 'Se pinta en negrita, como en el diseño original.'],
                     'pildora_despues' => ['label' => 'Píldora — después de la fecha', 'tipo' => 'texto', 'defecto' => 'Chile 2026'],
                     'titulo' => ['label' => 'Titular', 'tipo' => 'texto', 'defecto' => 'Miles de personas ya son parte de este'],
-                    'titulo_destacado' => ['label' => 'Titular — parte en naranja', 'tipo' => 'texto', 'defecto' => 'movimiento solidario', 'ayuda' => 'Se añade al final del titular, en naranja. Déjalo vacío si no quieres destacar nada.'],
+                    'titulo_destacado' => ['label' => 'Titular — parte en naranja', 'tipo' => 'texto', 'defecto' => 'movimiento solidario', 'vaciable' => true, 'ayuda' => 'Se añade al final del titular, en naranja. Déjalo vacío si no quieres destacar nada.'],
                     'bajada' => ['label' => 'Bajada', 'tipo' => 'parrafo', 'defecto' => 'Participa como voluntario, visita actividades solidarias o comparte la tuya.'],
                     'cta_texto' => ['label' => 'Botón sobre el logo', 'tipo' => 'texto', 'defecto' => '¿Cómo quieres participar hoy?'],
                     'cta_enlace' => ['label' => 'A dónde lleva el botón', 'tipo' => 'enlace', 'defecto' => '#voluntariado'],
@@ -110,7 +118,7 @@ class CatalogoHome
                 'resumen' => 'El bloque explicativo, con su imagen.',
                 'campos' => [
                     'titulo_antes' => ['label' => 'Titular — antes', 'tipo' => 'texto', 'defecto' => '¿Qué es el'],
-                    'titulo_destacado' => ['label' => 'Titular — parte en naranja', 'tipo' => 'texto', 'defecto' => 'Patrimonio Social'],
+                    'titulo_destacado' => ['label' => 'Titular — parte en naranja', 'tipo' => 'texto', 'defecto' => 'Patrimonio Social', 'vaciable' => true],
                     'titulo_despues' => ['label' => 'Titular — después', 'tipo' => 'texto', 'defecto' => '?'],
                     'cuerpo' => ['label' => 'Texto', 'tipo' => 'rico', 'defecto' => '<p>Es todo aquello que construimos cuando nos unimos para cuidar, compartir y colaborar con otras personas.</p><p>Es un patrimonio vivo que se fortalece con cada acción solidaria y que nos pertenece a todas y todos.</p>'],
                     'remate' => ['label' => 'Frase destacada del final', 'tipo' => 'texto', 'defecto' => 'Nuestro mayor Patrimonio Social es la solidaridad.'],
@@ -125,7 +133,7 @@ class CatalogoHome
                 'titulo' => '¿Por qué celebramos este día?',
                 'resumen' => 'El texto del porqué, con el video de la campaña al lado.',
                 'campos' => [
-                    'video' => ['label' => 'Video de YouTube', 'tipo' => 'youtube', 'defecto' => 'e8iqqzO3s7k', 'ayuda' => 'Pega el enlace del video o sólo su identificador. Déjalo vacío para que el video no aparezca.'],
+                    'video' => ['label' => 'Video de YouTube', 'tipo' => 'youtube', 'defecto' => 'e8iqqzO3s7k', 'vaciable' => true, 'ayuda' => 'Pega el enlace del video o sólo su identificador. Déjalo vacío y la sección vuelve a una sola columna, sin video.'],
                     'antetitulo' => ['label' => 'Antetítulo', 'tipo' => 'texto', 'defecto' => '¿Por qué celebramos este día?'],
                     'titulo' => ['label' => 'Titular', 'tipo' => 'texto', 'defecto' => 'Un movimiento para celebrar y fortalecer la solidaridad'],
                     'cuerpo' => ['label' => 'Texto', 'tipo' => 'rico', 'defecto' => '<p>Celebramos este día porque creemos en la fuerza de lo que construimos cuando actuamos juntos. El Día del Patrimonio Social invita a organizaciones, empresas, comunidades y personas a realizar acciones concretas que generen bienestar colectivo y motiven a otros a sumarse. ¡Todas y todos tenemos algo que aportar!</p>'],
@@ -171,7 +179,7 @@ class CatalogoHome
                 'resumen' => 'El crédito de la Comunidad de Organizaciones Solidarias.',
                 'campos' => [
                     'texto_antes' => ['label' => 'Antes del nombre', 'tipo' => 'texto', 'defecto' => 'El'],
-                    'texto_destacado' => ['label' => 'Nombre en naranja', 'tipo' => 'texto', 'defecto' => 'Día del Patrimonio Social'],
+                    'texto_destacado' => ['label' => 'Nombre en naranja', 'tipo' => 'texto', 'defecto' => 'Día del Patrimonio Social', 'vaciable' => true],
                     'texto_despues' => ['label' => 'Después del nombre', 'tipo' => 'texto', 'defecto' => 'es una iniciativa de:'],
                     'logo' => ['label' => 'Logo', 'tipo' => 'imagen', 'defecto' => 'img/logo-cos.png'],
                     'logo_alt' => ['label' => 'Descripción del logo', 'tipo' => 'texto', 'defecto' => 'Comunidad de Organizaciones Solidarias'],

@@ -136,11 +136,43 @@ export const almacenConfirmacion = {
 
 export const dialogoConfirmar = () => ({
     init() {
-        // Al abrirse, el foco entra al diálogo. Arranca en «Cancelar» y no en
-        // el botón que borra: un Enter de más no puede ser lo que elimine.
         this.$watch('$store.confirmacion.abierto', (abierto) => {
-            if (abierto) requestAnimationFrame(() => this.$refs.cancelar?.focus());
+            if (abierto) this.entrarAlDialogo();
         });
+    },
+
+    /**
+     * Mete el foco dentro del diálogo, insistiendo hasta que entra.
+     *
+     * Un solo `requestAnimationFrame` no bastaba: en producción el foco se
+     * quedaba en el botón «Borrar» que lo abrió, **fuera** del `role="dialog"`,
+     * y había que pulsar Tab para entrar. Con teclado eso es grave: no sabes
+     * dónde estás, y un Enter reflejo vuelve a abrir el diálogo en vez de
+     * cancelarlo.
+     *
+     * El motivo es que Alpine aplica el `x-show` en su propio ciclo, y hasta que
+     * el elemento no está visible no admite el foco. Se reintenta unos cuantos
+     * fotogramas —no un temporizador largo, que se notaría— y se comprueba que
+     * el foco acabó de verdad dentro. Si aun así no entra, se enfoca la caja del
+     * diálogo, que lleva `tabindex="-1"` justo para eso.
+     */
+    entrarAlDialogo(intentos = 12) {
+        const destino = this.$refs.cancelar;
+
+        if (! destino || ! this.$store.confirmacion.abierto) return;
+
+        destino.focus();
+
+        if (document.activeElement === destino) return;
+
+        if (intentos > 0) {
+            requestAnimationFrame(() => this.entrarAlDialogo(intentos - 1));
+
+            return;
+        }
+
+        // Último recurso: al menos que el foco esté dentro del diálogo.
+        this.$refs.caja?.focus();
     },
 
     /**
@@ -316,6 +348,42 @@ export const iniciarEstadosDeCarga = () => {
 
         ocupar(enlace);
         setTimeout(() => liberar(enlace), 4000);
+    });
+
+    /*
+     * Ordenar y paginar son navegaciones normales, así que el navegador ya
+     * enseña su indicador en la pestaña. Pero en una tabla eso queda lejos de
+     * donde está mirando la mano: se pulsa un encabezado y durante medio
+     * segundo no pasa nada visible. Se atenua la tabla, que es la respuesta
+     * más barata a «te he oído».
+     */
+    document.addEventListener('click', (e) => {
+        const enlace = e.target.closest('.col-orden, .paginacion-enlace');
+
+        if (!enlace || enlace.tagName !== 'A') return;
+
+        const tabla = enlace.closest('.panel-tabla') ?? document.querySelector('.panel-tabla');
+
+        tabla?.classList.add('tabla-cargando');
+        tabla?.setAttribute('aria-busy', 'true');
+    });
+
+    // Igual al filtrar, que también recarga.
+    document.addEventListener('submit', (e) => {
+        if (! (e.target instanceof HTMLFormElement) || ! e.target.classList.contains('panel-filtros')) return;
+
+        const tabla = document.querySelector('.panel-tabla');
+
+        tabla?.classList.add('tabla-cargando');
+        tabla?.setAttribute('aria-busy', 'true');
+    });
+
+    // Al volver con «atras», la tabla vuelve de la cache atenuada.
+    window.addEventListener('pageshow', () => {
+        document.querySelectorAll('.tabla-cargando').forEach((t) => {
+            t.classList.remove('tabla-cargando');
+            t.removeAttribute('aria-busy');
+        });
     });
 
     const liberar = (el) => {

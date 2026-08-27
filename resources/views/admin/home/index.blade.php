@@ -73,7 +73,7 @@
                         @endif
 
                         @if ($cambiados = $s->camposCambiados())
-                            <span class="helper">{{ $cambiados }} {{ Str::plural('campo', $cambiados) }} {{ Str::plural('cambiado', $cambiados) }}</span>
+                            <span class="helper">{{ $cambiados }} {{ \App\Support\Texto::plural('campo', $cambiados) }} {{ \App\Support\Texto::plural('cambiado', $cambiados) }}</span>
                         @endif
                     </div>
                     <p class="helper" style="margin:3px 0 0;">

@@ -24,7 +24,7 @@
      x-on:keydown.tab="ciclarFoco($event)"
      x-on:click.self="$store.confirmacion.cerrar()">
 
-    <div class="dialogo" role="dialog" aria-modal="true" :aria-label="$store.confirmacion.titulo" x-ref="caja">
+    <div class="dialogo" role="dialog" aria-modal="true" tabindex="-1" :aria-label="$store.confirmacion.titulo" x-ref="caja">
         <h2 class="dialogo-titulo" x-text="$store.confirmacion.titulo"></h2>
         <p class="dialogo-texto" x-text="$store.confirmacion.texto"></p>
 

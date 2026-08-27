@@ -180,9 +180,22 @@ class HomeSection extends Model
     {
         $fuente = $borrador ? ($this->borrador ?? $this->contenido) : $this->contenido;
         $guardado = $fuente[$campo] ?? null;
+        $meta = CatalogoHome::campos($this->clave)[$campo] ?? [];
+
+        /*
+         * Los campos marcados como `vaciable` se quedan vacíos si alguien los
+         * vació a propósito. Se comprueba con `array_key_exists` y no con
+         * `blank`: hace falta distinguir «se guardó vacío» de «nunca se ha
+         * guardado», y son cosas distintas. Sin esto, el video de «¿por qué
+         * celebramos?» no se podía quitar —volvía solo— y la variante de una
+         * columna quedaba fuera del alcance del panel.
+         */
+        if (($meta['vaciable'] ?? false) && is_array($fuente) && array_key_exists($campo, $fuente)) {
+            return $guardado;
+        }
 
         if (blank($guardado) && $guardado !== 0 && $guardado !== '0') {
-            return CatalogoHome::campos($this->clave)[$campo]['defecto'] ?? null;
+            return $meta['defecto'] ?? null;
         }
 
         return $guardado;

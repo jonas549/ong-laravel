@@ -69,7 +69,7 @@
                     @elseif ($meta['tipo'] === 'select')
                         {{ $meta['opciones'][$fila->{$campo}] ?? $fila->{$campo} }}
                     @elseif ($meta['tipo'] === 'datetime')
-                        {{ $fila->{$campo}?->locale('es')->isoFormat('D MMM YYYY') ?? '—' }}
+                        {{ \App\Support\Fecha::corta($fila->{$campo}) }}
                     @else
                         {{ Str::limit((string) $fila->{$campo}, 46) ?: '—' }}
                     @endif

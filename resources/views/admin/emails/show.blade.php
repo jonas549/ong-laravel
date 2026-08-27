@@ -25,15 +25,15 @@
             <dt class="helper" style="font-weight:700;">CC</dt><dd style="margin:0;">{{ $email->cc }}</dd>
         @endif
         <dt class="helper" style="font-weight:700;">Asunto</dt><dd style="margin:0;">{{ $email->subject }}</dd>
-        <dt class="helper" style="font-weight:700;">Creado</dt><dd style="margin:0;">{{ $email->created_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+        <dt class="helper" style="font-weight:700;">Creado</dt><dd style="margin:0;">{{ \App\Support\Fecha::larga($email->created_at) }}</dd>
         @if ($email->encolado_at)
-            <dt class="helper" style="font-weight:700;">Encolado</dt><dd style="margin:0;">{{ $email->encolado_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+            <dt class="helper" style="font-weight:700;">Encolado</dt><dd style="margin:0;">{{ \App\Support\Fecha::larga($email->encolado_at) }}</dd>
         @endif
         @if ($email->sent_at)
-            <dt class="helper" style="font-weight:700;">{{ $email->entregado ? 'Enviado' : 'Procesado' }}</dt><dd style="margin:0;">{{ $email->sent_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+            <dt class="helper" style="font-weight:700;">{{ $email->entregado ? 'Enviado' : 'Procesado' }}</dt><dd style="margin:0;">{{ \App\Support\Fecha::larga($email->sent_at) }}</dd>
         @endif
         @if ($email->reenviado_at)
-            <dt class="helper" style="font-weight:700;">Reenviado</dt><dd style="margin:0;">{{ $email->reenviado_at->locale('es')->isoFormat('D [de] MMMM YYYY, HH:mm') }}</dd>
+            <dt class="helper" style="font-weight:700;">Reenviado</dt><dd style="margin:0;">{{ \App\Support\Fecha::larga($email->reenviado_at) }}</dd>
         @endif
         @if ($email->plantilla)
             <dt class="helper" style="font-weight:700;">Plantilla</dt><dd style="margin:0;">{{ $email->plantilla }}</dd>

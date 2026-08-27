@@ -35,6 +35,6 @@
     @endif
 
     <div class="reveal" style="text-align:center;margin-top:48px;">
-        <a href="{{ route('activities.index') }}" class="btn btn-primary dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+        <a href="{{ route('activities.index') }}" class="btn btn-primary boton-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
     </div>
 </section>

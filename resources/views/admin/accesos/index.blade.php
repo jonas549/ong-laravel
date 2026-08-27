@@ -42,7 +42,7 @@
                             <td style="font-weight:600;color:{{ $s->acumulados >= $intentos ? 'var(--rosa)' : 'inherit' }};">
                                 {{ $s->acumulados }} / {{ $intentos }}
                             </td>
-                            <td style="white-space:nowrap;">{{ \Illuminate\Support\Carbon::parse($s->ultimo)->locale('es')->diffForHumans() }}</td>
+                            <td style="white-space:nowrap;">{{ \App\Support\Fecha::relativa($s->ultimo) }}</td>
                             <td style="text-align:right;">
                                 @if ($s->bloqueado)
                                     <form method="POST" action="{{ route('admin.accesos.desbloquear') }}" style="display:inline;">
@@ -109,7 +109,7 @@
         <tbody>
             @forelse ($accesos as $a)
                 <tr>
-                    <td style="white-space:nowrap;">{{ $a->created_at->locale('es')->isoFormat('D MMM HH:mm') }}</td>
+                    <td style="white-space:nowrap;">{{ \App\Support\Fecha::diaYHora($a->created_at) }}</td>
                     <td>{{ $a->email ?? '—' }}</td>
                     <td style="color:var(--gris);font-size:13px;">{{ $a->user?->name ?? '—' }}</td>
                     <td style="color:var(--gris);font-size:13px;">{{ $a->panel }}</td>

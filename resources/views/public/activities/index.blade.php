@@ -7,7 +7,7 @@
     <div style="margin-bottom:34px;">
         <div style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">Calendario</div>
         <h1 style="font-weight:800;font-size:40px;line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;">Actividades solidarias</h1>
-        <p style="font-size:16px;color:var(--gris);margin:0;">{{ $actividades->total() }} {{ Str::plural('actividad', $actividades->total()) }} publicada{{ $actividades->total() === 1 ? '' : 's' }}.</p>
+        <p style="font-size:16px;color:var(--gris);margin:0;">{{ $actividades->total() }} {{ \App\Support\Texto::plural('actividad', $actividades->total()) }} {{ \App\Support\Texto::plural('publicada', $actividades->total()) }}.</p>
     </div>
 
     <form method="GET" class="card" style="padding:20px 22px;margin-bottom:34px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end;">

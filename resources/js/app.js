@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import { iniciarAnclas } from './anclas';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import {
     almacenConfirmacion,
@@ -111,6 +112,9 @@ Alpine.start();
 // Va fuera de Alpine: se engancha al documento y vale para todo formulario del
 // panel, incluidos los que se escriban despues.
 iniciarEstadosDeCarga();
+
+// Que un ancla caiga donde tiene que caer, aunque el salto sea de 5.000 px.
+iniciarAnclas();
 
 /*
  * Interacciones rescatadas del componentDidMount de index.html.

@@ -6,7 +6,7 @@
             <h2 class="dato-editable" style="font-weight:800;font-size:38px;margin:0 0 22px;letter-spacing:-.01em;">{{ $seccion->texto('titulo_antes', $b) }} <span style="color:var(--naranjo);">{{ $seccion->texto('titulo_destacado', $b) }}</span>{{ $seccion->texto('titulo_despues', $b) }}</h2>
             <div class="texto-editable" style="font-size:16px;line-height:1.65;margin:0 0 20px;color:var(--gris-700);">{!! $seccion->rico('cuerpo', $b) !!}</div>
             <p class="dato-editable" style="font-size:19px;line-height:1.4;margin:0 0 26px;font-weight:700;color:var(--ink);">{{ $seccion->texto('remate', $b) }}</p>
-            <a href="{{ $seccion->enlace('cta_enlace', $b) ?: route('activities.index') }}" class="btn btn-primary dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+            <a href="{{ $seccion->enlace('cta_enlace', $b) ?: route('activities.index') }}" class="btn btn-primary boton-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
         </div>
 
         <figure class="reveal" style="margin:0;position:relative;overflow:visible;">

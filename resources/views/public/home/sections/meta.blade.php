@@ -47,7 +47,7 @@
         </div>
 
         <p class="dato-editable" style="font-size:15px;margin:44px 0 18px;color:var(--gris);">{{ $seccion->texto('pregunta', $b) }}</p>
-        <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#kit' }}" class="btn btn-primary dato-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+        <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#kit' }}" class="btn btn-primary boton-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
         <p class="dato-editable" style="font-size:13px;margin:16px 0 0;color:#9a9ca0;">{{ $seccion->texto('nota', $b) }}</p>
     </div>
 </section>

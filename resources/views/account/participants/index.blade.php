@@ -112,7 +112,7 @@
             </div>
 
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px;">
-                <span class="helper">Mostrando {{ $inscritos->count() }} de {{ $total }} {{ Str::plural('participante', $total) }}</span>
+                <span class="helper">Mostrando {{ $inscritos->count() }} de {{ $total }} {{ \App\Support\Texto::plural('participante', $total) }}</span>
 
                 @if (! $verTodos && $total > $inscritos->count())
                     <a href="{{ route('account.participants.index', [$activity] + $filtroActual + ['todos' => 1]) }}"

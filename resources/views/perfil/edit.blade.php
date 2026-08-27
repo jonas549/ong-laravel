@@ -151,7 +151,7 @@
                                     @endif
                                 </td>
                                 <td>{{ $s->ip ?? '—' }}</td>
-                                <td>{{ $s->ultimaActividad->locale('es')->diffForHumans() }}</td>
+                                <td>{{ \App\Support\Fecha::relativa($s->ultimaActividad) }}</td>
                                 <td style="text-align:right;">
                                     @unless ($s->esActual)
                                         <form method="POST" action="{{ route($esAdmin ? 'admin.perfil.sesiones.cerrar' : 'account.perfil.sesiones.cerrar') }}">

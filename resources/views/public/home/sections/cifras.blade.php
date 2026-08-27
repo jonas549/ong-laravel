@@ -1,6 +1,6 @@
 @php $b = $borrador ?? false; @endphp
 
-<section id="ediciones" style="position:relative;background:url('{{ asset('img/fondo-02.png') }}') center/cover no-repeat;">
+<section id="ediciones" style="scroll-margin-top:90px;position:relative;background:url('{{ asset('img/fondo-02.png') }}') center/cover no-repeat;">
     <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.94) 0%,rgba(255,255,255,.7) 42%,rgba(255,255,255,.9) 100%);"></div>
 
     <div style="position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:92px 40px 84px;text-align:center;">

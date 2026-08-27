@@ -113,7 +113,7 @@ class HomeSectionController extends Controller
 
         return response()->json([
             'guardado' => true,
-            'cuando' => $fila->borrador_at->locale('es')->isoFormat('HH:mm'),
+            'cuando' => \App\Support\Fecha::hora($fila->borrador_at),
         ]);
     }
 
@@ -208,7 +208,7 @@ class HomeSectionController extends Controller
         $fila = HomeSection::query()->where('clave', $seccion)->firstOrFail();
         abort_unless($version->home_section_id === $fila->id, 404);
 
-        $cuando = $version->created_at->locale('es')->isoFormat('D MMM YYYY, HH:mm');
+        $cuando = \App\Support\Fecha::conHora($version->created_at);
 
         DB::transaction(function () use ($fila, $version, $request, $cuando) {
             if (filled($fila->contenido)) {

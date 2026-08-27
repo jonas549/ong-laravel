@@ -9,7 +9,7 @@
 
 @if ($errors->any())
     <div class="alert alert-error" style="margin-bottom:20px;">
-        Revisa los campos marcados: hay {{ $errors->count() }} {{ Str::plural('dato', $errors->count()) }} por corregir.
+        Revisa los campos marcados: hay {{ $errors->count() }} {{ \App\Support\Texto::plural('dato', $errors->count()) }} por corregir.
     </div>
 @endif
 
