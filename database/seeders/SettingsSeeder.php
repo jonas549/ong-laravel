@@ -114,6 +114,11 @@ class SettingsSeeder extends Seeder
                 'descripcion' => 'Apagar oculta el formulario público de publicación.',
             ],
             [
+                'grupo' => 'general', 'clave' => 'alerta_revision_dias', 'tipo' => 'int', 'valor' => '3',
+                'label' => 'Días antes de avisar de una revisión pendiente',
+                'descripcion' => 'La portada del panel avisa cuando una actividad lleva más de estos días esperando revisión.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'acceso_intentos', 'tipo' => 'int', 'valor' => '5',
                 'label' => 'Intentos de acceso antes de bloquear',
                 'descripcion' => 'Cuántas contraseñas erróneas seguidas se admiten antes de cerrar el acceso a esa cuenta desde esa IP.',

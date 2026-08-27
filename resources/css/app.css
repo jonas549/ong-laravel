@@ -839,6 +839,17 @@ table.plist tr:hover td { background: #fdfcfb; }
 
 .kpi .l { font-size: 12.5px; color: var(--gris); }
 
+/*
+ * Las tarjetas de la portada del panel llevan a su listado. Se les quita el
+ * color de enlace —el número manda, y en naranja compite con el estado que ya
+ * indica su propio color— y se les deja el realce en el hover.
+ */
+a.kpi { color: inherit; text-decoration: none; transition: border-color .15s ease, transform .15s ease; }
+
+a.kpi:hover { border-color: var(--naranjo); transform: translateY(-2px); }
+
+a.kpi:focus-visible { outline: 2px solid var(--naranjo); outline-offset: 2px; }
+
 .admin-topbar { display: none; }
 
 @media (max-width: 900px) {

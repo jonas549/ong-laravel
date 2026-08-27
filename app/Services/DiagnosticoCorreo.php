@@ -46,6 +46,23 @@ class DiagnosticoCorreo
      *
      * @return array<string, mixed>
      */
+    /**
+     * Las tres piezas que hay que mirar juntas antes de creerse una tabla de
+     * correos: qué transporte se usa de verdad, si la cola avanza y si están
+     * las plantillas. Lo pide el registro de correos, la pantalla de SMTP y la
+     * portada del panel; estaba copiado en dos controladores.
+     *
+     * @return array<string, mixed>
+     */
+    public function salud(): array
+    {
+        return [
+            'transporte' => $this->transporte(),
+            'cola' => $this->cola(),
+            'plantillas' => $this->plantillas(),
+        ];
+    }
+
     public function transporte(): array
     {
         $mailerEnv = config('mail.default');

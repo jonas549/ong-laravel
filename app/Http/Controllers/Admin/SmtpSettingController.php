@@ -19,11 +19,7 @@ class SmtpSettingController extends Controller
             // Qué transporte se usa de verdad y si la cola avanza. Rellenar
             // bien estos campos no sirve de nada si el worker no corre, y
             // hasta ahora ninguna pantalla lo decía.
-            'salud' => [
-                'transporte' => $diagnostico->transporte(),
-                'cola' => $diagnostico->cola(),
-                'plantillas' => $diagnostico->plantillas(),
-            ],
+            'salud' => $diagnostico->salud(),
         ]);
     }
 

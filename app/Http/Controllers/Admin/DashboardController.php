@@ -3,25 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Activity;
-use App\Models\EmailLog;
-use App\Models\Organization;
-use App\Models\Registration;
+use App\Services\DiagnosticoCorreo;
+use App\Services\ResumenPanel;
 
+/**
+ * La portada del panel.
+ *
+ * Delgado a propósito: los números y sus definiciones viven en ResumenPanel,
+ * porque cada uno lleva detrás una decisión —qué cuenta como organización
+ * activa, desde cuándo se mide una espera— y esas decisiones tienen que poder
+ * leerse juntas y comprobarse sin pasar por una petición HTTP.
+ */
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(ResumenPanel $resumen, DiagnosticoCorreo $correo)
     {
-        $porEstado = Activity::selectRaw('estado, COUNT(*) n')->groupBy('estado')->pluck('n', 'estado');
-
-        return view('admin.dashboard', [
-            'porEstado' => $porEstado,
-            'totalActividades' => $porEstado->sum(),
-            'pendientes' => $porEstado['revision'] ?? 0,
-            'organizaciones' => Organization::count(),
-            'inscritos' => Registration::where('estado', '!=', 'cancelado')->count(),
-            'correosFallidos' => EmailLog::fallidos()->count(),
-            'ultimas' => Activity::with('organization')->latest('updated_at')->take(8)->get(),
+        return view('admin.dashboard', $resumen->kpis() + [
+            'evolucion' => $resumen->evolucion(),
+            'pendientesDeRevision' => $resumen->pendientesDeRevision(),
+            'ultimasInscripciones' => $resumen->ultimasInscripciones(),
+            'alertas' => $resumen->alertas(),
+            // El estado del correo lo cuenta su propio aviso, que ya distingue
+            // un transporte que no entrega de una cola sin worker.
+            'salud' => $correo->salud(),
         ]);
     }
 }

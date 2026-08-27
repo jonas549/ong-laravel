@@ -55,26 +55,8 @@ class EmailLogController extends Controller
             'plantillas' => EmailTemplate::orderBy('nombre')->pluck('nombre', 'clave'),
             // Sin esto, una cola parada o un mailer que no entrega se leían en
             // esta pantalla como "todavía no se ha enviado nada".
-            'salud' => $this->salud(),
+            'salud' => app(DiagnosticoCorreo::class)->salud(),
         ]);
-    }
-
-    /**
-     * Lo que hay que saber antes de mirar la tabla: si el transporte entrega de
-     * verdad y si la cola avanza. Son los dos fallos que dejaban al panel
-     * enseñando una lista tranquilizadora mientras no salía un solo correo.
-     *
-     * @return array<string, mixed>
-     */
-    private function salud(): array
-    {
-        $diagnostico = app(DiagnosticoCorreo::class);
-
-        return [
-            'transporte' => $diagnostico->transporte(),
-            'cola' => $diagnostico->cola(),
-            'plantillas' => $diagnostico->plantillas(),
-        ];
     }
 
     public function show(EmailLog $email)
