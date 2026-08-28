@@ -47,8 +47,17 @@
             <x-panel.campo nombre="enlace_web" label="Sitio web" :valor="$organizacion->enlace_web" reglas="nullable|url|max:255" />
             <x-panel.campo nombre="enlace_red_social" label="Red social" :valor="$organizacion->enlace_red_social" reglas="nullable|url|max:255" />
 
-            <x-panel.campo nombre="logo_path" label="Logo" :valor="$organizacion->logo_path" reglas="nullable|string|max:255"
-                           ayuda="Ruta dentro de public/, por ejemplo img/logo-x.png. Todavía no hay subida de archivos." />
+            {{--
+                Antes era un campo de texto con la ruta escrita a mano y la nota
+                «todavía no hay subida de archivos». Ya la hay: el selector
+                envía la misma cadena, así que la validación del controlador no
+                cambia.
+            --}}
+            <div style="margin-bottom:18px;">
+                <x-panel.imagen name="logo_path" :value="$organizacion->logo_path" label="Logo"
+                                ayuda="Elígelo de la biblioteca o sube uno nuevo." :alto="110" />
+                @error('logo_path')<p class="field-error">{{ $message }}</p>@enderror
+            </div>
 
             <div style="display:flex;gap:10px;">
                 <button type="submit" class="btn btn-primary" data-cargando="Guardando…">Guardar cambios</button>

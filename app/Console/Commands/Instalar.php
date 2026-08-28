@@ -85,6 +85,18 @@ class Instalar extends Command
         $creadas = HomeSection::sembrarLasQueFalten();
         $this->line("     <fg=green>✓</> Secciones del home".($creadas ? " ({$creadas} nuevas)" : ' (ya estaban)'));
 
+        /*
+         * La biblioteca de medios.
+         *
+         * No mueve ni un archivo: deja una fila por cada imagen de `public/img`
+         * para que se puedan elegir desde el panel. Sin esto, una base limpia
+         * nace con la biblioteca vacía y el selector no ofrece nada, aunque las
+         * 75 imágenes del diseño estén ahí mismo.
+         */
+        $medios = app(\App\Services\Biblioteca::class)->indexarCodigo();
+        $this->line("     <fg=green>✓</> Biblioteca de medios"
+            .($medios['nuevos'] ? " ({$medios['nuevos']} nuevas)" : ' (ya estaba)'));
+
         // Los ajustes se leen de una caché que vive para siempre; sin esto, el
         // proceso siguiente seguiría viendo la foto anterior.
         cache()->forget(Setting::CACHE_KEY);

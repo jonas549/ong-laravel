@@ -1527,6 +1527,148 @@ button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
 
 .col-acciones .helper { margin-right: 8px; }
 
+/* ── Biblioteca de medios ───────────────────────────────── */
+
+/*
+ * Cuadrícula y no tabla: aquí se busca mirando, no leyendo. `auto-fill` y no
+ * `auto-fit` a propósito: con `auto-fit`, una búsqueda que devuelve un solo
+ * archivo lo estira hasta ocupar toda la fila y la miniatura sale gigante.
+ */
+.rejilla-medios {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 18px;
+}
+
+.ficha-medio {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--linea);
+    border-radius: 16px;
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.ficha-medio:hover,
+.ficha-medio:focus-visible {
+    transform: translateY(-2px);
+    border-color: #dcdee1;
+    box-shadow: 0 14px 30px -22px rgba(0, 0, 0, .45);
+}
+
+/*
+ * Fondo a cuadros: sin él, un PNG o un SVG con transparencia sobre blanco
+ * parece recortado, y varios de los logos lo son.
+ */
+.ficha-medio-imagen {
+    display: grid;
+    place-items: center;
+    height: 150px;
+    padding: 12px;
+    background-color: #fbfbfc;
+    background-image:
+        linear-gradient(45deg, #f0f1f2 25%, transparent 25%, transparent 75%, #f0f1f2 75%),
+        linear-gradient(45deg, #f0f1f2 25%, transparent 25%, transparent 75%, #f0f1f2 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    border-bottom: 1px solid var(--linea);
+}
+
+.ficha-medio-imagen img {
+    max-width: 100%;
+    max-height: 126px;
+    width: auto;
+    object-fit: contain;
+}
+
+.ficha-medio-perdida {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rosa);
+}
+
+.ficha-medio-pie {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 11px 13px 13px;
+    min-width: 0;
+}
+
+/* El nombre no puede empujar la tarjeta: son nombres de banco de imágenes. */
+.ficha-medio-nombre {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ficha-medio-pie .helper { font-size: 12px; }
+
+/* Marca de selección, para el selector. */
+.ficha-medio.esta-elegida {
+    border-color: var(--naranjo);
+    box-shadow: 0 0 0 2px var(--naranjo);
+}
+
+/*
+ * Un <button> que se lee como un enlace. Hace falta de verdad: «búscalas en tu
+ * equipo» abre el diálogo de archivos, que es una acción, no una navegación, y
+ * un <a href="#"> ahí rompe el teclado y ensucia el historial.
+ */
+.enlace-boton {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--naranjo);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.enlace-boton:hover { color: var(--naranjo-600); }
+
+@media (max-width: 560px) {
+    .rejilla-medios { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .ficha-medio-imagen { height: 116px; }
+    .ficha-medio-imagen img { max-height: 96px; }
+}
+
+/* La vista previa del campo de imagen: mismo fondo a cuadros que la ficha. */
+.campo-medio-vista {
+    display: grid;
+    place-items: center;
+    width: 190px;
+    flex: none;
+    padding: 10px;
+    border: 1px solid var(--linea);
+    border-radius: 14px;
+    box-sizing: border-box;
+    background-color: #fbfbfc;
+    background-image:
+        linear-gradient(45deg, #f0f1f2 25%, transparent 25%, transparent 75%, #f0f1f2 75%),
+        linear-gradient(45deg, #f0f1f2 25%, transparent 25%, transparent 75%, #f0f1f2 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+}
+
+.campo-medio-vista img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
+@media (max-width: 560px) {
+    .campo-medio-vista { width: 100%; }
+}
+
 /* ── Paginación ────────────────────────────────────────── */
 
 .paginacion {

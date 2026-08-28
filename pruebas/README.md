@@ -51,6 +51,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `permisos.mjs` | Que un organizador **no** llegue a los datos de otro cambiando el número de la URL, y que ningún rol entre en el panel del otro. Sesenta segundos y 29 comprobaciones; el que hay que correr al añadir cualquier pantalla que reciba un id. |
 | `bloque-g.mjs` | los once CRUD del bloque G: crear, editar, esconder, borrar en blando, papelera, restaurar, y el reflejo en el home (**necesita Chrome**) |
 | `bloque-g2.mjs` | filtros, orden, paginación, acciones masivas, reordenar arrastrando y exportar (**necesita Chrome**) |
+| `bloque-j.mjs` | la biblioteca de medios y el selector: subir, filtrar, elegir desde un formulario, editar, reemplazar y borrar (**necesita Chrome**) |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---
@@ -131,6 +132,7 @@ cd pruebas
 npm install puppeteer-core     # queda fuera de git, ver .gitignore
 node bloque-g.mjs              # 112 comprobaciones
 node bloque-g2.mjs             # 37
+node bloque-j.mjs              # 49
 ```
 
 Apuntan al Chrome instalado (`C:/Program Files/Google/Chrome/Application/chrome.exe`).

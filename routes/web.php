@@ -267,6 +267,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/taxonomias/{id}/restaurar', [Admin\TaxonomyController::class, 'restaurar'])->name('taxonomies.restaurar');
 
         // Contenido editable (CRUD genérico)
+        /*
+         * Biblioteca de medios.
+         *
+         * `buscar` va ANTES de `{medio}`: si no, el comodín se lo traga y la
+         * ruta del selector nunca se alcanza. Es la misma piedra con la que se
+         * tropezó «exportar» en organizaciones.
+         */
+        Route::get('/medios', [Admin\MediaController::class, 'index'])->name('medios.index');
+        Route::get('/medios/buscar', [Admin\MediaController::class, 'buscar'])->name('medios.buscar');
+        // Subir dispara una petición por tanda de archivos: freno propio, más
+        // ancho que el de un formulario normal pero lejos de ser libre.
+        Route::post('/medios', [Admin\MediaController::class, 'store'])
+            ->middleware('throttle:60,1')
+            ->name('medios.store');
+        Route::get('/medios/{medio}', [Admin\MediaController::class, 'show'])->name('medios.show');
+        Route::put('/medios/{medio}', [Admin\MediaController::class, 'update'])->name('medios.update');
+        Route::post('/medios/{medio}/reemplazar', [Admin\MediaController::class, 'reemplazar'])->name('medios.reemplazar');
+        Route::delete('/medios/{medio}', [Admin\MediaController::class, 'destroy'])->name('medios.destroy');
+
         Route::get('/contenido/{tipo}', [Admin\ContentController::class, 'index'])->name('content.index');
         // Antes que `/{tipo}/{id}`: si no, el comodin se traga «exportar».
         Route::get('/contenido/{tipo}/exportar', [Admin\ContentController::class, 'exportar'])->name('content.exportar');

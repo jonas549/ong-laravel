@@ -39,14 +39,31 @@
                 }
             @endphp
 
-            <x-panel.campo
-                :nombre="$campo"
-                :label="$meta['label']"
-                :tipo="$meta['tipo'] === 'datetime' ? 'datetime-local' : $meta['tipo']"
-                :valor="$valor"
-                :reglas="$meta['reglas'] ?? ''"
-                :opciones="$meta['opciones'] ?? []"
-                :ayuda="$meta['ayuda'] ?? null" />
+            @if ($meta['tipo'] === 'imagen')
+                {{--
+                    Antes esto era un campo de texto donde había que escribir la
+                    ruta a mano, y el archivo tenía que estar ya en el servidor.
+                    El selector envía exactamente la misma cadena, así que las
+                    reglas de validación de arriba siguen valiendo tal cual.
+                --}}
+                <div style="margin-bottom:18px;">
+                    <x-panel.imagen
+                        :name="$campo"
+                        :value="$valor"
+                        :label="$meta['label']"
+                        :ayuda="$meta['ayuda'] ?? null" />
+                    @error($campo)<p class="field-error">{{ $message }}</p>@enderror
+                </div>
+            @else
+                <x-panel.campo
+                    :nombre="$campo"
+                    :label="$meta['label']"
+                    :tipo="$meta['tipo'] === 'datetime' ? 'datetime-local' : $meta['tipo']"
+                    :valor="$valor"
+                    :reglas="$meta['reglas'] ?? ''"
+                    :opciones="$meta['opciones'] ?? []"
+                    :ayuda="$meta['ayuda'] ?? null" />
+            @endif
         @endforeach
 
         <div style="display:flex;gap:10px;">

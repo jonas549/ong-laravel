@@ -190,14 +190,26 @@
                             @endforeach
                         </select>
 
+                    @elseif ($campo['tipo'] === 'imagen')
+                        {{--
+                            El selector de la biblioteca, no un campo de texto.
+                            Envía la misma cadena de siempre —la ruta relativa a
+                            `public/`— así que el controlador y su validación no
+                            cambian. `medio-cambiado` es lo que despierta al
+                            autoguardado, que si no no se entera: un campo oculto
+                            no dispara `input` al cambiarlo por código.
+                        --}}
+                        <div x-on:medio-cambiado="tocado()">
+                            <x-panel.imagen
+                                :name="$clave"
+                                :value="$valor"
+                                :label="''"
+                                :alto="120" />
+                        </div>
+
                     @else
                         <input class="fld" id="c-{{ $clave }}" name="{{ $clave }}" type="text"
                                value="{{ $valor }}" x-on:input="tocado()">
-                    @endif
-
-                    @if ($campo['tipo'] === 'imagen' && $seccion->imagen($clave, borrador: true))
-                        <img src="{{ asset($seccion->imagen($clave, borrador: true)) }}" alt=""
-                             style="margin-top:10px;max-width:200px;height:auto;border-radius:10px;border:1px solid var(--linea);display:block;">
                     @endif
 
                     @if (! empty($campo['ayuda']))

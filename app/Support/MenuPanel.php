@@ -63,6 +63,8 @@ class MenuPanel
                 self::nodo('Tarjetas de "¿cómo participar?"', 'admin.content.index', ['tipo' => 'tarjetas'], [], 'admin.content.*'),
             ]),
 
+            self::nodo('Medios', 'admin.medios.index', [], [], 'admin.medios.*'),
+
             self::nodo('Catálogos', null, [], [
                 self::nodo('Temas', 'admin.taxonomies.index', ['grupo' => 'tema'], [], 'admin.taxonomies.*'),
                 self::nodo('Características', 'admin.taxonomies.index', ['grupo' => 'caracteristica'], [], 'admin.taxonomies.*'),

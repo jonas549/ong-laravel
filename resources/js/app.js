@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { iniciarAnclas } from './anclas';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
+import { selectorMedio, subidorMedios } from './medios';
 import {
     almacenConfirmacion,
     barraFiltros,
@@ -107,6 +108,10 @@ Alpine.data('dialogoConfirmar', dialogoConfirmar);
 Alpine.data('flash', flash);
 Alpine.data('campoValidado', campoValidado);
 Alpine.data('filasOrdenables', filasOrdenables);
+
+// Biblioteca de medios: la pantalla propia y el selector de cualquier campo.
+Alpine.data('subidorMedios', subidorMedios);
+Alpine.data('selectorMedio', selectorMedio);
 
 window.Alpine = Alpine;
 Alpine.start();

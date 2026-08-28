@@ -111,6 +111,15 @@
                             {{ $meta['opciones'][$fila->{$campo}] ?? $fila->{$campo} }}
                         @elseif ($meta['tipo'] === 'datetime')
                             {{ \App\Support\Fecha::corta($fila->{$campo}) }}
+                        @elseif ($meta['tipo'] === 'imagen')
+                            {{-- La miniatura dice en un vistazo lo que una ruta recortada no dice nunca. --}}
+                            @if ($fila->{$campo})
+                                <img loading="lazy" decoding="async" src="{{ asset($fila->{$campo}) }}"
+                                     alt="" title="{{ $fila->{$campo} }}"
+                                     style="width:56px;height:40px;object-fit:contain;border:1px solid var(--linea);border-radius:8px;background:#fbfbfc;display:block;">
+                            @else
+                                —
+                            @endif
                         @else
                             {{ Str::limit((string) $fila->{$campo}, 46) ?: '—' }}
                         @endif
