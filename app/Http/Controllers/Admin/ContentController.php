@@ -13,7 +13,10 @@ use App\Models\Testimonial;
 use App\Services\Exportador;
 use App\Support\Filtro;
 use App\Support\Listado;
+use App\Support\Papelera;
+use App\Support\Texto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -150,19 +153,95 @@ class ContentController extends Controller
             $consulta->where('activo', $estado === 'si');
         }
 
+        $consulta = Papelera::aplicar($consulta, $request);
+
         $ordenables = array_values(array_intersect(['orden', 'titulo', 'nombre', 'autor', 'etiqueta', 'anio', 'activo', 'created_at'], $campos));
         $ordenables[] = 'created_at';
         $porDefecto = in_array('orden', $campos, true) ? 'orden' : 'created_at';
+
+        $tieneOrden = in_array('orden', $campos, true);
+
+        /*
+         * Arrastrar para reordenar solo tiene sentido con la lista entera
+         * delante y en su propio orden: con un filtro puesto, o paginado, mover
+         * la fila 3 sobre la 5 no dice nada de lo que hay entre medias. Cuando
+         * no se puede, la pantalla lo explica en vez de dejar el arrastre
+         * puesto haciendo cosas que no se corresponden con lo que se ve.
+         */
+        $puedeReordenar = $tieneOrden
+            && ! $request->hasAny(['q', 'estado', 'papelera'])
+            && Filtro::texto($request, 'orden') === '';
 
         return view('admin.content.index', [
             'tipo' => $tipo,
             'def' => $def,
             'ordenables' => $ordenables,
             'tieneActivo' => in_array('activo', $campos, true),
+            'tieneOrden' => $tieneOrden,
+            'puedeReordenar' => $puedeReordenar,
+            'verEliminados' => Papelera::incluyeEliminados($request),
             'filas' => Listado::ordenar($consulta, $request, $ordenables, $porDefecto, $porDefecto === 'created_at' ? 'desc' : 'asc')
-                ->paginate(Listado::porPagina($request))
+                ->paginate($puedeReordenar ? 200 : Listado::porPagina($request))
                 ->withQueryString(),
         ]);
+    }
+
+    /** Enciende o apaga una fila desde su propio boton. */
+    public function alternar(string $tipo, int $id)
+    {
+        $def = $this->definicion($tipo);
+
+        abort_unless(array_key_exists('activo', $def['campos']), 404);
+
+        $fila = $def['modelo']::findOrFail($id);
+        $fila->update(['activo' => ! $fila->activo]);
+
+        return back()->with('ok', $fila->activo ? 'Ya se ve en el sitio.' : 'Escondido del sitio.');
+    }
+
+    /**
+     * Devuelve una fila eliminada.
+     *
+     * `withTrashed` porque el registro esta borrado: sin eso no se encuentra y
+     * el boton de restaurar daria 404 justo sobre la fila que lo ensena.
+     */
+    public function restaurar(string $tipo, int $id)
+    {
+        $def = $this->definicion($tipo);
+
+        $fila = $def['modelo']::withTrashed()->findOrFail($id);
+        $fila->restore();
+
+        return back()->with('ok', 'Restaurado. Vuelve a estar donde estaba.');
+    }
+
+    /**
+     * Guarda el orden que ha quedado tras arrastrar.
+     *
+     * Solo para los contenidos con columna `orden`; los demas se ordenan por
+     * fecha y ahi no hay nada que arrastrar.
+     */
+    public function reordenar(Request $request, string $tipo)
+    {
+        $def = $this->definicion($tipo);
+
+        abort_unless(array_key_exists('orden', $def['campos']), 404);
+
+        $ids = Listado::ids($request, 'orden');
+
+        if (! $ids) {
+            return response()->json(['ok' => false, 'error' => 'No llego ningun orden.'], 422);
+        }
+
+        DB::transaction(function () use ($def, $ids) {
+            foreach ($ids as $posicion => $id) {
+                $def['modelo']::whereKey($id)->update(['orden' => $posicion + 1]);
+            }
+        });
+
+        return $request->expectsJson()
+            ? response()->json(['ok' => true])
+            : back()->with('ok', 'Orden guardado.');
     }
 
     /**
@@ -182,13 +261,15 @@ class ContentController extends Controller
             return back()->with('error', 'No habia ninguna fila seleccionada.');
         }
 
-        $filas = $def['modelo']::whereIn('id', $ids)->get();
+        // `withTrashed` para que «restaurar» encuentre lo que hay que restaurar.
+        $filas = $def['modelo']::withTrashed()->whereIn('id', $ids)->get();
         $tieneActivo = array_key_exists('activo', $def['campos']);
 
         $hechas = match (true) {
             $accion === 'activar' && $tieneActivo => $this->cambiarVisible($filas, true),
             $accion === 'desactivar' && $tieneActivo => $this->cambiarVisible($filas, false),
             $accion === 'eliminar' => $this->eliminar($filas),
+            $accion === 'restaurar' => $this->restaurarVarias($filas),
             default => null,
         };
 
@@ -197,9 +278,10 @@ class ContentController extends Controller
         }
 
         return back()->with('ok', match ($accion) {
-            'activar' => $hechas.' '.\App\Support\Texto::plural('registro', $hechas).' '.\App\Support\Texto::plural('visible', $hechas).' en el sitio.',
-            'desactivar' => $hechas.' '.\App\Support\Texto::plural('registro', $hechas).' escondidos del sitio.',
-            default => $hechas.' '.\App\Support\Texto::plural('registro', $hechas).' '.\App\Support\Texto::plural('eliminado', $hechas).'.',
+            'activar' => Texto::cuantos($hechas, 'registro').' '.Texto::plural('visible', $hechas).' en el sitio.',
+            'desactivar' => Texto::cuantos($hechas, 'registro').' '.Texto::plural('escondido', $hechas).' del sitio.',
+            'restaurar' => Texto::cuantos($hechas, 'registro').' '.Texto::plural('restaurado', $hechas).'.',
+            default => Texto::cuantos($hechas, 'registro').' '.Texto::plural('eliminado', $hechas).'. Se recuperan con el filtro de la papelera.',
         });
     }
 
@@ -214,9 +296,19 @@ class ContentController extends Controller
     /** @param  \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>  $filas */
     private function eliminar($filas): int
     {
-        $filas->each(fn ($f) => $f->delete());
+        $vivas = $filas->reject(fn ($f) => $f->trashed());
+        $vivas->each(fn ($f) => $f->delete());
 
-        return $filas->count();
+        return $vivas->count();
+    }
+
+    /** @param  \Illuminate\Support\Collection<int, \Illuminate\Database\Eloquent\Model>  $filas */
+    private function restaurarVarias($filas): int
+    {
+        $muertas = $filas->filter(fn ($f) => $f->trashed());
+        $muertas->each(fn ($f) => $f->restore());
+
+        return $muertas->count();
     }
 
     public function create(string $tipo)

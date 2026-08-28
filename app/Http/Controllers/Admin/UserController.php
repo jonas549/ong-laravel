@@ -9,6 +9,8 @@ use App\Services\ControlDeAcceso;
 use App\Services\SesionesActivas;
 use App\Services\SmtpConfigService;
 use App\Support\Filtro;
+use App\Support\Listado;
+use App\Support\Papelera;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -36,7 +38,9 @@ class UserController extends Controller
             $rol = '';
         }
 
-        $usuarios = User::with('organization')
+        $estado = Filtro::texto($request, 'estado');
+
+        $consulta = User::with('organization')
             ->when($rol, fn ($q) => $q->where('role', $rol))
             ->when(Filtro::texto($request, 'q'), function ($q, $b) {
                 $b = Filtro::like($b);
@@ -45,13 +49,16 @@ class UserController extends Controller
                     $w->where('name', 'like', "%{$b}%")->orWhere('email', 'like', "%{$b}%");
                 });
             })
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+            ->when($estado !== '', fn ($q) => $q->where('is_active', $estado === 'si'));
+
+        $consulta = Papelera::aplicar($consulta, $request);
 
         return view('admin.users.index', [
-            'usuarios' => $usuarios,
+            'usuarios' => Listado::ordenar($consulta, $request, ['name', 'email', 'role', 'is_active', 'last_login_at', 'created_at'], 'name')
+                ->paginate(Listado::porPagina($request))
+                ->withQueryString(),
             'rol' => $rol,
+            'verEliminados' => Papelera::incluyeEliminados($request),
             'conteos' => User::selectRaw('role, COUNT(*) n')->groupBy('role')->pluck('n', 'role'),
         ]);
     }
@@ -183,6 +190,39 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.edit', [$user, 'rol' => $user->role])
             ->with('ok', $this->resumen($user, $cerradas, $aviso));
+    }
+
+    /**
+     * Elimina una cuenta, en blando.
+     *
+     * No se borra de verdad y no es por comodidad: la cuenta esta enganchada al
+     * registro de accesos, a los correos enviados y —si es organizadora— a una
+     * organizacion con sus actividades. Borrarla dejaria ese rastro apuntando a
+     * un hueco. Eliminada, deja de poder entrar y desaparece de los listados.
+     *
+     * La propia no: quien la pulse se quedaria fuera del panel a mitad de la
+     * peticion. Es la misma regla que ya impide desactivarse a uno mismo.
+     */
+    public function destroy(Request $request, User $user)
+    {
+        if ($user->id === $request->user()->id) {
+            return back()->with('error', 'No puedes eliminar tu propia cuenta.');
+        }
+
+        // Se cierran sus sesiones antes: si no, una sesion abierta seguiria
+        // sirviendo pantallas hasta que caducara.
+        $this->sesiones->cerrarTodas($user);
+        $user->delete();
+
+        return back()->with('ok', "«{$user->name}» eliminado. Se puede recuperar con el filtro de la papelera.");
+    }
+
+    public function restaurar(Request $request, int $id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        $user->restore();
+
+        return back()->with('ok', "«{$user->name}» restaurado. Ya puede volver a entrar.");
     }
 
     public function toggleActive(Request $request, User $user)

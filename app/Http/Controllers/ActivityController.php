@@ -26,9 +26,9 @@ class ActivityController extends Controller
 
         return view('public.activities.index', [
             'actividades' => $actividades,
-            'regiones' => Region::ordered()->get(),
+            'regiones' => Region::activas()->ordered()->get(),
             'comunas' => $request->integer('region')
-                ? Commune::where('region_id', $request->integer('region'))->orderBy('nombre')->get()
+                ? Commune::activas()->where('region_id', $request->integer('region'))->orderBy('nombre')->get()
                 : collect(),
             'temas' => TaxonomyTerm::grupo('tema')->activos()->ordered()->get(),
             'formatos' => Activity::FORMATOS,

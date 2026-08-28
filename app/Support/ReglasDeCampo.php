@@ -19,6 +19,11 @@ namespace App\Support;
  * Lo que no se puede traducir —`unique`, `exists`, una regla propia— no se
  * intenta: se queda sin aviso previo y lo dice el servidor al enviar. Fingir
  * que se comprueba algo que no se comprueba sería peor que no comprobarlo.
+ *
+ * `required_if` sí se traduce, pero **sólo como pista, nunca como atributo
+ * HTML**: `required` a secas bloquearía el envío también cuando la condición no
+ * se cumple. El aviso en pantalla mira el otro campo y aparece o no según su
+ * valor, que es lo mismo que hace el servidor.
  */
 class ReglasDeCampo
 {
@@ -38,6 +43,7 @@ class ReglasDeCampo
 
             match ($nombre) {
                 'required' => $attrs['required'] = true,
+                // `required_if` a propósito no pone nada: ver la cabecera.
                 'email' => $attrs['type'] = 'email',
                 'url' => $attrs['type'] = 'url',
                 'numeric', 'integer' => $attrs['inputmode'] = 'numeric',
@@ -71,6 +77,7 @@ class ReglasDeCampo
 
             match ($nombre) {
                 'required' => $pistas['requerido'] = true,
+                'required_if' => $pistas['requeridoSi'] = static::condicion($valor),
                 'email' => $pistas['formato'] = 'email',
                 'url' => $pistas['formato'] = 'url',
                 'max' => $pistas['max'] = (int) $valor,
@@ -80,6 +87,21 @@ class ReglasDeCampo
         }
 
         return $pistas;
+    }
+
+    /**
+     * `required_if:tipo,Otra` o `required_if:tipo,Otra,Ninguna`.
+     *
+     * Devuelve de qué campo depende y con qué valores hace falta.
+     *
+     * @return array{campo: string, valores: array<int, string>}
+     */
+    private static function condicion(string $valor): array
+    {
+        $trozos = array_map('trim', explode(',', $valor));
+        $campo = array_shift($trozos) ?? '';
+
+        return ['campo' => $campo, 'valores' => array_values(array_filter($trozos, fn ($v) => $v !== ''))];
     }
 
     /**

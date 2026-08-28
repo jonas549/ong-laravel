@@ -21,7 +21,10 @@ class ActivityCatalogService
     {
         return [
             'formatos' => Activity::FORMATOS,
-            'regiones' => Region::ordered()->with('communes')->get(),
+            // Solo las encendidas, y sus comunas encendidas: apagar una comuna
+            // en el panel tiene que quitarla de este selector, o el interruptor
+            // no hace nada visible y es peor que no tenerlo.
+            'regiones' => Region::activas()->ordered()->with(['communes' => fn ($q) => $q->activas()])->get(),
             'temas' => $this->terminos('tema'),
             'caracteristicas' => $this->terminos('caracteristica'),
             'publicos' => $this->terminos('publico'),

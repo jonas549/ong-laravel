@@ -24,3 +24,9 @@ yarn-error.log
 
 # El buzón del SMTP de pruebas: se regenera en cada tanda.
 /pruebas/buzon.jsonl
+
+# Las dos pruebas de navegador necesitan `puppeteer-core`, que se instala
+# dentro de `pruebas/`. El script sí se versiona; la dependencia no.
+/pruebas/node_modules
+/pruebas/package.json
+/pruebas/package-lock.json

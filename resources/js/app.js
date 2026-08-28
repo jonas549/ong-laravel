@@ -6,6 +6,7 @@ import {
     barraFiltros,
     campoValidado,
     dialogoConfirmar,
+    filasOrdenables,
     flash,
     iniciarEstadosDeCarga,
     tablaSeleccion,
@@ -105,6 +106,7 @@ Alpine.data('barraFiltros', barraFiltros);
 Alpine.data('dialogoConfirmar', dialogoConfirmar);
 Alpine.data('flash', flash);
 Alpine.data('campoValidado', campoValidado);
+Alpine.data('filasOrdenables', filasOrdenables);
 
 window.Alpine = Alpine;
 Alpine.start();

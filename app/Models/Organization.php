@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Organization extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /** Los cinco tipos del paso 2 del wizard. */
     public const TIPOS = [
@@ -24,13 +26,14 @@ class Organization extends Model
     protected $fillable = [
         'user_id', 'nombre', 'slug', 'tipo', 'tipo_otro', 'descripcion', 'logo_path',
         'num_voluntarios', 'unidad_educativa', 'correo_contacto', 'enlace_web',
-        'enlace_red_social', 'verificada',
+        'enlace_red_social', 'verificada', 'activo',
     ];
 
     protected function casts(): array
     {
         return [
             'verificada' => 'boolean',
+            'activo' => 'boolean',
             'num_voluntarios' => 'integer',
         ];
     }
@@ -58,6 +61,16 @@ class Organization extends Model
         return $slug;
     }
 
+    /**
+     * Las que se ven. Una organizacion apagada deja de salir en los listados
+     * publicos, pero no se lleva por delante sus actividades ni las
+     * inscripciones de esas actividades: por eso se apaga en vez de borrarse.
+     */
+    public function scopeActivas($query)
+    {
+        return $query->where('activo', true);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -66,6 +79,18 @@ class Organization extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);
+    }
+
+    /**
+     * Las inscripciones de todas sus actividades.
+     *
+     * Existe para poder decir en pantalla que se llevaria por delante un
+     * borrado: «7 actividades y 24 inscripciones» se entiende, y «no se puede
+     * eliminar» a secas, no.
+     */
+    public function registrations(): HasManyThrough
+    {
+        return $this->hasManyThrough(Registration::class, Activity::class);
     }
 
     /** El nombre del tipo, resolviendo el campo libre cuando es "Otra". */

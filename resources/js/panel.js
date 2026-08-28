@@ -11,6 +11,8 @@
  * `init()`**, que es el único sitio donde `$el` sí lo es.
  */
 
+import { token } from './csrf';
+
 /* ─────────────────────────────────── selección múltiple en tablas ── */
 
 export const tablaSeleccion = (que = 'registros') => ({
@@ -58,21 +60,39 @@ export const tablaSeleccion = (que = 'registros') => ({
     /**
      * Antes de una acción masiva destructiva, pregunta.
      *
-     * Aquí sí se usa `confirm()` y no el diálogo propio, a propósito: el envío
-     * es síncrono y hay que decidir en el acto si se deja pasar. Abrir el
-     * diálogo obligaría a cancelar el envío, esperar la respuesta y volver a
-     * enviarlo, que es más piezas moviéndose para el mismo resultado.
+     * Con el mismo diálogo que las acciones de una sola fila, no con el
+     * `confirm()` del navegador: sale con la tipografía del sistema, no se
+     * puede escribir en el castellano del proyecto, y ya se quitó de los otros
+     * dos sitios donde estaba.
      *
-     * El diálogo propio sí se usa en las acciones de una sola fila, que es
-     * donde se ven casi siempre.
+     * El envío sí es síncrono, así que se corta, se pregunta, y al aceptar se
+     * vuelve a enviar con `requestSubmit(boton)`, que conserva el `name` y el
+     * `value` del botón pulsado y por tanto qué acción era. La marca
+     * `data-confirmado` en el formulario es lo que evita que la segunda vuelta
+     * pregunte otra vez.
      */
     confirmarAccion(evento) {
+        const formulario = evento.target;
         const boton = evento.submitter;
         const texto = boton?.dataset?.confirmar;
 
+        if (formulario.dataset.confirmado === '1') {
+            delete formulario.dataset.confirmado;
+
+            return true;
+        }
+
         if (!texto) return true;
 
-        return window.confirm(`${texto}\n\n${this.resumen()}.`);
+        this.$store.confirmacion.abrir({
+            titulo: boton.textContent.trim(),
+            texto: `${this.resumen()}. ${texto}`,
+            confirmar: 'Sí, continuar',
+            peligro: true,
+            objetivo: boton,
+        });
+
+        return false;
     },
 });
 
@@ -119,10 +139,45 @@ export const almacenConfirmacion = {
     peligro: true,
     // Desde dónde se abrió, para devolverle el foco al cerrar.
     origen: null,
+    /*
+     * Botón de otro formulario que hay que reenviar al aceptar, en vez de
+     * enviar el formulario del propio diálogo. Lo usan las acciones masivas de
+     * la tabla, que llevan marcados los ids y no se pueden rehacer desde aquí.
+     */
+    objetivo: null,
 
     abrir(datos) {
         this.origen = document.activeElement;
+        this.objetivo = null;
         Object.assign(this, datos, { abierto: true });
+    },
+
+    /**
+     * Reenvía el formulario de quien preguntó.
+     *
+     * Sólo se usa cuando hay `objetivo`, es decir cuando quien pregunta es una
+     * acción masiva de la tabla. En el caso normal el diálogo envía su propio
+     * formulario sin pasar por aquí.
+     *
+     * `requestSubmit(boton)` conserva el `name` y el `value` del botón, que es
+     * lo que dice qué acción masiva se pidió. La marca `data-confirmado` avisa
+     * al manejador de que esta vuelta ya viene contestada.
+     */
+    aceptar() {
+        const objetivo = this.objetivo;
+
+        if (! objetivo) return;
+
+        const formulario = objetivo.form;
+
+        this.abierto = false;
+        this.origen = null;
+        this.objetivo = null;
+
+        if (! formulario) return;
+
+        formulario.dataset.confirmado = '1';
+        formulario.requestSubmit(objetivo);
     },
 
     cerrar() {
@@ -218,9 +273,54 @@ export const campoValidado = (pistas) => ({
     aviso: '',
     tocado: false,
     entrada: null,
+    // Si hace falta rellenarlo AHORA MISMO. Con `required_if` cambia al vuelo,
+    // y de esto cuelga el asterisco de la etiqueta.
+    obligatorio: false,
 
     init() {
         this.entrada = this.$refs.entrada ?? null;
+
+        /*
+         * Con `required_if`, el aviso depende de OTRO campo. Hay que volver a
+         * mirar cuando aquél cambia: si no, se marca en rojo un campo que ya
+         * dejó de hacer falta, o al revés.
+         */
+        this.obligatorio = this.haceFalta();
+
+        const otro = this.deQuienDepende();
+
+        if (! otro) return;
+
+        const alCambiar = () => {
+            this.obligatorio = this.haceFalta();
+
+            if (this.tocado) this.revisar();
+        };
+
+        // `change` cubre los selectores y `input` los campos de texto.
+        otro.addEventListener('change', alCambiar);
+        otro.addEventListener('input', alCambiar);
+    },
+
+    /** El campo del que depende un `required_if`, dentro del mismo formulario. */
+    deQuienDepende() {
+        const nombre = pistas.requeridoSi?.campo;
+
+        if (! nombre || ! this.entrada) return null;
+
+        const formulario = this.entrada.form ?? document;
+
+        return formulario.querySelector(`[name="${nombre}"]`);
+    },
+
+    /** ¿Hace falta rellenarlo, contando el `required_if`? */
+    haceFalta() {
+        if (pistas.requerido) return true;
+        if (! pistas.requeridoSi) return false;
+
+        const otro = this.deQuienDepende();
+
+        return !! otro && pistas.requeridoSi.valores.includes(otro.value);
     },
 
     valor() {
@@ -246,7 +346,7 @@ export const campoValidado = (pistas) => ({
     problema() {
         const v = this.valor();
 
-        if (pistas.requerido && v === '') {
+        if (this.haceFalta() && v === '') {
             return `${pistas.etiqueta || 'Este campo'} no puede quedar vacío.`;
         }
 
@@ -406,3 +506,93 @@ export const iniciarEstadosDeCarga = () => {
         document.querySelectorAll('[data-ocupado="1"]').forEach(liberar);
     });
 };
+
+/* ────────────────────────────────── reordenar arrastrando ── */
+
+/**
+ * Arrastrar filas de una tabla para cambiar su orden.
+ *
+ * Es hermano del que ordena las secciones del home, pero generico: sirve para
+ * cualquier listado con columna `orden`. Se movio aqui en vez de copiarlo
+ * porque el bloque G lo necesitaba en cuatro sitios mas.
+ *
+ * Como todo lo de este archivo, la raiz se guarda en `init()`: dentro de un
+ * `x-on:dragend` puesto en un `<tr>`, `$el` es esa fila y no la tabla.
+ */
+export const filasOrdenables = (urlOrden) => ({
+    arrastrando: null,
+    guardando: false,
+    error: '',
+    cuerpo: null,
+
+    init() {
+        this.cuerpo = this.$el.querySelector('tbody');
+    },
+
+    empezar(evento, id) {
+        this.arrastrando = String(id);
+        evento.dataTransfer.effectAllowed = 'move';
+        // Firefox no arranca el arrastre si no se escribe algo aqui.
+        evento.dataTransfer.setData('text/plain', String(id));
+    },
+
+    /*
+     * Se mueve el nodo en el DOM en vez de repintar con Alpine: repintar a
+     * media operacion cancela el arrastre del navegador, porque el elemento que
+     * se esta arrastrando deja de existir.
+     */
+    sobre(evento, id) {
+        if (!this.arrastrando || String(id) === this.arrastrando) return;
+
+        const origen = this.cuerpo?.querySelector(`[data-fila="${this.arrastrando}"]`);
+        const destino = this.cuerpo?.querySelector(`[data-fila="${id}"]`);
+
+        if (!origen || !destino) return;
+
+        const caja = destino.getBoundingClientRect();
+        const despues = evento.clientY > caja.top + caja.height / 2;
+
+        destino.parentNode.insertBefore(origen, despues ? destino.nextSibling : destino);
+    },
+
+    async terminar() {
+        if (!this.arrastrando) return;
+
+        this.arrastrando = null;
+
+        const orden = [...(this.cuerpo?.querySelectorAll('[data-fila]') ?? [])]
+            .map((f) => f.getAttribute('data-fila'));
+
+        if (!orden.length) {
+            this.error = 'No se pudo leer el orden nuevo. Recarga la pagina.';
+
+            return;
+        }
+
+        this.guardando = true;
+        this.error = '';
+
+        try {
+            const cuerpo = new FormData();
+            orden.forEach((id) => cuerpo.append('orden[]', id));
+
+            const r = await fetch(urlOrden, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' },
+                body: cuerpo,
+            });
+
+            if (!r.ok) throw new Error(String(r.status));
+        } catch (e) {
+            /*
+             * El motivo va a la consola a proposito. Un `catch` mudo escondio
+             * durante una tarde que aqui faltaba una funcion: en pantalla ponia
+             * «no se pudo guardar» y parecia cosa del servidor.
+             */
+            console.error('No se pudo guardar el orden:', e);
+            this.error = 'No se pudo guardar el orden. Recarga para ver como quedo de verdad.';
+        } finally {
+            this.guardando = false;
+        }
+    },
+});

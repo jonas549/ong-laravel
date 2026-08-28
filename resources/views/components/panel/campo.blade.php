@@ -60,6 +60,13 @@
             @if ($attrs['required'] ?? false)
                 <span class="campo-obligatorio" aria-hidden="true">*</span>
                 <span class="visualmente-oculto">(obligatorio)</span>
+            @elseif (isset($pistas['requeridoSi']))
+                {{-- Con `required_if` el asterisco va y viene con el campo del
+                     que depende, igual que la regla del servidor. --}}
+                <span x-show="obligatorio" x-cloak>
+                    <span class="campo-obligatorio" aria-hidden="true">*</span>
+                    <span class="visualmente-oculto">(obligatorio)</span>
+                </span>
             @endif
         </label>
 

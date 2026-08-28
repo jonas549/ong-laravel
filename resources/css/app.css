@@ -1508,6 +1508,25 @@ button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
 
 .tabla-acciones-botones { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ── Filas eliminadas y columna de acciones ────────────── */
+
+/*
+ * Una fila eliminada se ve, pero se ve apagada: esta ahi para poder
+ * restaurarla, no para confundirse con las vivas.
+ */
+.fila-eliminada { opacity: .55; }
+
+.fila-eliminada td:not(.col-acciones) { text-decoration: line-through; text-decoration-color: var(--linea); }
+
+.col-acciones {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.col-acciones > * { vertical-align: middle; }
+
+.col-acciones .helper { margin-right: 8px; }
+
 /* ── Paginación ────────────────────────────────────────── */
 
 .paginacion {

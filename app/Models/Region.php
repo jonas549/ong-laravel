@@ -10,7 +10,24 @@ class Region extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'slug', 'orden'];
+    protected $fillable = ['nombre', 'slug', 'orden', 'activo'];
+
+    protected function casts(): array
+    {
+        return ['activo' => 'boolean'];
+    }
+
+    /**
+     * Las que se ofrecen al publicar.
+     *
+     * Una region apagada deja de salir en los selectores del wizard, pero no se
+     * borra: hay actividades apuntando a ella y borrarla las dejaria sin
+     * ubicacion. Por eso aqui se apaga y no se elimina.
+     */
+    public function scopeActivas($query)
+    {
+        return $query->where('activo', true);
+    }
 
     public function communes(): HasMany
     {

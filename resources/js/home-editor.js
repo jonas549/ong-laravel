@@ -11,7 +11,7 @@
  * pintarlo. Esto decide qué es cómodo escribir, no qué es seguro guardar.
  */
 
-const token = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+import { token } from './csrf';
 
 /* ─────────────────────────────────────────────── editor de texto rico ── */
 

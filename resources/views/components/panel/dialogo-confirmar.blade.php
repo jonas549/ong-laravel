@@ -16,6 +16,10 @@
     - El formulario se envía de verdad, con su token y su `_method`: la acción
       destructiva sigue siendo un POST del servidor, no algo que decida el
       navegador.
+    - **Cuando quien pregunta es una acción masiva de la tabla**, el envío no
+      sale de aquí: el almacén guarda el botón que lo pidió y reenvía *su*
+      formulario, que es el que lleva marcados los ids. Este de abajo se queda
+      quieto.
 --}}
 
 <div x-data="dialogoConfirmar()" x-show="$store.confirmacion.abierto" x-cloak
@@ -28,7 +32,8 @@
         <h2 class="dialogo-titulo" x-text="$store.confirmacion.titulo"></h2>
         <p class="dialogo-texto" x-text="$store.confirmacion.texto"></p>
 
-        <form method="POST" :action="$store.confirmacion.accion" class="dialogo-botones">
+        <form method="POST" :action="$store.confirmacion.accion" class="dialogo-botones"
+              x-on:submit="if ($store.confirmacion.objetivo) { $event.preventDefault(); $store.confirmacion.aceptar(); }">
             @csrf
             <input type="hidden" name="_method" :value="$store.confirmacion.metodo">
 

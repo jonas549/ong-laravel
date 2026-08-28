@@ -49,6 +49,8 @@ contra producción: varios borran filas y cambian contraseñas.
 | `panel-home.mjs` | Que cada número de la portada del panel coincida con su consulta en MySQL, y que **cambie cuando cambia la base**: publica una actividad, inscribe a alguien, lo cancela y lo borra, mirando la pantalla en cada paso. |
 | `panel-vacio.php` | Que con la base **vacía** todo dé cero. Corre dentro de una transacción que se deshace: `php artisan tinker --execute="require base_path('pruebas/panel-vacio.php');"` |
 | `permisos.mjs` | Que un organizador **no** llegue a los datos de otro cambiando el número de la URL, y que ningún rol entre en el panel del otro. Sesenta segundos y 29 comprobaciones; el que hay que correr al añadir cualquier pantalla que reciba un id. |
+| `bloque-g.mjs` | los once CRUD del bloque G: crear, editar, esconder, borrar en blando, papelera, restaurar, y el reflejo en el home (**necesita Chrome**) |
+| `bloque-g2.mjs` | filtros, orden, paginación, acciones masivas, reordenar arrastrando y exportar (**necesita Chrome**) |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---
@@ -117,16 +119,24 @@ el arrastre que mandaba el cuerpo vacío y una palabra larga que desbordaba su
 caja —con la página sin desbordar, así que ni siquiera se veía mirando el ancho
 total—.
 
-Para eso hace falta un navegador de verdad. No está en el repositorio porque
-`puppeteer-core` es una dependencia grande y estos scripts no tienen ninguna,
-pero se monta en un minuto:
+Para eso hace falta un navegador de verdad. **Dos de los scripts de aquí ya lo
+usan** —`bloque-g.mjs` y `bloque-g2.mjs`, los del bloque G—, así que la parte de
+«habría que montarlo» ya está montada.
+
+`puppeteer-core` no se versiona: es una dependencia grande y sólo hace falta
+para esos dos. Se instala una vez, dentro de esta carpeta:
 
 ```bash
-mkdir /tmp/pruebas-navegador && cd /tmp/pruebas-navegador
-npm install puppeteer-core
-# y se apunta al Chrome instalado:
-#   puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' })
+cd pruebas
+npm install puppeteer-core     # queda fuera de git, ver .gitignore
+node bloque-g.mjs              # 112 comprobaciones
+node bloque-g2.mjs             # 37
 ```
+
+Apuntan al Chrome instalado (`C:/Program Files/Google/Chrome/Application/chrome.exe`).
+Las capturas van al temporal del sistema; con `DPS_SALIDA` se manda a otra parte.
+
+Los demás scripts no necesitan nada: conducen la aplicación por HTTP.
 
 Lo que conviene comprobar ahí, y no aquí:
 

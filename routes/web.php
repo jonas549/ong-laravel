@@ -200,6 +200,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('organizations.verificacion');
         Route::post('/organizaciones/{organization}/verificar', [Admin\OrganizationController::class, 'toggleVerified'])
             ->name('organizations.verify');
+        // Antes que `/{organization}`: si no, el comodin se traga «exportar».
+        Route::get('/organizaciones/exportar', [Admin\OrganizationController::class, 'exportar'])->name('organizations.exportar');
+        Route::get('/organizaciones/{organization}/editar', [Admin\OrganizationController::class, 'edit'])->name('organizations.edit');
+        Route::put('/organizaciones/{organization}', [Admin\OrganizationController::class, 'update'])->name('organizations.update');
+        Route::post('/organizaciones/{organization}/estado', [Admin\OrganizationController::class, 'alternar'])->name('organizations.alternar');
+        Route::delete('/organizaciones/{organization}', [Admin\OrganizationController::class, 'destroy'])->name('organizations.destroy');
+        Route::post('/organizaciones/{id}/restaurar', [Admin\OrganizationController::class, 'restaurar'])->name('organizations.restaurar');
 
         Route::get('/inscripciones', [Admin\RegistrationController::class, 'index'])->name('registrations.index');
         Route::get('/inscripciones/exportar', [Admin\RegistrationController::class, 'exportar'])->name('registrations.exportar');
@@ -216,6 +223,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->middleware('throttle:10,1')
             ->name('users.password');
         Route::post('/usuarios/{user}/estado', [Admin\UserController::class, 'toggleActive'])->name('users.toggle');
+        Route::delete('/usuarios/{user}', [Admin\UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/usuarios/{id}/restaurar', [Admin\UserController::class, 'restaurar'])->name('users.restaurar');
 
         // Buscador del panel
         Route::get('/buscar', Admin\BuscadorController::class)->name('buscar');
@@ -243,18 +252,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Regiones y comunas (sólo consulta)
         Route::get('/regiones', [Admin\RegionController::class, 'index'])->name('regiones.index');
+        Route::get('/regiones/exportar', [Admin\RegionController::class, 'exportar'])->name('regiones.exportar');
+        Route::post('/regiones/comuna/{commune}/estado', [Admin\RegionController::class, 'alternarComuna'])->name('regiones.comuna.estado');
+        Route::post('/regiones/{region}/estado', [Admin\RegionController::class, 'alternarRegion'])->name('regiones.estado');
 
         // Taxonomías
         Route::get('/taxonomias', [Admin\TaxonomyController::class, 'index'])->name('taxonomies.index');
         Route::post('/taxonomias', [Admin\TaxonomyController::class, 'store'])->name('taxonomies.store');
         Route::put('/taxonomias/{term}', [Admin\TaxonomyController::class, 'update'])->name('taxonomies.update');
         Route::delete('/taxonomias/{term}', [Admin\TaxonomyController::class, 'destroy'])->name('taxonomies.destroy');
+        Route::get('/taxonomias/exportar', [Admin\TaxonomyController::class, 'exportar'])->name('taxonomies.exportar');
+        Route::post('/taxonomias/orden', [Admin\TaxonomyController::class, 'reordenar'])->name('taxonomies.orden');
+        Route::post('/taxonomias/{term}/estado', [Admin\TaxonomyController::class, 'alternar'])->name('taxonomies.alternar');
+        Route::post('/taxonomias/{id}/restaurar', [Admin\TaxonomyController::class, 'restaurar'])->name('taxonomies.restaurar');
 
         // Contenido editable (CRUD genérico)
         Route::get('/contenido/{tipo}', [Admin\ContentController::class, 'index'])->name('content.index');
         // Antes que `/{tipo}/{id}`: si no, el comodin se traga «exportar».
         Route::get('/contenido/{tipo}/exportar', [Admin\ContentController::class, 'exportar'])->name('content.exportar');
         Route::post('/contenido/{tipo}/acciones', [Admin\ContentController::class, 'masivas'])->name('content.masivas');
+        Route::post('/contenido/{tipo}/orden', [Admin\ContentController::class, 'reordenar'])->name('content.orden');
+        Route::post('/contenido/{tipo}/{id}/estado', [Admin\ContentController::class, 'alternar'])->name('content.alternar');
+        Route::post('/contenido/{tipo}/{id}/restaurar', [Admin\ContentController::class, 'restaurar'])->name('content.restaurar');
         Route::get('/contenido/{tipo}/nuevo', [Admin\ContentController::class, 'create'])->name('content.create');
         Route::post('/contenido/{tipo}', [Admin\ContentController::class, 'store'])->name('content.store');
         Route::get('/contenido/{tipo}/{id}/editar', [Admin\ContentController::class, 'edit'])->name('content.edit');
