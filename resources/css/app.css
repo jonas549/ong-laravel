@@ -708,41 +708,63 @@ a.textlink:hover { color: var(--naranjo-600); }
 .actcard { transition: transform .2s ease, box-shadow .2s ease; }
 
 /*
- * Auspiciadores: todas las cajas iguales, el logo se escala dentro. Sustituye
- * al ancho por contenido del fuente, donde ninguna medía lo mismo.
+ * Auspiciadores.
+ *
+ * El fuente reparte cada grupo con `flex-wrap` centrado, no con una grilla de
+ * columnas fijas. La grilla de 4 columnas que había aquí daba el resultado
+ * correcto sólo si el grupo traía 4 logos: con dos, llenaba las dos primeras
+ * columnas y dejaba el bloque pegado a la izquierda, desalineado de su propia
+ * etiqueta, que sí va centrada. Los tres grupos tienen dos logos, así que se
+ * veía en los tres.
+ *
+ * El tamaño de la tarjeta también es del grupo, como en el fuente: el
+ * destacado va grande y el resto chico.
  */
-.grid-logos {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 18px;
-    align-items: stretch;
+.logos-fila {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-.grid-logos .logo-chip {
+.logos-fila .logo-chip {
     display: grid;
     place-items: center;
-    height: 112px;
-    padding: 0 18px;
     background: #fff;
     border: 1px solid #eef0f1;
-    border-radius: 16px;
     box-shadow: 0 6px 18px -14px rgba(0, 0, 0, .25);
     transition: transform .2s ease;
+
+    /*
+     * `border-box` explícito: este proyecto no lleva reset global, así que sin
+     * esto el `max-width` no contaría el padding y la tarjeta se saldría de su
+     * columna en pantallas estrechas.
+     */
+    box-sizing: border-box;
+    max-width: 100%;
 }
 
-.grid-logos .logo-chip img {
-    max-height: 56px;
-    max-width: 100%;
+.logos-fila .logo-chip img {
     width: auto;
     object-fit: contain;
 }
 
-.grid-logos .logo-chip span {
+.logos-fila .logo-chip span {
     font-weight: 800;
-    font-size: 18px;
     letter-spacing: -.01em;
     color: var(--gris-700);
 }
+
+/* El grupo destacado. */
+.logos-fila--grande { gap: 24px; }
+.logos-fila--grande .logo-chip { height: 124px; padding: 0 44px; border-radius: 16px; }
+.logos-fila--grande .logo-chip img { max-height: 76px; max-width: 300px; }
+.logos-fila--grande .logo-chip span { font-size: 22px; }
+
+/* El resto. */
+.logos-fila--chico { gap: 18px; }
+.logos-fila--chico .logo-chip { height: 76px; padding: 0 26px; border-radius: 14px; }
+.logos-fila--chico .logo-chip img { max-height: 44px; max-width: 200px; }
+.logos-fila--chico .logo-chip span { font-size: 20px; white-space: nowrap; }
 
 .logo-chip:hover { transform: scale(1.05); }
 
@@ -929,7 +951,9 @@ table.plist tr:hover td { background: #fdfcfb; }
     .adorno { top: -12px !important; right: -6px !important; width: 56px !important; height: 56px !important; }
 
     .grid-2 { grid-template-columns: 1fr !important; }
-    .grid-logos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    /* Se encoge la tarjeta grande para que el grupo destacado siga en una fila. */
+    .logos-fila--grande .logo-chip { height: 108px; padding: 0 28px; }
+    .logos-fila--grande .logo-chip img { max-height: 64px; max-width: 240px; }
 }
 
 /* ── Panel admin ────────────────────────────────────────── */
@@ -1345,9 +1369,14 @@ button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
 /* ── Teléfono ───────────────────────────────────────────── */
 
 @media (max-width: 560px) {
-    .grid-logos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .grid-logos .logo-chip { height: 88px; padding: 0 12px; }
-    .grid-logos .logo-chip img { max-height: 44px; }
+    /* Dos por fila también en móvil, como estaba con la grilla. */
+    .logos-fila--grande { gap: 12px; }
+    .logos-fila--grande .logo-chip { height: 92px; padding: 0 14px; }
+    .logos-fila--grande .logo-chip img { max-height: 52px; max-width: 128px; }
+
+    .logos-fila--chico { gap: 12px; }
+    .logos-fila--chico .logo-chip { height: 70px; padding: 0 12px; }
+    .logos-fila--chico .logo-chip img { max-height: 38px; max-width: 139px; }
 
     .nav-sep, .nav-cos { display: none !important; }
     .nav-logos img { height: 34px !important; }
