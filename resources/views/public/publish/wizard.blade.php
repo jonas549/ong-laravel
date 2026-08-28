@@ -16,7 +16,7 @@
 
 <div x-data="wizard({
         paso: {{ $pasoInicial }},
-        tipo: {{ Js::from(old('org_tipo', $tiposOrg[0])) }},
+        tipo: {{ Js::from(old('org_tipo', $organizacion?->tipo ?? $tiposOrg[0])) }},
         temas: {{ Js::from(old('temas', [])) }},
         caracteristicas: {{ Js::from(old('caracteristicas', [])) }},
         publicos: {{ Js::from(old('publicos', [])) }},

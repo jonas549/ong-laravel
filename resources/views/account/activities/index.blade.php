@@ -17,8 +17,6 @@
         'Canceladas' => 'Ya no aparecen en el calendario',
         'Borradores' => 'Guardadas sin enviar a revisión',
     ];
-
-    $duplicables = $actividades->where('estado', '!=', 'cancelada');
 @endphp
 
 {{-- PANTALLA 1 — MIS ACTIVIDADES de mi-cuenta.html --}}
@@ -58,7 +56,7 @@
             <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 10px;color:var(--ink);">Mis actividades</h1>
             <p style="font-size:16.5px;line-height:1.6;color:var(--gris);margin:0;max-width:56ch;text-wrap:pretty;">Aquí puedes revisar el estado de tus actividades, editarlas y registrar nuevas iniciativas.</p>
         </div>
-        <button type="button" class="btn btn-primary" x-on:click="modal = 'nueva'">+ Sumar nueva actividad</button>
+        <a href="{{ route('publish.create') }}" class="btn btn-primary">+ Sumar nueva actividad</a>
     </div>
 
     @if ($necesitanAjustes > 0)
@@ -150,55 +148,6 @@
             @endforeach
         </div>
     @endif
-
-    {{-- ══ MODAL — SUMAR NUEVA ACTIVIDAD ══ --}}
-    <div x-show="modal === 'nueva'" x-cloak
-         x-data="{ eligiendo: false, cual: {{ Js::from($duplicables->isEmpty() ? '' : route('account.activities.duplicate', $duplicables->first())) }} }"
-         style="position:fixed;inset:0;z-index:80;background:rgba(51,54,58,.45);backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px;"
-         x-on:click.self="modal = null" x-on:keydown.escape.window="modal = null">
-        <div style="background:#fff;border-radius:26px;padding:34px 32px;max-width:560px;width:100%;box-sizing:border-box;box-shadow:0 40px 80px -40px rgba(0,0,0,.5);"
-             role="dialog" aria-modal="true" aria-labelledby="mn-t">
-            <h2 id="mn-t" style="font-size:26px;font-weight:800;line-height:1.2;margin:0 0 10px;color:var(--ink);">¿Cómo quieres sumar tu nueva actividad?</h2>
-            <p style="font-size:15.5px;line-height:1.65;color:var(--gris);margin:0 0 24px;text-wrap:pretty;">Puedes empezar de cero o duplicar una actividad que ya publicaste y ajustar los datos.</p>
-
-            <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
-                <a href="{{ route('publish.create') }}"
-                   style="text-align:left;background:#fff;border:2px solid #e8e9eb;border-radius:20px;padding:20px;color:inherit;display:block;">
-                    <div style="font-family:var(--font-title);font-size:18px;font-weight:800;color:var(--ink);margin-bottom:6px;">Crear desde cero</div>
-                    <div style="font-size:14px;line-height:1.55;color:var(--gris);">Completa el formulario paso a paso.</div>
-                </a>
-
-                <button type="button" x-on:click="eligiendo = true"
-                        style="text-align:left;background:var(--naranjo-100);border:2px solid var(--naranjo);border-radius:20px;padding:20px;cursor:pointer;font-family:var(--font);">
-                    <div style="font-family:var(--font-title);font-size:18px;font-weight:800;color:var(--ink);margin-bottom:6px;">Duplicar una actividad existente</div>
-                    <div style="font-size:14px;line-height:1.55;color:var(--gris-700);">Elige cuál copiar de tu lista de actividades.</div>
-                </button>
-            </div>
-
-            {{-- El selector no está en el prototipo: ahí el botón no hacía nada. --}}
-            <div x-show="eligiendo" x-cloak style="margin-bottom:22px;">
-                @if ($duplicables->isEmpty())
-                    <p class="helper" style="margin:0;">Todavía no tienes actividades que copiar.</p>
-                @else
-                    <form method="POST" x-bind:action="cual" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
-                        @csrf
-                        <label class="lbl" style="flex:1;min-width:220px;">¿Cuál quieres copiar?
-                            <select class="fld" x-model="cual">
-                                @foreach ($duplicables as $a)
-                                    <option value="{{ route('account.activities.duplicate', $a) }}">{{ $a->titulo }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <button type="submit" class="btn btn-primary btn-sm">Duplicar</button>
-                    </form>
-                @endif
-            </div>
-
-            <div style="display:flex;justify-content:flex-end;">
-                <button type="button" class="btn btn-outline" x-on:click="modal = null">Volver</button>
-            </div>
-        </div>
-    </div>
 
     {{-- ══ MODAL DE CANCELACIÓN ══ --}}
     <div x-show="modal === 'cancelar'" x-cloak

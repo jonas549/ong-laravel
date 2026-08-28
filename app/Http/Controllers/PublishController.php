@@ -35,6 +35,13 @@ class PublishController extends Controller
     {
         abort_unless(Setting::get('publicacion_abierta', true), 403, 'La publicación de actividades está cerrada por ahora.');
 
+        // El admin no publica como organización: no tiene ninguna detrás.
+        if (Auth::user()?->esAdmin()) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('error', 'Las actividades se publican desde una cuenta de organización.');
+        }
+
         return view('public.publish.wizard', $this->catalogos());
     }
 
@@ -44,36 +51,61 @@ class PublishController extends Controller
 
         $datos = $request->validated();
 
+        /*
+         * Con la sesión abierta el paso «crea tu acceso» no se pinta, así que
+         * el correo de la cuenta no viaja en el POST: sale del usuario.
+         */
+        $conSesion = $request->user();
+        $correoCuenta = $datos['email'] ?? $conSesion?->email;
+
         // El paso 4 ofrece reusar el correo de la cuenta como contacto público.
         $correoPublico = $request->boolean('usar_correo_cuenta')
-            ? $datos['email']
-            : ($datos['correo_contacto'] ?? $datos['email']);
+            ? $correoCuenta
+            : ($datos['correo_contacto'] ?? $correoCuenta);
 
         try {
-            $actividad = DB::transaction(function () use ($datos, $request, $correoPublico) {
-                $usuario = User::create([
-                    'name' => $datos['org_nombre'],
-                    'email' => $datos['email'],
-                    'password' => $datos['password'],
-                    'role' => User::ROL_ORGANIZER,
-                    'is_active' => true,
-                ]);
-
-                $organizacion = Organization::create([
-                    'user_id' => $usuario->id,
+            $actividad = DB::transaction(function () use ($datos, $request, $correoPublico, $conSesion) {
+                $campos = [
                     'nombre' => $datos['org_nombre'],
                     'tipo' => $datos['org_tipo'],
                     'tipo_otro' => $datos['org_tipo_otro'] ?? null,
                     'descripcion' => $datos['org_descripcion'] ?? null,
                     'num_voluntarios' => $datos['org_num_voluntarios'] ?? null,
                     'unidad_educativa' => $datos['org_unidad_educativa'] ?? null,
-                    'logo_path' => ($logo = $request->file('org_logo'))
-                        ? 'storage/'.$logo->store('organizaciones', 'public')
-                        : null,
                     'correo_contacto' => $correoPublico,
                     'enlace_web' => $datos['enlace_web'] ?? null,
                     'enlace_red_social' => $datos['enlace_red_social'] ?? null,
-                ]);
+                ];
+
+                if ($logo = $request->file('org_logo')) {
+                    $campos['logo_path'] = 'storage/'.$logo->store('organizaciones', 'public');
+                }
+
+                if ($conSesion) {
+                    /*
+                     * Ya tiene cuenta y organización: se reusan. El usuario es
+                     * `hasOne` de organización, así que crear otra dejaría dos
+                     * colgando del mismo dueño y la ficha saldría de la
+                     * equivocada. Los campos van rellenos desde el formulario y
+                     * son editables, así que lo que venga se guarda; el logo
+                     * sólo se pisa si subió uno nuevo.
+                     */
+                    $organizacion = $conSesion->organization;
+                    $organizacion->fill($campos)->save();
+                } else {
+                    $usuario = User::create([
+                        'name' => $datos['org_nombre'],
+                        'email' => $datos['email'],
+                        'password' => $datos['password'],
+                        'role' => User::ROL_ORGANIZER,
+                        'is_active' => true,
+                    ]);
+
+                    $organizacion = Organization::create($campos + [
+                        'user_id' => $usuario->id,
+                        'logo_path' => $campos['logo_path'] ?? null,
+                    ]);
+                }
 
                 $comuna = Commune::find($datos['commune_id'] ?? null);
 
@@ -136,22 +168,31 @@ class PublishController extends Controller
         // Fuera de la transacción: si el correo falla, la actividad ya existe.
         $moderacion->cambiar($actividad, 'revision', null);
 
-        $nuevoUsuario = $actividad->organization->user;
+        /*
+         * Quien ya tenía la sesión abierta no estrena cuenta: ni se le vuelve a
+         * iniciar sesión —regenerar la sesión aquí le cambiaría la que ya tiene
+         * sin motivo—, ni se le manda la bienvenida, ni se dispara `Registered`,
+         * que le pediría verificar un correo verificado hace meses.
+         */
+        if (! $conSesion) {
+            $nuevoUsuario = $actividad->organization->user;
 
-        // La cuenta se acaba de crear con la contraseña que eligió aquí mismo:
-        // dejarla fuera obligaba a volver a escribirla para ver su actividad, y
-        // el enlace del correo de verificación rebotaba al login.
-        Auth::login($nuevoUsuario);
-        $request->session()->regenerate();
+            // La cuenta se acaba de crear con la contraseña que eligió aquí
+            // mismo: dejarla fuera obligaba a volver a escribirla para ver su
+            // actividad, y el enlace del correo de verificación rebotaba al
+            // login.
+            Auth::login($nuevoUsuario);
+            $request->session()->regenerate();
 
-        $nuevoUsuario->forceFill(['last_login_at' => now()])->save();
-        app(ControlDeAcceso::class)->exito($request, AccessLog::PANEL_ORGANIZADOR, $nuevoUsuario);
+            $nuevoUsuario->forceFill(['last_login_at' => now()])->save();
+            app(ControlDeAcceso::class)->exito($request, AccessLog::PANEL_ORGANIZADOR, $nuevoUsuario);
 
-        app(CorreoTransaccional::class)->bienvenida($nuevoUsuario);
+            app(CorreoTransaccional::class)->bienvenida($nuevoUsuario);
 
-        // La cuenta nace aquí, así que aquí sale también el correo de
-        // verificación. No bloquea nada: es para confirmar la dirección.
-        event(new Registered($nuevoUsuario));
+            // La cuenta nace aquí, así que aquí sale también el correo de
+            // verificación. No bloquea nada: es para confirmar la dirección.
+            event(new Registered($nuevoUsuario));
+        }
 
         return redirect()
             ->route('publish.done', $actividad)
@@ -188,6 +229,11 @@ class PublishController extends Controller
     private function catalogos(): array
     {
         return app(ActivityCatalogService::class)->todos()
-            + ['tiposOrg' => Organization::TIPOS];
+            + [
+                'tiposOrg' => Organization::TIPOS,
+                // Con sesión abierta, el paso 3 sale relleno con lo que ya hay
+                // guardado y el paso de «crea tu acceso» no se pinta.
+                'organizacion' => Auth::user()?->organization,
+            ];
     }
 }

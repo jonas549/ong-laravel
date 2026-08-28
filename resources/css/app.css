@@ -82,6 +82,15 @@ a.textlink:hover { color: var(--naranjo-600); }
     border: 1.5px solid transparent;
     cursor: pointer;
     white-space: nowrap;
+
+    /*
+     * `border-box` explícito. El navegador ya se lo da a los <button>, pero no
+     * a los <a>, y este proyecto no lleva reset global. Sin esto, el
+     * `min-height: 42px` que se pone en móvil para el tamaño del toque se le
+     * suma al padding en vez de contenerlo, y un <a class="btn"> sale 25px más
+     * alto que el mismo botón escrito como <button>.
+     */
+    box-sizing: border-box;
     transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, border-color .18s ease;
 }
 

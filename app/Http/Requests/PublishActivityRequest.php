@@ -76,9 +76,20 @@ class PublishActivityRequest extends FormRequest
             'org_num_voluntarios' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'org_unidad_educativa' => ['nullable', 'required_if:org_tipo,Institución educativa', 'string', 'max:255'],
             'org_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:500'],
-            'email' => ['required', 'email', 'max:255', new CorreoEnviable, Rule::unique('users', 'email')],
+            /*
+             * Correo y contraseña sólo se piden a quien no tiene cuenta. Con la
+             * sesión abierta el wizard no pinta ese bloque y la actividad va a
+             * la cuenta que ya existe, así que exigirlos rebotaría un
+             * formulario que no tiene dónde rellenarlos, y el `unique` daría
+             * por repetido el correo del propio dueño.
+             */
+            'email' => $this->user()
+                ? ['prohibited']
+                : ['required', 'email', 'max:255', new CorreoEnviable, Rule::unique('users', 'email')],
             // El tope de 72 no es capricho: bcrypt ignora lo que pase de ahí.
-            'password' => ['required', 'string', 'min:8', 'max:72', 'confirmed'],
+            'password' => $this->user()
+                ? ['prohibited']
+                : ['required', 'string', 'min:8', 'max:72', 'confirmed'],
 
             // Paso 4 — la actividad
             'titulo' => ['required', 'string', 'max:255'],

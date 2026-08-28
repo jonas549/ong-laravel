@@ -19,7 +19,7 @@
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <label class="lbl">Nombre de la organización *
                 <input class="fld @error('org_nombre') is-invalid @enderror" name="org_nombre"
-                       value="@viejo('org_nombre')" placeholder="Ej. Fundación Junto al Barrio">
+                       value="@viejo('org_nombre', $organizacion?->nombre)" placeholder="Ej. Fundación Junto al Barrio">
                 @error('org_nombre') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
@@ -31,21 +31,21 @@
 
         <label class="lbl" x-show="esOtra()" x-cloak>Describe tu organización *
             <input class="fld @error('org_tipo_otro') is-invalid @enderror" name="org_tipo_otro"
-                   value="@viejo('org_tipo_otro')" placeholder="Otra (especificar)">
+                   value="@viejo('org_tipo_otro', $organizacion?->tipo_otro)" placeholder="Otra (especificar)">
             <span class="helper">Se muestra solo al seleccionar "Otra".</span>
             @error('org_tipo_otro') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
         <label class="lbl" style="max-width:280px;" x-show="esEmpresa()" x-cloak>¿Cuántos trabajadores participan como voluntarios?
             <input class="fld @error('org_num_voluntarios') is-invalid @enderror" name="org_num_voluntarios"
-                   inputmode="numeric" value="@viejo('org_num_voluntarios')" placeholder="Ej. 25">
+                   inputmode="numeric" value="@viejo('org_num_voluntarios', $organizacion?->num_voluntarios)" placeholder="Ej. 25">
             <span class="helper">Número aproximado. Escribe 0 si no aplica.</span>
             @error('org_num_voluntarios') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
         <label class="lbl" x-show="esEducativa()" x-cloak>¿Qué unidad, grupo o comunidad educativa organiza la actividad? *
             <input class="fld @error('org_unidad_educativa') is-invalid @enderror" name="org_unidad_educativa"
-                   value="@viejo('org_unidad_educativa')" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B">
+                   value="@viejo('org_unidad_educativa', $organizacion?->unidad_educativa)" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B">
             @error('org_unidad_educativa') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
@@ -70,6 +70,22 @@
         </div>
     </div>
 
+    @if ($organizacion)
+        {{--
+            Con la sesión abierta no hay acceso que crear: la actividad va a la
+            cuenta que ya existe. Se conserva el bloque —mismo fondo, mismo
+            `seclabel`, misma caja— para no dejar un hueco donde el fuente pone
+            una sección, pero en vez de los campos va el aviso de a qué cuenta
+            se suma.
+        --}}
+        <div style="padding:30px;background:#fdfcfb;">
+            <div class="seclabel" style="margin-bottom:6px;">Tu cuenta</div>
+            <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0;max-width:60ch;">
+                Esta actividad se sumará a tu cuenta, <strong style="color:var(--ink);">{{ auth()->user()->email }}</strong>.
+                La verás en «Mis actividades» junto a las demás.
+            </p>
+        </div>
+    @else
     <div style="padding:30px;background:#fdfcfb;">
         <div class="seclabel" style="margin-bottom:6px;">Crea tu acceso</div>
         <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0 0 18px;max-width:60ch;">Con este acceso podrás ingresar a tu cuenta para editar tus actividades y hacer seguimiento a tu publicación.</p>
@@ -100,6 +116,8 @@
             </label>
         </div>
     </div>
+
+    @endif
 
     <div style="padding:20px 30px;border-top:1px solid var(--linea);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <span class="helper">* campos obligatorios</span>

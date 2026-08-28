@@ -30,16 +30,24 @@ Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'can
 // El wizard es sólo para quien no tiene cuenta: crea una nueva y entra con
 // ella, así que a quien ya está dentro se le manda a sumar la actividad desde
 // su cuenta en vez de dejar la anterior huérfana.
-$avisoWizard = 'invitado:Ya tienes la sesión abierta. Suma la actividad desde aquí, con "Sumar nueva actividad", y así queda en tu misma cuenta.';
-
+/*
+ * El wizard ya NO es sólo para invitados.
+ *
+ * Antes llevaba `invitado:`, que devolvía al organizador con sesión a su
+ * cuenta diciéndole que sumara la actividad desde el botón «Sumar nueva
+ * actividad»... que es justo el que lleva aquí. El aviso mandaba al botón y el
+ * botón al aviso, así que para quien tenía la sesión abierta el botón no hacía
+ * nada. Ahora el wizard reusa su cuenta y su organización en vez de crear
+ * otras; quien sí sigue sin pintar nada aquí es el admin, y de eso se encarga
+ * el propio controlador.
+ */
 Route::get('/publicar-actividad', [PublishController::class, 'create'])
-    ->middleware($avisoWizard)
     ->name('publish.create');
 
-// El mismo freno que el registro: este POST también crea cuenta y dispara
+// El mismo freno que el registro: este POST puede crear cuenta y disparar
 // tres correos, así que sin límite era la vía para saltarse el del registro.
 Route::post('/publicar-actividad', [PublishController::class, 'store'])
-    ->middleware([$avisoWizard, 'throttle:10,1'])
+    ->middleware('throttle:10,1')
     ->name('publish.store');
 Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::class, 'done'])->name('publish.done');
 
