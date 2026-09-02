@@ -89,11 +89,16 @@ class OrganizationController extends Controller
             'enlace_web' => ['nullable', 'url', 'max:255'],
             'enlace_red_social' => ['nullable', 'url', 'max:255'],
             'logo_path' => ['nullable', 'string', 'max:255'],
+            'requiere_revision' => ['nullable', 'boolean'],
         ], [], [
             'nombre' => 'el nombre',
             'tipo' => 'el tipo',
             'correo_contacto' => 'el correo de contacto',
         ]);
+
+        // La casilla no viaja cuando está desmarcada, así que hay que
+        // preguntarle al request y no al array de datos validados.
+        $datos['requiere_revision'] = $request->boolean('requiere_revision');
 
         $organization->update($datos);
 

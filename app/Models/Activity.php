@@ -58,6 +58,7 @@ class Activity extends Model
         'accesibilidad_detalle', 'publico_otro', 'info_previa',
         'imagen_portada', 'correo_contacto', 'enlace_red_social', 'enlace_web',
         'estado', 'observaciones_revision', 'destacada', 'orden', 'published_at',
+        'publicada_automaticamente',
     ];
 
     protected function casts(): array
@@ -66,6 +67,7 @@ class Activity extends Model
             'fecha_inicio' => 'date',
             'fecha_termino' => 'date',
             'published_at' => 'datetime',
+            'publicada_automaticamente' => 'boolean',
             'sin_fecha_definida' => 'boolean',
             'abierta_publico' => 'boolean',
             'inscripcion_habilitada' => 'boolean',

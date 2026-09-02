@@ -119,6 +119,10 @@ class CorreoTransaccional
             'lugar' => trim(($actividad->direccion ? $actividad->direccion . ', ' : '') . $actividad->lugar, ', '),
             'organizacion' => $actividad->organization?->nombre ?? '',
             'enlace_actividad' => route('activities.show', $actividad),
+            // Los dos enlaces de calendario, ya montados. Sale vacío si la
+            // actividad no tiene fecha, y entonces el bloque desaparece
+            // entero en vez de dejar un enlace sin destino.
+            'bloque_calendario' => app(Calendario::class)->bloqueHtml($actividad),
             'sitio' => config('app.name'),
         ];
     }

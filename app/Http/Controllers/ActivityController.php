@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Commune;
 use App\Models\Region;
 use App\Models\TaxonomyTerm;
+use App\Services\Calendario;
 use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -54,5 +55,27 @@ class ActivityController extends Controller
             ->get();
 
         return view('public.activities.show', compact('activity', 'relacionadas'));
+    }
+
+    /**
+     * El «añadir a mi calendario» de los correos: un archivo .ics.
+     *
+     * Mismo permiso que la ficha, y por el mismo motivo: si la actividad no
+     * está publicada, esta dirección tampoco puede confirmar que existe.
+     */
+    public function calendario(Activity $activity, Calendario $calendario)
+    {
+        abort_unless(Gate::allows('view', $activity), 404);
+
+        // Sin fecha no hay nada que agendar. Un .ics vacío sería peor que un
+        // 404: el calendario lo aceptaría sin rechistar y no aparecería nada.
+        abort_unless($calendario->agendable($activity), 404);
+
+        $activity->load(['organization', 'commune', 'region']);
+
+        return response($calendario->ics($activity), 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$calendario->nombreArchivo($activity).'"',
+        ]);
     }
 }

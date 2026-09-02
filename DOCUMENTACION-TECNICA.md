@@ -352,6 +352,56 @@ administración diría cuáles son de administración.
 Como el rol se lee en cada petición, **cambiárselo a alguien surte efecto de
 inmediato**, sin que tenga que cerrar sesión.
 
+### La aprobación automática, y por qué una actividad puede no pasar por revisión
+
+Desde el 2026-09-02, **la primera actividad de cada organización se revisa a
+mano y de la segunda en adelante se publica sola**. La decisión está entera en
+`App\Services\AprobacionAutomatica`, con el porqué de cada regla escrito al
+lado. Lo que hay que saber para no romperlo:
+
+- **«Ya publicó antes» se mide por `published_at`, no por el estado.** Una
+  actividad cancelada estuvo publicada y sigue contando: lo que da confianza es
+  que la ONG aprobó ese contenido, no en qué estado está hoy.
+- **Un «necesita ajustes» sin resolver lo pausa**, y se reanuda solo al
+  resolverse. No reinicia nada.
+- **Una actividad que vuelve de ajustes nunca se auto-aprueba**, por muchas
+  publicadas que tenga la organización. Eso se decide en el controlador, que es
+  donde se sabe de dónde viene.
+- **Dos interruptores**: uno global en Configuración → General y otro por
+  organización en su ficha. El segundo es el que sirve contra el spam.
+
+Y su contrapartida: lo que se publica solo **no pasa por «Estamos revisando»**,
+así que sin más no habría dónde encontrarlo. Queda marcado en
+`activities.publicada_automaticamente`, con el motivo escrito en
+`activity_status_logs`, y el listado del panel tiene una pestaña «Publicadas
+solas» para repasarlo.
+
+### Los correos llevan «añadir a mi calendario», sin librería
+
+`App\Services\Calendario` genera el `.ics` y la URL de Google Calendar. No hay
+dependencia: son quince líneas de texto y una URL con parámetros.
+
+- El `.ics` **se sirve por una ruta** (`/actividades/{slug}/calendario.ics`), no
+  como adjunto. El correo no engorda y no hace falta el trabajo de adjuntos.
+- Una actividad sin fecha —«disponible de forma permanente»— **no ofrece
+  calendario**: el bloque entero desaparece del correo y la ruta da 404.
+- **La zona horaria es donde esto se tuerce.** `fecha_inicio` y `hora_inicio`
+  son la hora de pared en Chile; el `.ics` se escribe en UTC. Se montan en la
+  zona del sitio y se convierten, así que el horario de verano sale solo.
+- En la plantilla es **un solo marcador**, `{{ bloque_calendario }}`, y no dos
+  URLs sueltas: las plantillas no tienen condicionales, y con dos variables una
+  actividad sin fecha dejaría un enlace con el destino vacío.
+
+**Los marcadores que se añaden al catálogo después no se meten solos** en las
+plantillas que la ONG ya editó: el editor avisa de que hay uno nuevo y ella
+decide dónde ponerlo. `EmailTemplate::variablesDisponibles()` devuelve la unión
+del catálogo y lo que la plantilla tenga guardado, para que lo nuevo funcione
+sin tocar el texto.
+
+Un detalle del renderizador: **los marcadores que empiezan por `enlace_` o
+`bloque_` no se escapan**, porque uno va dentro de un `href` y el otro ES html.
+Ninguno de los dos puede alimentarse de texto que escriba una persona.
+
 ### Los textos por defecto del home viven en el código
 
 `App\Support\CatalogoHome` tiene el texto original de las 12 secciones. La base
@@ -395,7 +445,8 @@ No hay tests de PHPUnit todavía. SQLite en memoria ya está habilitado en
 | Un cambio de CSS o JS no aparece | ¿Se corrió `npm run build` y se commiteó `public/build/`? |
 | Plantillas de correo o biblioteca vacías | `php artisan dps:instalar`. |
 | Un intento de acceso raro | `/admin/accesos`, que registra cada intento con su motivo. |
-| Un cambio de estado de una actividad | La tabla `activity_status_logs`: guarda quién, cuándo y de qué estado a cuál. |
+| Un cambio de estado de una actividad | La tabla `activity_status_logs`: guarda quién, cuándo, de qué estado a cuál y por qué. Una publicada sola no tiene autor y lleva el motivo escrito. |
+| Una actividad publicada sin que nadie la revisara | La pestaña «Publicadas solas» del listado de actividades. |
 | Un correo que se envió o no | `/admin/correos`, con su estado y el reintento a mano. |
 
 Los registros de la aplicación están en `storage/logs/laravel.log`.

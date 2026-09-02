@@ -19,8 +19,13 @@ class ActivityController extends Controller
     {
         $estado = $estadoFijo ?: Filtro::texto($request, 'estado');
 
+        // Lo que se publicó solo, para poder repasarlo: sin este filtro no
+        // aparece en «pendientes» y no hay forma de encontrarlo.
+        $soloAutomaticas = $request->boolean('auto');
+
         $actividades = Activity::with(['organization', 'commune', 'region'])
             ->when($estado, fn ($q) => $q->where('estado', $estado))
+            ->when($soloAutomaticas, fn ($q) => $q->where('publicada_automaticamente', true))
             ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('titulo', 'like', "%{$b}%"))
             ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
             ->latest('updated_at')
@@ -28,8 +33,11 @@ class ActivityController extends Controller
             ->withQueryString();
 
         $conteos = Activity::selectRaw('estado, COUNT(*) n')->groupBy('estado')->pluck('n', 'estado');
+        $automaticas = Activity::where('publicada_automaticamente', true)->count();
 
-        return view('admin.activities.index', compact('actividades', 'conteos', 'estado', 'estadoFijo'));
+        return view('admin.activities.index', compact(
+            'actividades', 'conteos', 'estado', 'estadoFijo', 'soloAutomaticas', 'automaticas',
+        ));
     }
 
     public function show(Activity $activity)

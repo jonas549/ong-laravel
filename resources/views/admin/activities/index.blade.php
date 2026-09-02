@@ -7,14 +7,30 @@
         Todas <span class="count-badge">{{ $conteos->sum() }}</span>
     </a>
     @foreach (\App\Models\Activity::ESTADOS as $clave => $meta)
-        <a class="tab {{ $estado === $clave ? 'on' : '' }}" href="{{ route('admin.activities.index', ['estado' => $clave]) }}">
+        <a class="tab {{ $estado === $clave && ! $soloAutomaticas ? 'on' : '' }}" href="{{ route('admin.activities.index', ['estado' => $clave]) }}">
             {{ $meta['filtro'] }} <span class="count-badge">{{ $conteos[$clave] ?? 0 }}</span>
         </a>
     @endforeach
+
+    {{--
+        Lo que se publicó sin que nadie lo mirara.
+
+        Es la contrapartida de la aprobación automática: esas actividades no
+        pasan por «Estamos revisando», así que sin esta pestaña no hay ningún
+        sitio donde encontrarlas. Sólo aparece cuando hay alguna, para no
+        dejar una pestaña vacía en un panel que ya tiene seis.
+    --}}
+    @if ($automaticas > 0)
+        <a class="tab {{ $soloAutomaticas ? 'on' : '' }}" href="{{ route('admin.activities.index', ['auto' => 1]) }}"
+           title="Se publicaron solas, sin pasar por revisión">
+            Publicadas solas <span class="count-badge">{{ $automaticas }}</span>
+        </a>
+    @endif
 </div>
 
 <form method="GET" style="display:flex;gap:10px;margin-bottom:20px;max-width:420px;">
     <input type="hidden" name="estado" value="{{ $estado }}">
+    @if ($soloAutomaticas) <input type="hidden" name="auto" value="1"> @endif
     <input class="fld" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar por nombre…">
     <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
 </form>
@@ -40,6 +56,10 @@
                         {{ Str::limit($a->titulo, 46) }}
                         @if ($a->destacada)
                             <span title="Aparece en el home" style="color:var(--amarillo);">★</span>
+                        @endif
+                        @if ($a->publicada_automaticamente)
+                            <span title="Se publicó sola, sin pasar por revisión"
+                                  style="margin-left:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo-600);white-space:nowrap;">Sin revisar</span>
                         @endif
                     </td>
                     <td>{{ $a->organization?->nombre }}</td>

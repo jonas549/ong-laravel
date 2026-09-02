@@ -9,6 +9,7 @@ use App\Models\ActivityCollaborator;
 use App\Models\Commune;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
+use App\Services\AprobacionAutomatica;
 use App\Support\Filtro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -208,13 +209,30 @@ class MyActivityController extends Controller
             ->with('ok', 'La actividad fue cancelada.');
     }
 
-    public function submitForReview(Request $request, Activity $activity, ActivityModerationService $moderacion)
-    {
+    public function submitForReview(
+        Request $request,
+        Activity $activity,
+        ActivityModerationService $moderacion,
+        AprobacionAutomatica $aprobacion,
+    ) {
         $this->authorize('submit', $activity);
 
-        $moderacion->cambiar($activity, 'revision', $request->user());
+        /*
+         * Una actividad que vuelve de «necesita ajustes» SIEMPRE pasa por
+         * revisión, por muchas publicadas que tenga la organización: si la
+         * ONG pidió cambios, quiere ver cómo quedaron. Es la única excepción
+         * a la aprobación automática y se decide aquí, que es donde se sabe
+         * de dónde viene la actividad.
+         */
+        [$estado, $motivo] = $activity->estado === 'ajustes'
+            ? ['revision', 'A revisión: vuelve de una petición de ajustes.']
+            : $aprobacion->estadoAlEnviar($activity->organization);
 
-        return back()->with('ok', 'Enviamos tu actividad a revisión.');
+        $moderacion->cambiar($activity, $estado, $request->user(), $motivo, automatica: $estado === 'publicada');
+
+        return back()->with('ok', $estado === 'publicada'
+            ? 'Tu actividad ya está publicada en el calendario.'
+            : 'Enviamos tu actividad a revisión.');
     }
 
     /** "Jornada X" → "Jornada X (copia)" → "Jornada X (copia 2)" … */

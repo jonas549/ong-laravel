@@ -66,6 +66,7 @@ class EmailTemplateController extends Controller
             'plantilla' => $template,
             'variables' => $template->variablesDisponibles(),
             'desconocidas' => $template->variablesDesconocidas(),
+            'nuevas' => $template->variablesNuevas(),
         ]);
     }
 

@@ -25,7 +25,7 @@ class EmailTemplate extends Model
         'inscripcion_confirmada' => [
             'nombre' => 'Confirmación de inscripción',
             'descripcion' => 'Se envía a la persona que se inscribe en una actividad.',
-            'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'organizacion', 'enlace_actividad', 'enlace_cancelar', 'sitio'],
+            'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'organizacion', 'enlace_actividad', 'enlace_cancelar', 'bloque_calendario', 'sitio'],
         ],
         'nueva_inscripcion' => [
             'nombre' => 'Aviso de nueva inscripción',
@@ -35,7 +35,7 @@ class EmailTemplate extends Model
         'recordatorio' => [
             'nombre' => 'Recordatorio antes de la actividad',
             'descripcion' => 'Se envía a las personas inscritas los días previos a la actividad.',
-            'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'dias', 'enlace_actividad', 'enlace_cancelar', 'sitio'],
+            'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'dias', 'enlace_actividad', 'enlace_cancelar', 'bloque_calendario', 'sitio'],
         ],
         'inscripcion_cancelada' => [
             'nombre' => 'Aviso de actividad cancelada',
@@ -59,7 +59,42 @@ class EmailTemplate extends Model
     /** Los marcadores que admite esta plantilla, con el catálogo como respaldo. */
     public function variablesDisponibles(): array
     {
-        return $this->variables ?: (self::CATALOGO[$this->clave]['variables'] ?? []);
+        /*
+         * La UNIÓN de las dos listas, no una o la otra.
+         *
+         * `variables` se copia del catálogo al crear la plantilla y se queda
+         * congelada ahí. Devolver sólo esa dejaba fuera cualquier marcador
+         * añadido después: la ONG no lo vería en el panel y, si lo escribía
+         * a mano, saldría literal en el correo por no estar en la lista
+         * blanca. Con la unión, lo nuevo del catálogo funciona en las
+         * plantillas que ya existían sin tocarles el texto.
+         */
+        return array_values(array_unique(array_merge(
+            $this->variables ?: [],
+            self::CATALOGO[$this->clave]['variables'] ?? [],
+        )));
+    }
+
+    /**
+     * Marcadores que el catálogo ofrece y esta plantilla todavía no usa.
+     *
+     * Es lo que se le enseña a la ONG cuando aparece uno nuevo. **No se
+     * mete solo en el cuerpo**: el texto de esa plantilla lo escribió
+     * alguien y colarle un párrafo sin avisar es peor que no ofrecerlo.
+     * Se avisa, y quien lo edita decide dónde va.
+     *
+     * @return array<int, string>
+     */
+    public function variablesNuevas(): array
+    {
+        $delCatalogo = self::CATALOGO[$this->clave]['variables'] ?? [];
+        $texto = $this->asunto.' '.$this->cuerpo_html;
+
+        return array_values(array_filter(
+            $delCatalogo,
+            fn (string $v) => ! in_array($v, $this->variables ?: [], true)
+                && ! preg_match('/\{\{\s*'.preg_quote($v, '/').'\s*\}\}/', $texto),
+        ));
     }
 
     /**

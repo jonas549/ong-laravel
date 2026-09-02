@@ -114,6 +114,13 @@ class SettingsSeeder extends Seeder
                 'descripcion' => 'Apagar oculta el formulario público de publicación.',
             ],
             [
+                'grupo' => 'general', 'clave' => 'aprobacion_automatica', 'tipo' => 'bool', 'valor' => '1',
+                'label' => 'Publicar sin revisar a partir de la segunda actividad',
+                'descripcion' => 'La primera actividad de cada organización se revisa siempre a mano. '
+                    .'Apagar esto devuelve todas las actividades a revisión, y es lo que hay que hacer si llega spam. '
+                    .'Para una organización concreta hay un interruptor propio en su ficha.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'alerta_revision_dias', 'tipo' => 'int', 'valor' => '3',
                 'label' => 'Días antes de avisar de una revisión pendiente',
                 'descripcion' => 'La portada del panel avisa cuando una actividad lleva más de estos días esperando revisión.',

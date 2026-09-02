@@ -26,7 +26,7 @@ class Organization extends Model
     protected $fillable = [
         'user_id', 'nombre', 'slug', 'tipo', 'tipo_otro', 'descripcion', 'logo_path',
         'num_voluntarios', 'unidad_educativa', 'correo_contacto', 'enlace_web',
-        'enlace_red_social', 'verificada', 'activo',
+        'enlace_red_social', 'verificada', 'activo', 'requiere_revision',
     ];
 
     protected function casts(): array
@@ -34,6 +34,7 @@ class Organization extends Model
         return [
             'verificada' => 'boolean',
             'activo' => 'boolean',
+            'requiere_revision' => 'boolean',
             'num_voluntarios' => 'integer',
         ];
     }

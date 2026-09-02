@@ -59,6 +59,33 @@
                 @error('logo_path')<p class="field-error">{{ $message }}</p>@enderror
             </div>
 
+            {{--
+                El interruptor por organización de la aprobación automática.
+
+                Es el que sirve de verdad cuando llega spam: el general apaga la
+                comodidad para todas, y éste sólo para quien haga falta. La
+                casilla habla en positivo —«revisar siempre»— porque es lo que
+                se va a buscar cuando alguien esté dando problemas.
+            --}}
+            <div style="margin:4px 0 20px;padding:16px 18px;border:1.5px solid var(--linea);border-radius:16px;background:#fdfcfb;">
+                {{-- `x-panel.campo` con tipo bool, no `x-panel.casilla`: aquélla es
+                     la casilla de una fila de tabla, con su `ids[]` y su form
+                     de fuera, y aquí revienta por no recibir un $id. --}}
+                <x-panel.campo nombre="requiere_revision" tipo="bool"
+                               label="Revisar siempre sus actividades a mano"
+                               :valor="$organizacion->requiere_revision" />
+                <p class="helper" style="margin:8px 0 0 27px;">
+                    @if (\App\Models\Setting::get('aprobacion_automatica', true))
+                        Por defecto, una organización que ya publicó alguna vez sube sus
+                        actividades sin pasar por revisión. Marca esto para que las suyas
+                        pasen siempre.
+                    @else
+                        Ahora mismo da igual: la aprobación automática está apagada para
+                        todo el sitio en Configuración, así que ya se revisan todas.
+                    @endif
+                </p>
+            </div>
+
             <div style="display:flex;gap:10px;">
                 <button type="submit" class="btn btn-primary" data-cargando="Guardando…">Guardar cambios</button>
                 <a href="{{ route('admin.organizations.index') }}" class="btn btn-ghost">Cancelar</a>

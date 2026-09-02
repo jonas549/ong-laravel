@@ -23,12 +23,19 @@ class ActivityModerationService
         'cancelada' => \App\Mail\ActivityCancelled::class,
     ];
 
+    /**
+     * @param  bool  $automatica  la publicó la regla de aprobación automática,
+     *                           no una persona. Queda marcado en la actividad
+     *                           para que la ONG pueda repasar después lo que
+     *                           se publicó sin que nadie lo mirara.
+     */
     public function cambiar(
         Activity $actividad,
         string $nuevoEstado,
         ?User $autor = null,
         ?string $comentario = null,
         bool $notificar = true,
+        bool $automatica = false,
     ): Activity {
         $anterior = $actividad->estado;
 
@@ -40,6 +47,7 @@ class ActivityModerationService
 
         if ($nuevoEstado === 'publicada') {
             $actividad->published_at ??= now();
+            $actividad->publicada_automaticamente = $automatica;
         }
 
         if ($nuevoEstado === 'ajustes') {

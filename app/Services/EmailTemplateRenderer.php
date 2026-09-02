@@ -53,6 +53,9 @@ class EmailTemplateRenderer
             'enlace_actividades' => url('/actividades'),
             'enlace_cancelar' => url('/inscripcion/ejemplo/cancelar'),
             'enlace_participantes' => route('account.activities.index'),
+            'bloque_calendario' => '<p style="margin:22px 0 0;font-size:14px;color:#63666A;">'
+                .'Añádelo a tu calendario: <a href="#" style="color:#cc6600;font-weight:600;">Google Calendar</a>'
+                .' &nbsp;·&nbsp; <a href="#" style="color:#cc6600;font-weight:600;">Apple, Outlook y otros</a></p>',
         ];
 
         return collect($plantilla->variablesDisponibles())
@@ -69,10 +72,22 @@ class EmailTemplateRenderer
         foreach ($permitidas as $clave) {
             $valor = (string) ($datos[$clave] ?? '');
 
-            // Los enlaces van dentro de href, donde escapar rompería la URL.
-            $valor = $escapar && ! str_starts_with($clave, 'enlace_')
-                ? e($valor)
-                : $valor;
+            /*
+             * Dos prefijos entran sin escapar, y conviene saber por qué:
+             *
+             * - `enlace_`: va dentro de un href, donde escapar rompe la URL.
+             * - `bloque_`: ES html, montado por nosotros pieza a pieza en
+             *   `App\Services\Calendario`, con sus propias URLs ya escapadas.
+             *
+             * **Ninguno de los dos puede alimentarse de texto que escriba
+             * una persona.** Todo lo que llega por ahí lo genera el código a
+             * partir de rutas y datos ya validados. El día que alguien meta
+             * un `bloque_` con contenido de un formulario, esto es una
+             * inyección de HTML en el correo de otro.
+             */
+            $confiable = str_starts_with($clave, 'enlace_') || str_starts_with($clave, 'bloque_');
+
+            $valor = $escapar && ! $confiable ? e($valor) : $valor;
 
             $texto = preg_replace(
                 '/\{\{\s*' . preg_quote($clave, '/') . '\s*\}\}/',

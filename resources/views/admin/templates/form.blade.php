@@ -53,6 +53,31 @@
             <div class="seclabel" style="margin-bottom:12px;">Marcadores disponibles</div>
             <p class="helper" style="margin:0 0 12px;">Escríbelos tal cual en el asunto o el cuerpo. Se sustituyen al enviar.</p>
 
+            {{--
+                Marcadores que se han añadido al catálogo después de crearse
+                esta plantilla.
+
+                Se avisa y no se mete solo: el cuerpo de una plantilla ya
+                editada lo escribió alguien, y colarle un párrafo sin decir
+                nada es peor que no ofrecer el marcador. El botón lo inserta
+                donde esté el cursor, igual que los demás.
+            --}}
+            @if (! empty($nuevas))
+                <div class="alert alert-info" style="margin-bottom:14px;font-size:13.5px;">
+                    <strong>{{ count($nuevas) === 1 ? 'Hay un marcador nuevo' : 'Hay '.count($nuevas).' marcadores nuevos' }}</strong>
+                    que esta plantilla todavía no usa. Añádelo donde quieras, o déjalo:
+                    el correo se sigue enviando igual.
+
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+                        @foreach ($nuevas as $v)
+                            @php $marcadorNuevo = '{{ ' . $v . ' }}'; @endphp
+                            <button type="button" class="chip on" style="font-family:ui-monospace,Consolas,monospace;"
+                                    x-on:click="insertar({{ Js::from($marcadorNuevo) }})">{{ $marcadorNuevo }}</button>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
                 @foreach ($variables as $v)
                     {{-- El marcador se arma en PHP: escribirlo literal en Blade

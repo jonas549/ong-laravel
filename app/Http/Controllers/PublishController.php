@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
+use App\Services\AprobacionAutomatica;
 use App\Services\ControlDeAcceso;
 use App\Services\CorreoTransaccional;
 use Illuminate\Auth\Events\Registered;
@@ -165,8 +166,17 @@ class PublishController extends Controller
             ]);
         }
 
-        // Fuera de la transacción: si el correo falla, la actividad ya existe.
-        $moderacion->cambiar($actividad, 'revision', null);
+        /*
+         * Fuera de la transacción: si el correo falla, la actividad ya existe.
+         *
+         * A quien publica por primera vez le toca revisión siempre, porque su
+         * organización se acaba de crear y no tiene nada publicado; de la
+         * segunda en adelante, sale directa. Ver `AprobacionAutomatica`.
+         */
+        [$estado, $motivo] = app(AprobacionAutomatica::class)
+            ->estadoAlEnviar($actividad->organization);
+
+        $moderacion->cambiar($actividad, $estado, null, $motivo, automatica: $estado === 'publicada');
 
         /*
          * Quien ya tenía la sesión abierta no estrena cuenta: ni se le vuelve a

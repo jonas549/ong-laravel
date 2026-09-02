@@ -37,6 +37,15 @@ pasaban también con el menú roto, y el fallo que arregla `wizard-errores.mjs`
 —un aviso correcto que quedaba fuera de la pantalla— es invisible por HTTP por
 definición. Lo que hay que medir ahí son píxeles.
 
+**`clave-admin.mjs` le cambia la contraseña al organizador y no se la devuelve.**
+Cualquier script que corra después no podrá entrar con `organizador1234`, y lo
+que se ve entonces no es «login roto» sino la mitad de las comprobaciones
+fallando por sitios raros. Para volver al punto de partida:
+
+```bash
+php artisan db:seed --class=UserSeeder
+```
+
 Los scripts entran con las cuentas del `UserSeeder`
 (`admin@ong-laravel.test` / `admin1234`), así que **son para local**, nunca
 contra producción: varios borran filas y cambian contraseñas.
@@ -62,6 +71,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `wizard-errores.mjs` | que el usuario **vea** lo que falta, en el wizard, en el editor de actividades de mi-cuenta y en el formulario de inscripción: el resumen de arriba, el salto al campo, la marca «Obligatorio» de los chips, la máscara y el calendario del campo de fecha, y que lo obligatorio aquí sea exactamente lo obligatorio en el servidor (**necesita Chrome**) |
 | `login-puertas.mjs` | los dos accesos: que quien se equivoca de puerta vea el botón que lleva a la buena con su correo puesto, que la pista NO salga sin la contraseña correcta, que equivocarse no bloquee, y qué pasa al cambiarle el rol a alguien con la sesión abierta (**necesita Chrome**) |
 | `moderacion-ajustes.mjs` | el circuito «pedir ajustes → corregir → reenviar»: que guardar no mueva el estado y que el botón lo devuelva directo a revisión, sin paso intermedio (**necesita Chrome**) |
+| `calendario-y-aprobacion.mjs` | el `.ics` y el enlace de Google de los correos —incluidas las líneas de 75 octetos y las tildes al plegarlas—, y la aprobación automática con sus dos interruptores, el «ajustes» que la pausa y la marca que deja para poder repasarla (**necesita Chrome**) |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---

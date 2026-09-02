@@ -52,7 +52,8 @@ class EmailTemplateSeeder extends Seeder
                      <p style="margin:0 0 6px;"><strong>Cuándo:</strong> {{ fecha }}, {{ hora }}</p>
                      <p style="margin:0 0 6px;"><strong>Dónde:</strong> {{ lugar }}</p>
                      <p style="margin:0 0 14px;"><strong>Organiza:</strong> {{ organizacion }}</p>
-                     <p style="margin:0 0 14px;">Si al final no puedes ir, avísanos para liberar tu cupo: <a href="{{ enlace_cancelar }}" style="color:#cc6600;">cancelar mi inscripción</a>.</p>',
+                     <p style="margin:0 0 14px;">Si al final no puedes ir, avísanos para liberar tu cupo: <a href="{{ enlace_cancelar }}" style="color:#cc6600;">cancelar mi inscripción</a>.</p>
+                     {{ bloque_calendario }}',
                     'Ver la actividad',
                     '{{ enlace_actividad }}',
                 ),
@@ -76,7 +77,8 @@ class EmailTemplateSeeder extends Seeder
                     '<p style="margin:0 0 14px;">Hola {{ nombre }}, te recordamos que en {{ dias }} días es <strong>{{ actividad }}</strong>.</p>
                      <p style="margin:0 0 6px;"><strong>Cuándo:</strong> {{ fecha }}, {{ hora }}</p>
                      <p style="margin:0 0 14px;"><strong>Dónde:</strong> {{ lugar }}</p>
-                     <p style="margin:0 0 14px;">Si ya no puedes asistir, <a href="{{ enlace_cancelar }}" style="color:#cc6600;">cancela tu inscripción</a> para que otra persona pueda ocupar tu cupo.</p>',
+                     <p style="margin:0 0 14px;">Si ya no puedes asistir, <a href="{{ enlace_cancelar }}" style="color:#cc6600;">cancela tu inscripción</a> para que otra persona pueda ocupar tu cupo.</p>
+                     {{ bloque_calendario }}',
                     'Ver la actividad',
                     '{{ enlace_actividad }}',
                 ),

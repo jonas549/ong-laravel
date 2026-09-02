@@ -22,6 +22,11 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/actividades', [ActivityController::class, 'index'])->name('activities.index');
 Route::get('/actividades/{activity:slug}', [ActivityController::class, 'show'])->name('activities.show');
+// El «añadir a mi calendario» de los correos. Va por ruta y no como
+// adjunto: así el correo no engorda y no hace falta el trabajo de
+// adjuntos, que está aplazado.
+Route::get('/actividades/{activity:slug}/calendario.ics', [ActivityController::class, 'calendario'])
+    ->name('activities.calendario');
 Route::post('/actividades/{activity:slug}/inscribirse', [RegistrationController::class, 'store'])
     ->name('registrations.store');
 Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'cancel'])
