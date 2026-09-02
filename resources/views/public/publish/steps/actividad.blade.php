@@ -101,7 +101,7 @@
             <label class="lbl" data-campo="fecha_inicio" data-obligatorio
                    data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_inicio') }}"
                    x-data="campoFecha()">Fecha *
-                <span class="campo-fecha">
+                <span class="campo-selector">
                     <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
                            {{-- Sin maxlength: cortaría lo que se pegue antes de
                                 poder ordenarlo. Al teclear ya lo acota la máscara,
@@ -114,11 +114,11 @@
                     {{-- El botón es quien abre el desplegable; el input[type=date]
                          está debajo, transparente y sin recibir clics, sólo para
                          que el calendario del navegador salga anclado aquí. --}}
-                    <input type="date" class="campo-fecha-nativo" x-ref="calendario"
+                    <input type="date" class="campo-selector-nativo" x-ref="calendario"
                            tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
                            x-on:change="desdeCalendario()">
 
-                    <button type="button" class="campo-fecha-boton"
+                    <button type="button" class="campo-selector-boton"
                             x-bind:disabled="sinFecha"
                             x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
                             aria-label="Elegir la fecha en un calendario">
@@ -129,15 +129,57 @@
                 @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
-            <label class="lbl">Hora inicio
-                <input class="fld @error('hora_inicio') is-invalid @enderror" name="hora_inicio"
-                       placeholder="HH:MM" x-bind:disabled="sinFecha" value="@viejo('hora_inicio')">
+            <label class="lbl" data-campo="hora_inicio"
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('hora_inicio') }}"
+                   x-data="campoHora()">Hora inicio
+                <span class="campo-selector">
+                    <input class="fld @error('hora_inicio') is-invalid @enderror" name="hora_inicio"
+                           x-ref="hora" inputmode="numeric" autocomplete="off"
+                           placeholder="HH:MM"
+                           x-on:input="alEscribir($event)" x-on:blur="normalizar()"
+                           x-bind:disabled="sinFecha" value="@viejo('hora_inicio')">
+                    {{-- Mismo montaje que el calendario de la fecha: el botón abre el
+                         desplegable y el input nativo está debajo, transparente y sin
+                         recibir clics, sólo para que salga anclado aquí. --}}
+                    <input type="time" class="campo-selector-nativo" x-ref="reloj"
+                           tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
+                           x-on:change="desdeReloj()">
+
+                    <button type="button" class="campo-selector-boton"
+                            x-bind:disabled="sinFecha"
+                            x-on:click="sincronizarReloj(); $refs.reloj.showPicker ? $refs.reloj.showPicker() : $refs.hora.focus()"
+                            aria-label="Elegir la hora en un reloj">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
+                    </button>
+                </span>
+                <span class="helper">Ej. 09:00</span>
                 @error('hora_inicio') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
-            <label class="lbl">Hora término
-                <input class="fld @error('hora_termino') is-invalid @enderror" name="hora_termino"
-                       placeholder="HH:MM" x-bind:disabled="sinFecha" value="@viejo('hora_termino')">
+            <label class="lbl" data-campo="hora_termino"
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('hora_termino') }}"
+                   x-data="campoHora()">Hora término
+                <span class="campo-selector">
+                    <input class="fld @error('hora_termino') is-invalid @enderror" name="hora_termino"
+                           x-ref="hora" inputmode="numeric" autocomplete="off"
+                           placeholder="HH:MM"
+                           x-on:input="alEscribir($event)" x-on:blur="normalizar()"
+                           x-bind:disabled="sinFecha" value="@viejo('hora_termino')">
+                    {{-- Mismo montaje que el calendario de la fecha: el botón abre el
+                         desplegable y el input nativo está debajo, transparente y sin
+                         recibir clics, sólo para que salga anclado aquí. --}}
+                    <input type="time" class="campo-selector-nativo" x-ref="reloj"
+                           tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
+                           x-on:change="desdeReloj()">
+
+                    <button type="button" class="campo-selector-boton"
+                            x-bind:disabled="sinFecha"
+                            x-on:click="sincronizarReloj(); $refs.reloj.showPicker ? $refs.reloj.showPicker() : $refs.hora.focus()"
+                            aria-label="Elegir la hora en un reloj">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
+                    </button>
+                </span>
+                <span class="helper">Ej. 13:00</span>
                 @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
             </label>
         </div>

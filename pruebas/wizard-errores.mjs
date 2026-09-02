@@ -178,7 +178,7 @@ di('hay ayuda escrita con un ejemplo',
 di('y la ayuda cabe en una linea de su columna',
     await p.$eval('[data-campo="fecha_inicio"] .helper', (e) => e.getBoundingClientRect().height < 24),
     await p.$eval('[data-campo="fecha_inicio"] .helper', (e) => Math.round(e.getBoundingClientRect().height) + 'px'));
-di('hay botón de calendario', await p.$$eval('[data-campo="fecha_inicio"] .campo-fecha-boton', (n) => n.length) === 1);
+di('hay botón de calendario', await p.$$eval('[data-campo="fecha_inicio"] .campo-selector-boton', (n) => n.length) === 1);
 
 /*
  * Pegar.
@@ -216,12 +216,74 @@ di('tecleado a mano en ISO, tambien se arregla al salir',
 
 // Y el calendario escribe en el campo de texto, no lo sustituye.
 await p.evaluate(() => {
-    const cal = document.querySelector('[data-campo="fecha_inicio"] .campo-fecha-nativo');
+    const cal = document.querySelector('[data-campo="fecha_inicio"] .campo-selector-nativo');
     cal.value = '2027-03-09';
     cal.dispatchEvent(new Event('change', { bubbles: true }));
 });
 di('el calendario escribe en el campo de texto',
     await p.$eval('input[name="fecha_inicio"]', (e) => e.value) === '09 / 03 / 2027');
+
+/* ══════════════════════════════════════════════════════════════════ */
+t('Los campos de hora, con el mismo trato que la fecha');
+
+const hora = async (campo, texto) => {
+    await p.evaluate((c) => { document.querySelector(`input[name="${c}"]`).value = ''; }, campo);
+    await p.focus(`input[name="${campo}"]`);
+    await p.type(`input[name="${campo}"]`, texto);
+    await p.evaluate((c) => {
+        const el = document.querySelector(`input[name="${c}"]`);
+        el.dispatchEvent(new Event('blur', { bubbles: true }));
+    }, campo);
+    await new Promise((r) => setTimeout(r, 150));
+    return p.$eval(`input[name="${campo}"]`, (e) => e.value);
+};
+
+di('sigue siendo texto, no type=time',
+    await p.$eval('input[name="hora_inicio"]', (e) => e.type) === 'text');
+di('el hueco enseña el formato',
+    await p.$eval('input[name="hora_inicio"]', (e) => e.placeholder) === 'HH:MM');
+di('hay botón de reloj',
+    await p.$$eval('[data-campo="hora_inicio"] .campo-selector-boton', (n) => n.length) === 1);
+di('y ayuda con un ejemplo',
+    await p.$eval('[data-campo="hora_inicio"]', (e) => /Ej\. 09:00/.test(e.innerText)));
+
+di('los dos puntos se ponen solos al teclear', await hora('hora_inicio', '0930') === '09:30');
+di('«9» son las nueve en punto', await hora('hora_inicio', '9') === '09:00');
+di('«930» también se entiende', await hora('hora_inicio', '930') === '09:30');
+di('y lo escrito con punto', await hora('hora_inicio', '9.30') === '09:30');
+di('una hora imposible se deja como está, y la explica el servidor',
+    await hora('hora_inicio', '99') === '99', await hora('hora_inicio', '99'));
+
+// Pegar: el mismo camino que en la fecha, por el evento que dispara el
+// navegador al pegar.
+const pegarHora = async (texto) => {
+    await p.evaluate((v) => {
+        const campo = document.querySelector('input[name="hora_termino"]');
+        campo.value = v;
+        campo.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromPaste' }));
+    }, texto);
+    await new Promise((r) => setTimeout(r, 150));
+    return p.$eval('input[name="hora_termino"]', (e) => e.value);
+};
+
+di('pegado con dos puntos, se respeta', await pegarHora('13:45') === '13:45');
+di('pegado sin separador, se ordena solo', await pegarHora('1345') === '13:45');
+di('pegado con segundos, se recorta', await pegarHora('13:45:00') === '13:45');
+
+// Y el reloj escribe en el campo de texto, no lo sustituye.
+await p.evaluate(() => {
+    const r = document.querySelector('[data-campo="hora_termino"] .campo-selector-nativo');
+    r.value = '18:15';
+    r.dispatchEvent(new Event('change', { bubbles: true }));
+});
+await new Promise((r) => setTimeout(r, 150));
+di('el reloj escribe en el campo de texto',
+    await p.$eval('input[name="hora_termino"]', (e) => e.value) === '18:15');
+
+await p.evaluate(() => {
+    document.querySelector('input[name="hora_inicio"]').value = '';
+    document.querySelector('input[name="hora_termino"]').value = '';
+});
 
 /* ══════════════════════════════════════════════════════════════════ */
 t('«Disponible de forma permanente» no pide la fecha');
@@ -506,12 +568,18 @@ if (! editar) {
     di('el título ya no lleva el `required` del navegador',
         await p.$eval('input[name="titulo"]', (e) => ! e.required));
 
-    // Las dos fechas con máscara y calendario.
+    // Las dos fechas y las dos horas, con su selector y su máscara.
+    const conSelector = (campos) => p.$$eval(
+        campos.map((c) => `[data-campo="${c}"] .campo-selector-boton`).join(', '),
+        (n) => n.length);
+
     di('las dos fechas tienen calendario',
-        await p.$$eval('.campo-fecha-boton', (n) => n.length) === 2);
-    di('y las dos siguen siendo de texto',
-        await p.$$eval('input[name="fecha_inicio"], input[name="fecha_termino"]',
-            (n) => n.every((e) => e.type === 'text')));
+        await conSelector(['fecha_inicio', 'fecha_termino']) === 2);
+    di('y las dos horas tienen reloj',
+        await conSelector(['hora_inicio', 'hora_termino']) === 2);
+    di('los cuatro siguen siendo de texto, para poder pegar',
+        await p.$$eval('input[name="fecha_inicio"], input[name="fecha_termino"], input[name="hora_inicio"], input[name="hora_termino"]',
+            (n) => n.length === 4 && n.every((e) => e.type === 'text')));
 
     // Seleccionar todo y reescribir encima, que es lo que se hace para cambiar
     // una fecha que ya estaba puesta.

@@ -29,19 +29,25 @@
             <div class="alert alert-error" style="margin-bottom:18px;">{{ session('error') }}</div>
         @endif
 
+        <x-puerta-equivocada style="margin-bottom:18px;" />
+
         <form method="POST" action="{{ route('admin.login.attempt') }}" style="display:flex;flex-direction:column;gap:16px;">
             @csrf
 
             <div>
                 <label class="helper" for="email" style="display:block;margin-bottom:6px;font-weight:600;">Correo</label>
+                {{-- Si viene del otro acceso, el correo ya lo escribió allí y el
+                     foco salta a la contraseña: es lo único que le queda. --}}
                 <input class="fld @error('email') is-invalid @enderror" type="email" id="email" name="email"
-                       value="@viejo('email')" required autofocus autocomplete="username">
+                       value="{{ \App\Support\Formulario::viejo('email', $correoSugerido ?? '') }}"
+                       required @empty($correoSugerido) autofocus @endempty autocomplete="username">
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
             </div>
 
             <div>
                 <label class="helper" for="password" style="display:block;margin-bottom:6px;font-weight:600;">Contraseña</label>
-                <input class="fld" type="password" id="password" name="password" required autocomplete="current-password">
+                <input class="fld" type="password" id="password" name="password"
+                       required @if ($correoSugerido ?? null) autofocus @endif autocomplete="current-password">
             </div>
 
             <button type="submit" class="btn btn-primary" style="justify-content:center;">Entrar</button>

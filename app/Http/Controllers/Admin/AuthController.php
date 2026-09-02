@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
 use App\Models\User;
 use App\Services\ControlDeAcceso;
+use App\Support\PuertaDeAcceso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +21,10 @@ class AuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return view('admin.auth.login');
+        // Si viene rebotado del otro acceso, el correo ya lo escribió allí.
+        return view('admin.auth.login', [
+            'correoSugerido' => PuertaDeAcceso::correoRecordado(PuertaDeAcceso::A_ADMIN),
+        ]);
     }
 
     public function login(Request $request)
@@ -50,9 +54,23 @@ class AuthController extends Controller
 
             $this->acceso->fallo($request, AccessLog::PANEL_ADMIN, $motivo, $duenno);
 
+            /*
+             * Con el rol equivocado, el aviso lleva botón a la puerta buena y se
+             * lleva el correo puesto. Antes sólo decía la dirección, y quien no
+             * la copiaba a mano se quedaba ahí: pasó de verdad el 2026-09-01.
+             *
+             * Va sólo en este caso porque es el único en que sabemos de quién
+             * es la cuenta: `porCredenciales` ya ha comprobado la contraseña.
+             * Ofrecerlo antes convertiría esta pantalla en una forma de
+             * averiguar qué correos son de administración.
+             */
+            if ($motivo === 'rol') {
+                PuertaDeAcceso::sugerir(PuertaDeAcceso::A_ORGANIZADOR, $datos['email']);
+            }
+
             throw ValidationException::withMessages([
                 'email' => match ($motivo) {
-                    'rol' => 'Esa es una cuenta de organizador. Entra por el acceso de organizaciones, en '.route('account.login').'.',
+                    'rol' => 'Esa es una cuenta de organización, no de administración.',
                     'inactiva' => 'Esa cuenta está desactivada. Escríbenos si crees que es un error.',
                     default => 'Esas credenciales no corresponden a una cuenta de administración.',
                 },

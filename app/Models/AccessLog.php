@@ -36,8 +36,22 @@ class AccessLog extends Model
      * cuenta ya bloqueada alargaría el bloqueo, y a quien esté probando
      * contraseñas le bastaría con seguir dándole para dejar al dueño fuera
      * indefinidamente.
+     *
+     * **`rol` también quedó fuera, el 2026-09-02.** Un `rol` sólo se registra
+     * cuando `User::porCredenciales` YA ha dado por buena la contraseña: no es
+     * un intento de adivinarla, es alguien que sabe la suya y ha llamado a la
+     * puerta equivocada. Contarlo no quita ni una posibilidad a quien esté
+     * probando contraseñas —el que ya la sabe entraría por la puerta buena— y
+     * en cambio dejaba fuera durante quince minutos justo a la persona que se
+     * equivoca de acceso, que es de quien viene el problema: el bloqueo salta
+     * ANTES de comprobar nada, así que a la sexta vez ya no le salía el aviso
+     * con el botón que la lleva a su sitio. Lo enseñó una captura de las
+     * pruebas de este mismo arreglo.
+     *
+     * La fila se sigue guardando: sale en el registro de accesos y en su
+     * filtro. Lo único que cambia es que no suma para bloquear.
      */
-    public const FALLOS_QUE_CUENTAN = ['credenciales', 'rol', 'inactiva'];
+    public const FALLOS_QUE_CUENTAN = ['credenciales', 'inactiva'];
 
     /** Los que ponen el contador a cero: entrar bien, o que un admin lo levante. */
     public const REINICIOS = ['exito', 'desbloqueo'];

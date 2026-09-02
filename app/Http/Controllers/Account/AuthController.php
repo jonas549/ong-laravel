@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
 use App\Models\User;
 use App\Services\ControlDeAcceso;
+use App\Support\PuertaDeAcceso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +21,10 @@ class AuthController extends Controller
             return redirect()->route('account.activities.index');
         }
 
-        return view('account.auth.login');
+        // Si viene rebotado del otro acceso, el correo ya lo escribió allí.
+        return view('account.auth.login', [
+            'correoSugerido' => PuertaDeAcceso::correoRecordado(PuertaDeAcceso::A_ORGANIZADOR),
+        ]);
     }
 
     public function login(Request $request)
@@ -50,9 +54,15 @@ class AuthController extends Controller
 
             $this->acceso->fallo($request, AccessLog::PANEL_ORGANIZADOR, $motivo, $duenno);
 
+            // El mismo aviso con botón, en el otro sentido. Ver el gemelo en
+            // Admin\AuthController para el porqué de que vaya sólo aquí.
+            if ($motivo === 'rol') {
+                PuertaDeAcceso::sugerir(PuertaDeAcceso::A_ADMIN, $datos['email']);
+            }
+
             throw ValidationException::withMessages([
                 'email' => match ($motivo) {
-                    'rol' => 'Esa es una cuenta de administración. Entra por el panel, en '.route('admin.login').'.',
+                    'rol' => 'Esa es una cuenta de administración, no de organización.',
                     'inactiva' => 'Esa cuenta está desactivada. Escríbenos si crees que es un error.',
                     default => 'No encontramos una cuenta con ese correo y contraseña.',
                 },

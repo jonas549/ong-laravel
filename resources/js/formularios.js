@@ -518,3 +518,131 @@ export const campoFecha = () => ({
         this.calendario.value = anio + '-' + mes + '-' + dia;
     },
 });
+
+/* ══════════════════════════════════════════════════ campo de hora ══ */
+
+/**
+ * El campo de hora, con el mismo trato que el de fecha.
+ *
+ * Se quedó en texto libre con un `placeholder="HH:MM"` cuando la fecha ya tenía
+ * máscara y calendario, y el cliente lo pidió el 2026-09-01. Aquí el formato no
+ * es ambiguo —nadie duda de si 09:30 son las nueve y media— pero el placeholder
+ * desaparece en cuanto se escribe la primera cifra, y sin selector hay que
+ * teclear los dos puntos a mano.
+ *
+ * Sigue siendo `type="text"` por lo mismo que la fecha: los campos nativos de
+ * hora no dejan pegar. El reloj va al lado, en un `input[type=time]`
+ * transparente debajo del botón, y ESCRIBE en el campo de texto.
+ *
+ * Se normaliza igual que en el servidor, y un poco más generoso: `horaIso` de
+ * los dos Form Requests exige un separador, así que «0930» a secas se le
+ * atragantaba. Aquí se convierte antes de enviarlo, y de paso se le enseñó al
+ * servidor a entenderlo por su cuenta para quien navegue sin JavaScript.
+ */
+export const campoHora = () => ({
+    entrada: null,
+    reloj: null,
+
+    init() {
+        this.entrada = this.$refs.hora ?? null;
+        this.reloj = this.$refs.reloj ?? null;
+    },
+
+    /**
+     * Al escribir: los dos puntos se ponen solos tras la hora.
+     *
+     * Borrar no se toca, por lo mismo que en la fecha: reformatear mientras
+     * alguien borra le mueve el cursor y no hay forma de corregir nada.
+     */
+    alEscribir(evento) {
+        const tipo = evento?.inputType ?? '';
+
+        if (tipo.startsWith('delete')) return;
+
+        if (tipo === 'insertFromPaste' || tipo === 'insertFromDrop') {
+            this.normalizar();
+
+            return;
+        }
+
+        const digitos = this.entrada.value.replace(/\D/g, '').slice(0, 4);
+
+        this.entrada.value = digitos.length > 2
+            ? digitos.slice(0, 2) + ':' + digitos.slice(2)
+            : digitos;
+    },
+
+    /**
+     * Al salir del campo o al pegar: se deja en HH:MM.
+     *
+     * Entiende lo que la gente escribe de verdad: «9» son las nueve en punto,
+     * «930» y «0930» las nueve y media, y «9.30» o «9:30» lo mismo. Una hora
+     * imposible se deja tal cual: la explica el servidor, que para eso tiene el
+     * mensaje escrito, y no se inventa una encima de lo que puso la persona.
+     */
+    normalizar() {
+        const texto = this.entrada.value.trim();
+
+        if (texto === '') return;
+
+        /*
+         * Las mismas dos lecturas, y en el mismo orden, que `FechaEscrita::hora`
+         * en el servidor. Primero la que lleva separador, que es la que además
+         * recorta los segundos de un «13:45:00» pegado desde otro sitio; si se
+         * mirasen sólo los dígitos, ese daría 134500 y no se entendería.
+         */
+        const conSeparador = texto.match(/^(\d{1,2})\D(\d{2})/);
+
+        /*
+         * Si no hay separador completo, valen las cifras a secas. Y aquí sí se
+         * miran las cifras SUELTAS, no la cadena entera, porque la máscara deja
+         * estados a medias: quien teclea «930» ve «93:0» según lo escribe, y eso
+         * no es ni una cosa ni la otra. Sus tres cifras sí lo son.
+         */
+        const digitos = texto.replace(/\D/g, '');
+
+        let hora, minuto;
+
+        if (conSeparador) {
+            [, hora, minuto] = conSeparador;
+        } else if (digitos.length >= 1 && digitos.length <= 4) {
+            // Con una o dos cifras es la hora en punto; con tres o cuatro, las
+            // dos últimas son los minutos.
+            [hora, minuto] = digitos.length <= 2
+                ? [digitos, '00']
+                : [digitos.slice(0, -2), digitos.slice(-2)];
+        } else {
+            return;
+        }
+
+        const h = Number(hora);
+        const m = Number(minuto);
+
+        // Una hora imposible se deja como se escribió: la explica el servidor,
+        // que para eso tiene el mensaje puesto, y no se inventa otra encima.
+        if (! (h >= 0 && h <= 23 && m >= 0 && m <= 59)) return;
+
+        this.entrada.value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    },
+
+    /** El reloj escribe en el campo de texto; no lo sustituye. */
+    desdeReloj() {
+        const valor = this.reloj?.value;
+
+        if (! valor) return;
+
+        this.entrada.value = valor.slice(0, 5);
+        this.entrada.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+
+    /** Y al revés: el reloj se abre por donde ya diga el campo. */
+    sincronizarReloj() {
+        if (! this.reloj) return;
+
+        this.normalizar();
+
+        if (/^\d{2}:\d{2}$/.test(this.entrada.value)) {
+            this.reloj.value = this.entrada.value;
+        }
+    },
+});

@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Organization;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
+use App\Support\FechaEscrita;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,48 +20,18 @@ class PublishActivityRequest extends FormRequest
     /**
      * Las fechas y horas del paso 4 son campos de texto, como en el
      * prototipo, así que llegan en formato chileno y hay que normalizarlas.
+     *
+     * La lectura vive en `App\Support\FechaEscrita`, compartida con el
+     * editor de «Mi cuenta»: estaba copiada en los dos, y dos copias de una
+     * regla de lectura acaban entendiendo cosas distintas.
      */
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'fecha_inicio' => $this->fechaIso($this->input('fecha_inicio')),
-            'hora_inicio' => $this->horaIso($this->input('hora_inicio')),
-            'hora_termino' => $this->horaIso($this->input('hora_termino')),
+            'fecha_inicio' => FechaEscrita::fecha($this->input('fecha_inicio')),
+            'hora_inicio' => FechaEscrita::hora($this->input('hora_inicio')),
+            'hora_termino' => FechaEscrita::hora($this->input('hora_termino')),
         ]);
-    }
-
-    /** "04 / 12 / 2026", "4-12-2026" o "2026-12-04" → "2026-12-04". */
-    private function fechaIso(mixed $valor): ?string
-    {
-        $texto = trim((string) $valor);
-
-        if ($texto === '') {
-            return null;
-        }
-
-        if (preg_match('/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})$/', $texto, $m)) {
-            [, $anio, $mes, $dia] = $m;
-        } elseif (preg_match('/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/', $texto, $m)) {
-            [, $dia, $mes, $anio] = $m;
-        } else {
-            return $texto;
-        }
-
-        return sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
-    }
-
-    /** "09:00", "9.00" o "09:00:00" → "09:00". */
-    private function horaIso(mixed $valor): ?string
-    {
-        $texto = trim((string) $valor);
-
-        if ($texto === '') {
-            return null;
-        }
-
-        return preg_match('/^(\d{1,2})\D(\d{2})/', $texto, $m)
-            ? sprintf('%02d:%02d', $m[1], $m[2])
-            : $texto;
     }
 
     /** @return array<string, mixed> */

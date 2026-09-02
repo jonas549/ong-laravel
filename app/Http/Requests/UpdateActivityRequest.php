@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\ActivityCollaborator;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
+use App\Support\FechaEscrita;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -45,50 +46,18 @@ class UpdateActivityRequest extends FormRequest
     /**
      * Normaliza antes de validar: las fechas y horas del formulario vienen
      * en formato chileno y hay que dejarlas como las espera la base.
+     *
+     * La lectura vive en `App\Support\FechaEscrita`, compartida con el
+     * wizard: estaba copiada en los dos.
      */
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'fecha_inicio' => $this->fechaIso($this->input('fecha_inicio')),
-            'fecha_termino' => $this->fechaIso($this->input('fecha_termino')),
-            'hora_inicio' => $this->horaIso($this->input('hora_inicio')),
-            'hora_termino' => $this->horaIso($this->input('hora_termino')),
+            'fecha_inicio' => FechaEscrita::fecha($this->input('fecha_inicio')),
+            'fecha_termino' => FechaEscrita::fecha($this->input('fecha_termino')),
+            'hora_inicio' => FechaEscrita::hora($this->input('hora_inicio')),
+            'hora_termino' => FechaEscrita::hora($this->input('hora_termino')),
         ]);
-    }
-
-    /** "26 / 07 / 2026", "26-7-2026" o "2026-07-26" → "2026-07-26". */
-    private function fechaIso(mixed $valor): ?string
-    {
-        $texto = trim((string) $valor);
-
-        if ($texto === '') {
-            return null;
-        }
-
-        if (preg_match('/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})$/', $texto, $m)) {
-            [, $anio, $mes, $dia] = $m;
-        } elseif (preg_match('/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/', $texto, $m)) {
-            [, $dia, $mes, $anio] = $m;
-        } else {
-            // Que falle la regla `date` con el valor original a la vista.
-            return $texto;
-        }
-
-        return sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
-    }
-
-    /** "10:00", "10.00" o "10:00:00" → "10:00". */
-    private function horaIso(mixed $valor): ?string
-    {
-        $texto = trim((string) $valor);
-
-        if ($texto === '') {
-            return null;
-        }
-
-        return preg_match('/^(\d{1,2})\D(\d{2})/', $texto, $m)
-            ? sprintf('%02d:%02d', $m[1], $m[2])
-            : $texto;
     }
 
     /** @return array<string, mixed> */

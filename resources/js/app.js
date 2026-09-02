@@ -1,7 +1,7 @@
 import Alpine from 'alpinejs';
 import { iniciarAnclas } from './anclas';
 import { editorActividad } from './editor-actividad';
-import { campoFecha, formularioGuiado } from './formularios';
+import { campoFecha, campoHora, formularioGuiado } from './formularios';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import { selectorMedio, subidorMedios } from './medios';
 import {
@@ -122,6 +122,7 @@ Alpine.data('wizard', wizard);
 Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);
+Alpine.data('campoHora', campoHora);
 
 window.Alpine = Alpine;
 Alpine.start();

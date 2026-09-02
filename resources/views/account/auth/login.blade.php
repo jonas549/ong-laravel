@@ -17,20 +17,26 @@
     </div>
 
     <div class="card" style="padding:34px 32px;">
+        <x-puerta-equivocada style="margin-bottom:18px;" />
+
         <form method="POST" action="{{ route('account.login.attempt') }}"
               style="display:flex;flex-direction:column;gap:18px;">
             @csrf
 
             <label class="lbl">Correo electrónico
+                {{-- Si viene del otro acceso, el correo ya lo escribió allí y el
+                     foco salta a la contraseña: es lo único que le queda. --}}
                 <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
-                       value="@viejo('email')" placeholder="contacto@organizacion.cl"
-                       required autofocus autocomplete="email">
+                       value="{{ \App\Support\Formulario::viejo('email', $correoSugerido ?? '') }}"
+                       placeholder="contacto@organizacion.cl"
+                       required @empty($correoSugerido) autofocus @endempty autocomplete="email">
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Contraseña
                 <input class="fld @error('password') is-invalid @enderror" type="password" name="password"
-                       placeholder="••••••••" required autocomplete="current-password">
+                       placeholder="••••••••" required
+                       @if ($correoSugerido ?? null) autofocus @endif autocomplete="current-password">
                 @error('password') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 

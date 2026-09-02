@@ -1781,6 +1781,25 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
     border: 0;
 }
 
+/* ── «Te has equivocado de puerta» ─────────────────────
+ *
+ * El aviso de los dos accesos, con el botón que lleva al otro. Va en el
+ * naranja de `.alert-info` y no en el rosa del error: la contraseña era
+ * correcta y la cuenta existe, sólo hay que entrar por la otra puerta.
+ */
+
+.puerta-equivocada {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    line-height: 1.55;
+}
+
+/* Sin esto el botón se estira a todo el ancho de la caja: es hijo de un
+ * flex en columna, igual que le pasaba a la marca «Obligatorio». */
+.puerta-equivocada .btn { flex: none; }
+
 /* ── Resumen de errores del formulario ──────────────────────
  *
  * La caja que va arriba del formulario cuando algo falta. Existe porque el
@@ -1926,11 +1945,11 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
  * donde tiene que salir. Quien abre el desplegable es el botón, con
  * `showPicker()`. */
 
-.campo-fecha { position: relative; display: block; }
+.campo-selector { position: relative; display: block; }
 
-.campo-fecha > .fld { padding-right: 44px; }
+.campo-selector > .fld { padding-right: 44px; }
 
-.campo-fecha-boton {
+.campo-selector-boton {
     position: absolute;
     right: 4px;
     top: 50%;
@@ -1947,11 +1966,11 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
     z-index: 2;
 }
 
-.campo-fecha-boton:hover { background: var(--naranjo-100); color: var(--naranjo-600); }
+.campo-selector-boton:hover { background: var(--naranjo-100); color: var(--naranjo-600); }
 
-.campo-fecha-boton:disabled { opacity: .35; cursor: not-allowed; background: none; }
+.campo-selector-boton:disabled { opacity: .35; cursor: not-allowed; background: none; }
 
-.campo-fecha-nativo {
+.campo-selector-nativo {
     position: absolute;
     right: 4px;
     top: 50%;
