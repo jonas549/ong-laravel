@@ -1781,6 +1781,186 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
     border: 0;
 }
 
+/* ── Resumen de errores del formulario ──────────────────────
+ *
+ * La caja que va arriba del formulario cuando algo falta. Existe porque el
+ * aviso de campo —`.field-error`, doce píxeles y medio en rosa, debajo del
+ * campo— es correcto pero invisible: al volver de un POST rechazado el
+ * navegador deja la página por su comienzo, y en un formulario de mil píxeles
+ * eso significa que el único aviso está fuera de la pantalla.
+ *
+ * Va en el rosa de `.alert-error`, que es el color que este sitio ya usa para
+ * decir «esto no salió», y no en el naranja de la marca: un error tiene que
+ * distinguirse de un aviso a la primera ojeada.
+ */
+
+.resumen-errores {
+    background: #fdeaf0;
+    border: 1.5px solid #f0cdd8;
+    border-radius: 16px;
+    padding: 15px 18px 16px;
+    margin-bottom: 22px;
+    color: #a82249;
+    scroll-margin-top: 110px;
+}
+
+.resumen-errores:focus-visible { outline: 2px solid var(--rosa); outline-offset: 3px; }
+
+/* Se enfoca por código para anunciarlo; sin esto sale un cerco al hacer clic. */
+.resumen-errores:focus:not(:focus-visible) { outline: none; }
+
+.resumen-errores-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 15.5px;
+    line-height: 1.4;
+}
+
+.resumen-errores-icono { display: grid; place-items: center; flex: none; }
+
+.resumen-errores-pie { margin: 5px 0 0 26px; font-size: 13px; color: #b8506f; }
+
+.resumen-errores-lista {
+    list-style: none;
+    margin: 11px 0 0 26px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.resumen-errores-salto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    border: 0;
+    background: none;
+    padding: 1px 0;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 700;
+    color: #a82249;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+}
+
+.resumen-errores-salto:hover { color: #7d1836; }
+
+.resumen-errores-motivo {
+    font-weight: 500;
+    font-size: 12.5px;
+    color: #b8506f;
+    text-decoration: none;
+}
+
+/* La caja del campo que falla.
+ *
+ * Con `outline` y no con borde ni con padding: el proyecto no tiene reset de
+ * box-sizing —ver la bitácora del 25— y cualquier borde o relleno nuevo sobre
+ * un elemento con `max-width` se suma por fuera y descuadra la fila. El outline
+ * no ocupa sitio.
+ *
+ * Hace falta en la caja entera y no sólo en el campo porque el fallo que se
+ * viene a arreglar era justo de los que no tienen campo que teñir: un grupo de
+ * chips no tiene borde. */
+.campo-fallido {
+    outline: 1.5px solid #f0cdd8;
+    outline-offset: 8px;
+    border-radius: 3px;
+}
+
+.campo-fallido .fld { border-color: var(--rosa); }
+
+/* ── Marca de campo obligatorio ─────────────────────────────
+ *
+ * El asterisco del prototipo funciona en un campo con recuadro: se lee como
+ * parte de la etiqueta de algo que hay que rellenar. En un grupo de chips no,
+ * porque los chips no parecen un campo que se rellene, parecen filtros que se
+ * pueden mirar y dejar. Ese fue el campo que hizo que el cliente creyera que
+ * los tenía todos completos.
+ *
+ * Así que ahí el asterisco se acompaña de la palabra, y la palabra cambia
+ * cuando ya está resuelto: mientras esté pendiente hay que verlo, y en cuanto
+ * se elige algo deja de gritar. */
+
+.marca-obligatoria {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 9px;
+    vertical-align: 1px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #fdeaf0;
+    color: #a82249;
+    border: 1px solid #f0cdd8;
+    white-space: nowrap;
+}
+
+.marca-obligatoria.listo {
+    background: #eaf6f5;
+    color: #0d6b64;
+    border-color: #cbe7e5;
+}
+
+/* ── Campo de fecha con calendario ──────────────────────────
+ *
+ * El campo sigue siendo `type="text"`: los nativos de fecha no dejan pegar, y
+ * pegar es de lo que más se hace aquí. El calendario se le añade al lado, y
+ * escribe en el campo de texto en vez de sustituirlo.
+ *
+ * El `input[type=date]` de verdad está debajo del botón, transparente y sin
+ * recibir clics: sólo está para que el desplegable del navegador salga anclado
+ * donde tiene que salir. Quien abre el desplegable es el botón, con
+ * `showPicker()`. */
+
+.campo-fecha { position: relative; display: block; }
+
+.campo-fecha > .fld { padding-right: 44px; }
+
+.campo-fecha-boton {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--gris);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.campo-fecha-boton:hover { background: var(--naranjo-100); color: var(--naranjo-600); }
+
+.campo-fecha-boton:disabled { opacity: .35; cursor: not-allowed; background: none; }
+
+.campo-fecha-nativo {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
 /* ── Diálogo de confirmación ───────────────────────────── */
 
 .dialogo-fondo {

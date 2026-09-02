@@ -7,11 +7,21 @@
 
 @section('content')
 @php
-    // Si la validación falló, volvemos al paso donde está el primer error.
-    $camposPaso3 = ['org_nombre', 'org_tipo', 'org_tipo_otro', 'org_descripcion',
-        'org_num_voluntarios', 'org_unidad_educativa', 'org_logo', 'email', 'password'];
+    use App\Support\CamposDeActividad;
 
-    $pasoInicial = $errors->any() ? ($errors->hasAny($camposPaso3) ? 3 : 4) : 1;
+    /*
+     * Lo que el servidor rechazó, traducido a la lista que pinta el resumen de
+     * arriba del formulario y que la guía usa para saltar de campo en campo.
+     * El paso al que se vuelve sale de ahí: del primer error de la lista, que
+     * va ordenada como se ven los campos en pantalla.
+     *
+     * Antes esto era una lista de nombres de campo escrita a mano aquí mismo
+     * para decidir entre el paso 3 y el 4. Cualquier campo nuevo que no
+     * estuviera en ella caía en el 4 por descarte.
+     */
+    $erroresDelServidor = CamposDeActividad::resumen($errors->getBag('default'));
+
+    $pasoInicial = $erroresDelServidor[0]['paso'] ?? ($errors->any() ? 4 : 1);
 @endphp
 
 <div x-data="wizard({
@@ -34,6 +44,7 @@
         otrosId: {{ Js::from(optional($publicos->firstWhere('nombre', 'Otros'))->id) }},
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null },
         comunas: {{ Js::from($regiones->mapWithKeys(fn ($r) => [$r->id => $r->communes->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre])->values()])) }},
+        errores: {{ Js::from($erroresDelServidor) }},
      })">
 
 @include('public.publish.partials.pasos')
@@ -42,7 +53,7 @@
 
 
     {{-- ══ PASO 1 — ¿VOLUNTARIADO? ══ --}}
-    <div x-show="paso === 1" x-cloak class="rise" style="max-width:860px;margin:0 auto;padding:64px 32px 96px;">
+    <div x-show="paso === 1" x-cloak data-paso="1" class="rise" style="max-width:860px;margin:0 auto;padding:64px 32px 96px;">
         <h1 style="font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 12px;color:var(--ink);text-wrap:pretty;">¿Necesitas convocar a personas voluntarias para esta actividad?</h1>
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:58ch;text-wrap:pretty;">Con esta respuesta sabremos si tu actividad necesita una convocatoria de voluntariado o solo difusión en el calendario.</p>
 
@@ -65,15 +76,38 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('publish.store') }}" enctype="multipart/form-data">
+    {{--
+        `revisarAntesDeEnviar` corta el envío cuando falta algo obligatorio y lo
+        enseña arriba. No sustituye a la validación del servidor —que sigue
+        siendo la que manda—, le ahorra el viaje a lo que se puede ver desde
+        aquí: un campo vacío.
+
+        Los dos manejadores de abajo van en el formulario y no campo a campo: un
+        solo `x-on:` cubre los cuarenta y pico, y al rellenar uno se le quita la
+        marca roja en el acto. Dejar en rojo lo ya corregido es la otra mitad de
+        no enterarse, porque no se sabe qué queda.
+    --}}
+    <form method="POST" action="{{ route('publish.store') }}" enctype="multipart/form-data"
+          x-on:submit="revisarAntesDeEnviar($event)"
+          x-on:input="revisarCampo($event.target.closest('[data-campo]')?.dataset.campo)"
+          x-on:change="revisarCampo($event.target.closest('[data-campo]')?.dataset.campo)">
         @csrf
 
         {{-- ══ PASO 2 — TIPO DE ORGANIZACIÓN ══ --}}
-        <div x-show="paso === 2" x-cloak class="rise" style="max-width:900px;margin:0 auto;padding:64px 32px 96px;">
+        <div x-show="paso === 2" x-cloak data-paso="2" class="rise" style="max-width:900px;margin:0 auto;padding:64px 32px 96px;">
             <h1 style="font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 12px;color:var(--ink);">¿Qué tipo de organización eres?</h1>
             <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:56ch;">Según tu respuesta te pediremos solo los datos que corresponden.</p>
 
-            <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
+            {{-- Este paso siempre trae una opción marcada, así que no puede
+                 quedarse vacío por descuido. El resumen está igualmente
+                 porque `org_tipo` sí puede rebotar del servidor, y sin él la
+                 guía mandaría a la persona a un paso donde no hay nada que
+                 leer. --}}
+            <x-resumen-errores :errores="$erroresDelServidor" />
+
+            <div class="grid-3" data-campo="org_tipo"
+                 data-etiqueta="{{ \App\Support\CamposDeActividad::etiqueta('org_tipo') }}"
+                 style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
                 @foreach ($tiposOrg as $t)
                     <button type="button"
                             x-bind:class="tipo === {{ Js::from($t) }} ? 'tileopt on' : 'tileopt'"
@@ -89,12 +123,12 @@
         </div>
 
         {{-- ══ PASO 3 — TU ORGANIZACIÓN ══ --}}
-        <div x-show="paso === 3" x-cloak class="rise" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
+        <div x-show="paso === 3" x-cloak data-paso="3" class="rise" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
             @include('public.publish.steps.organizacion')
         </div>
 
         {{-- ══ PASO 4 — TU ACTIVIDAD ══ --}}
-        <div x-show="paso === 4" x-cloak class="rise" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
+        <div x-show="paso === 4" x-cloak data-paso="4" class="rise" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
             @include('public.publish.steps.actividad')
         </div>
     </form>
@@ -121,92 +155,11 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-    function wizard(inicial) {
-        return {
-            paso: inicial.paso,
-            redirigir: false,
+{{--
+    El componente `wizard` vivía aquí en un <script> suelto. Se mudó a
+    resources/js/wizard.js al darle la guía de errores: son dos cosas que se
+    tienen que hablar —la guía salta al paso 3 para enseñar un campo del 3
+    estando en el 4— y componerlas en un módulo es más claro que apilar objetos
+    dentro de un atributo. Se registra con Alpine.data en resources/js/app.js.
+--}}
 
-            tipo: inicial.tipo,
-            formato: inicial.formato,
-            sinFecha: inicial.sinFecha,
-            acc: inicial.acc,
-            insc: inicial.insc,
-            colab: inicial.colab,
-            colabs: inicial.colabs,
-            regionId: inicial.regionId ?? '',
-            communeId: inicial.communeId ?? '',
-            mismoCorreo: inicial.mismoCorreo,
-            descLen: inicial.descLen,
-
-            comunas: inicial.comunas,
-            otrosId: inicial.otrosId,
-            limites: inicial.limites,
-
-            sel: {
-                temas: inicial.temas.map(Number),
-                caracteristicas: inicial.caracteristicas.map(Number),
-                publicos: inicial.publicos.map(Number),
-            },
-
-            irA(n) {
-                this.paso = n;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            },
-
-            // Las dos opciones del modal hacen lo mismo que en el prototipo:
-            // cerrar y seguir al paso 2.
-            cerrarRedirigir() {
-                this.redirigir = false;
-                this.irA(2);
-            },
-
-            esOtra() { return this.tipo === 'Otra'; },
-            esEmpresa() { return this.tipo === 'Empresa o institución privada'; },
-            esEducativa() { return this.tipo === 'Institución educativa'; },
-
-            marcado(grupo, id) {
-                return this.sel[grupo].includes(id);
-            },
-
-            alternar(grupo, id) {
-                const lista = this.sel[grupo];
-                const i = lista.indexOf(id);
-
-                if (i !== -1) {
-                    lista.splice(i, 1);
-                    return;
-                }
-
-                const tope = this.limites[grupo];
-                if (tope && lista.length >= tope) {
-                    lista.shift();
-                }
-
-                lista.push(id);
-            },
-
-            // "¿Cuál?" solo aparece si el público marcado incluye "Otros".
-            publicoOtros() {
-                return this.otrosId !== null && this.sel.publicos.includes(Number(this.otrosId));
-            },
-
-            comunasDeRegion() {
-                return this.comunas[this.regionId] ?? [];
-            },
-
-            cambiarRegion() {
-                this.communeId = '';
-            },
-
-            agregarColaborador(e) {
-                const v = e.target.value.trim();
-                if (!v) return;
-                this.colabs.push(v);
-                e.target.value = '';
-            },
-        };
-    }
-</script>
-@endpush

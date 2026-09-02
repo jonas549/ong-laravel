@@ -1,5 +1,21 @@
 {{-- PASO 4 — TU ACTIVIDAD de publicar-actividad.html (líneas 223-415). --}}
+@php
+    // Un @include compila a su propio archivo, así que el `use` del wizard no
+    // llega hasta aquí y hay que repetirlo.
+    use App\Support\CamposDeActividad;
+@endphp
+
 <h1 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:0 0 24px;color:var(--ink);">Sobre tu actividad</h1>
+
+{{--
+    Este paso NO tenía resumen ninguno: el del paso 3 estaba escrito dentro de
+    su propia vista. Como aquí caen casi todos los campos, un error en este
+    paso volvía del servidor sin absolutamente nada arriba que lo dijera, y la
+    única señal era un renglón rosa de doce píxeles y medio a mitad del
+    formulario. Eso es lo que llegó reportado como «tira error aunque los
+    campos estén completos».
+--}}
+<x-resumen-errores :errores="$erroresDelServidor" />
 
 <div style="background:#fff;border:1px solid var(--linea);border-radius:24px;box-shadow:0 18px 40px -32px rgba(0,0,0,.22);overflow:hidden;">
 
@@ -8,14 +24,16 @@
         <div class="seclabel" style="margin-bottom:18px;">Información básica</div>
 
         <div style="display:flex;flex-direction:column;gap:18px;">
-            <label class="lbl">Nombre de la actividad *
+            <label class="lbl" data-campo="titulo" data-obligatorio
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('titulo') }}">Nombre de la actividad *
                 <input class="fld @error('titulo') is-invalid @enderror" name="titulo"
                        value="@viejo('titulo')" placeholder="Ej. Jornada comunitaria en el barrio">
                 @error('titulo') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
-            <div>
-                <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">¿Qué características tiene tu actividad? *</div>
+            <div data-campo="caracteristicas" data-obligatorio
+                 data-etiqueta="{{ CamposDeActividad::etiqueta('caracteristicas') }}">
+                <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">¿Qué características tiene tu actividad? *<x-marca-obligatoria grupo="caracteristicas" /></div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
                     @foreach ($caracteristicas as $c)
                         <button type="button"
@@ -44,7 +62,8 @@
                 @error('formato') <span class="field-error">{{ $message }}</span> @enderror
             </div>
 
-            <label class="lbl">Descripción de la actividad *
+            <label class="lbl" data-campo="descripcion" data-obligatorio
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('descripcion') }}">Descripción de la actividad *
                 <textarea class="fld @error('descripcion') is-invalid @enderror" name="descripcion" rows="4"
                           style="resize:vertical;" maxlength="1000"
                           placeholder="Cuenta de qué se trata, qué harán las personas y por qué participar…"
@@ -68,12 +87,45 @@
             Campos de texto, no input[type=date]: es lo que trae el prototipo
             y además los navegadores no dejan pegar en los campos nativos de
             fecha y hora.
+
+            Pero texto libre y sin decir nada más dejaba al usuario adivinando
+            entre dd/mm/aaaa y mm/dd/aaaa, que es lo segundo que llegó
+            reportado. Así que el texto se queda —el pegado sigue funcionando—
+            y se le añaden las tres cosas que le faltaban: el formato escrito
+            en el hueco y debajo, una máscara que pone las barras sola mientras
+            se teclea, y un calendario de verdad que ESCRIBE en el campo de
+            texto en lugar de sustituirlo. Ver `campoFecha` en
+            resources/js/formularios.js.
         --}}
         <div class="grid-2" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
-            <label class="lbl">Fecha *
-                <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
-                       inputmode="numeric" placeholder="dd / mm / aaaa"
-                       x-bind:disabled="sinFecha" value="@viejo('fecha_inicio')">
+            <label class="lbl" data-campo="fecha_inicio" data-obligatorio
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_inicio') }}"
+                   x-data="campoFecha()">Fecha *
+                <span class="campo-fecha">
+                    <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
+                           {{-- Sin maxlength: cortaría lo que se pegue antes de
+                                poder ordenarlo. Al teclear ya lo acota la máscara,
+                                que reescribe el campo con ocho dígitos como mucho. --}}
+                           x-ref="fecha" inputmode="numeric" autocomplete="off"
+                           placeholder="dd / mm / aaaa"
+                           x-on:input="alEscribir($event)" x-on:blur="normalizar()"
+                           x-bind:disabled="sinFecha" value="@viejo('fecha_inicio')">
+
+                    {{-- El botón es quien abre el desplegable; el input[type=date]
+                         está debajo, transparente y sin recibir clics, sólo para
+                         que el calendario del navegador salga anclado aquí. --}}
+                    <input type="date" class="campo-fecha-nativo" x-ref="calendario"
+                           tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
+                           x-on:change="desdeCalendario()">
+
+                    <button type="button" class="campo-fecha-boton"
+                            x-bind:disabled="sinFecha"
+                            x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
+                            aria-label="Elegir la fecha en un calendario">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
+                    </button>
+                </span>
+                <span class="helper">Ej. 04 / 12 / 2026</span>
                 @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
@@ -105,7 +157,8 @@
         </label>
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            <label class="lbl">Región *
+            <label class="lbl" data-campo="region_id" data-obligatorio
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('region_id') }}">Región *
                 <select class="fld @error('region_id') is-invalid @enderror" name="region_id"
                         x-model="regionId" x-on:change="cambiarRegion()">
                     <option value="">Selecciona</option>
@@ -116,7 +169,8 @@
                 @error('region_id') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
-            <label class="lbl">Comuna *
+            <label class="lbl" data-campo="commune_id" data-obligatorio
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('commune_id') }}">Comuna *
                 <select class="fld @error('commune_id') is-invalid @enderror" name="commune_id" x-model="communeId">
                     <option value="">Selecciona</option>
                     <template x-for="c in comunasDeRegion()" x-bind:key="c.id">
@@ -127,7 +181,13 @@
             </label>
         </div>
 
-        <label class="lbl" style="margin-top:16px;">Dirección *
+        {{-- Sin `data-obligatorio` a propósito: el prototipo le pone
+             asterisco pero la regla del servidor dice `nullable`. Hasta
+             que se decida cuál de los dos manda, la revisión previa sigue a
+             la regla; exigir aquí lo que el servidor no exige es el mismo
+             fallo con los papeles cambiados. --}}
+        <label class="lbl" style="margin-top:16px;" data-campo="direccion"
+               data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección *
             <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
                    value="@viejo('direccion')" placeholder="Calle, número, referencia">
             @error('direccion') <span class="field-error">{{ $message }}</span> @enderror
@@ -138,7 +198,8 @@
     <div style="padding:30px;border-bottom:1px solid var(--linea);">
         <div class="seclabel" style="margin-bottom:18px;">Temas y público</div>
 
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">Tema de la actividad *</div>
+        <div data-campo="temas" data-obligatorio data-etiqueta="{{ CamposDeActividad::etiqueta('temas') }}">
+        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">Tema de la actividad *<x-marca-obligatoria grupo="temas" /></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
             @foreach ($temas as $t)
                 <button type="button"
@@ -152,8 +213,13 @@
         </template>
         <div class="helper" style="margin-top:8px;">Selecciona hasta tres temas principales.</div>
         @error('temas') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
 
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin:24px 0 9px;">¿Quién es el público beneficiado por esta actividad? *</div>
+        {{-- ESTE es el campo del reporte: obligatorio, pero dibujado como un
+             grupo de chips, que no parece algo que haya que rellenar sino un
+             filtro que se puede mirar y dejar. El asterisco solo no bastó. --}}
+        <div data-campo="publicos" data-obligatorio data-etiqueta="{{ CamposDeActividad::etiqueta('publicos') }}" style="margin-top:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin:0 0 9px;">¿Quién es el público beneficiado por esta actividad? *<x-marca-obligatoria grupo="publicos" /></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
             @foreach ($publicos as $p)
                 <button type="button"
@@ -167,8 +233,11 @@
         </template>
         <div class="helper" style="margin-top:8px;">Selecciona todas las que correspondan.</div>
         @error('publicos') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
 
-        <label class="lbl" style="margin-top:16px;max-width:440px;" x-show="publicoOtros()" x-cloak>¿Cuál? *
+        <label class="lbl" style="margin-top:16px;max-width:440px;" x-show="publicoOtros()" x-cloak
+               data-campo="publico_otro" data-obligatorio
+               data-etiqueta="{{ CamposDeActividad::etiqueta('publico_otro') }}">¿Cuál? *
             <input class="fld @error('publico_otro') is-invalid @enderror" name="publico_otro"
                    value="@viejo('publico_otro')" placeholder="Especifica el público beneficiado">
             @error('publico_otro') <span class="field-error">{{ $message }}</span> @enderror

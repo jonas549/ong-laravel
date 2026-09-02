@@ -30,6 +30,13 @@ Dos variables opcionales, por si cambia el entorno:
 | `DPS_URL` | `http://127.0.0.1:8123` |
 | `DPS_MYSQL` | `C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe` |
 
+**Los que llevan «necesita Chrome» conducen un navegador de verdad, y eso no es
+un capricho.** Un script por HTTP lee el HTML que vuelve y encuentra en él
+cualquier aviso, porque no tiene pantalla ni scroll: los 74 casos del bloque F
+pasaban también con el menú roto, y el fallo que arregla `wizard-errores.mjs`
+—un aviso correcto que quedaba fuera de la pantalla— es invisible por HTTP por
+definición. Lo que hay que medir ahí son píxeles.
+
 Los scripts entran con las cuentas del `UserSeeder`
 (`admin@ong-laravel.test` / `admin1234`), así que **son para local**, nunca
 contra producción: varios borran filas y cambian contraseñas.
@@ -52,6 +59,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `bloque-g.mjs` | los once CRUD del bloque G: crear, editar, esconder, borrar en blando, papelera, restaurar, y el reflejo en el home (**necesita Chrome**) |
 | `bloque-g2.mjs` | filtros, orden, paginación, acciones masivas, reordenar arrastrando y exportar (**necesita Chrome**) |
 | `bloque-j.mjs` | la biblioteca de medios y el selector: subir, filtrar, elegir desde un formulario, editar, reemplazar y borrar (**necesita Chrome**) |
+| `wizard-errores.mjs` | que el usuario **vea** lo que falta: el resumen de arriba del wizard y del formulario de inscripción, el salto al campo, la marca «Obligatorio» de los chips y la máscara del campo de fecha (**necesita Chrome**) |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---

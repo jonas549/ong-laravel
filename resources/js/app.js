@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import { iniciarAnclas } from './anclas';
+import { campoFecha, formularioGuiado } from './formularios';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import { selectorMedio, subidorMedios } from './medios';
 import {
@@ -12,6 +13,7 @@ import {
     iniciarEstadosDeCarga,
     tablaSeleccion,
 } from './panel';
+import { wizard } from './wizard';
 
 /*
  * Barra de pasos del wizard (publicar-actividad.html).
@@ -112,6 +114,12 @@ Alpine.data('filasOrdenables', filasOrdenables);
 // Biblioteca de medios: la pantalla propia y el selector de cualquier campo.
 Alpine.data('subidorMedios', subidorMedios);
 Alpine.data('selectorMedio', selectorMedio);
+
+// El wizard de publicar y la guia de errores que comparte con los formularios
+// publicos sueltos (inscripcion). Ver resources/js/formularios.js.
+Alpine.data('wizard', wizard);
+Alpine.data('formularioGuiado', formularioGuiado);
+Alpine.data('campoFecha', campoFecha);
 
 window.Alpine = Alpine;
 Alpine.start();
