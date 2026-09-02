@@ -77,6 +77,16 @@ di('y lo dicen con la palabra «Obligatorio»',
     ['temas', 'publicos', 'caracteristicas'].every((c) => conMarca.includes(c)),
     conMarca.join(', '));
 
+// La marca es una pastilla, no una barra: dentro de un flex en columna se
+// estiraba a todo el ancho y dejaba de leerse como una etiqueta. Hay que
+// medirla con el paso 4 en pantalla; oculta, todo mide cero.
+await irAPaso(4);
+const anchoMarcas = await p.$$eval('.marca-obligatoria', (n) => n.map((e) => Math.round(e.getBoundingClientRect().width)));
+di('y la marca es una pastilla, no una barra',
+    anchoMarcas.length === 3 && anchoMarcas.every((w) => w > 0 && w < 130),
+    anchoMarcas.join('px, ') + 'px');
+await irAPaso(1);
+
 /* ══════════════════════════════════════════════════════════════════ */
 t('Enviar el paso 4 sin el público beneficiado — el caso del reporte');
 
@@ -390,6 +400,193 @@ di('y no se exigen', faltanConSesion.length === 0, faltanConSesion.join(', '));
 await continuar();
 await new Promise((r) => setTimeout(r, 500));
 di('«Continuar» deja pasar al 4', await paso() === 4);
+
+/* ══════════════════════════════════════════════════════════════════ */
+t('La dirección ahora es obligatoria de verdad');
+
+/*
+ * Decidido por Jonas el 2026-09-02: el asterisco del HTML fuente manda, y la
+ * regla pasa a `required_without:sin_fecha_definida` como las de región y
+ * comuna. Lo que se comprueba aquí es que las dos puntas dicen lo mismo: la
+ * revisión previa la exige, y el servidor también.
+ */
+await abrirWizard();
+await irAPaso(4);
+
+const exigeDireccion = await p.evaluate(() => {
+    const d = Alpine.$data(document.querySelector('[x-data^="wizard"]'));
+    return d.camposQueFaltan(4).some((e) => e.campo === 'direccion');
+});
+di('la revisión previa la exige', exigeDireccion);
+
+// Y con «disponible de forma permanente» deja de exigirla, igual que la fecha.
+await p.evaluate(() => document.querySelector('input[name="sin_fecha_definida"]').click());
+await new Promise((r) => setTimeout(r, 300));
+const sinFechaSinDireccion = await p.evaluate(() => {
+    const d = Alpine.$data(document.querySelector('[x-data^="wizard"]'));
+    return d.camposQueFaltan(4).some((e) => e.campo === 'direccion');
+});
+di('pero deja de exigirla si es permanente', sinFechaSinDireccion === false);
+
+const relevados = await p.evaluate(() => {
+    const d = Alpine.$data(document.querySelector('[x-data^="wizard"]'));
+    return d.camposQueFaltan(4).map((e) => e.campo);
+});
+di('y lo mismo con región y comuna, que son `required_without`',
+    ! relevados.includes('region_id') && ! relevados.includes('commune_id'),
+    relevados.join(', '));
+
+await p.evaluate(() => document.querySelector('input[name="sin_fecha_definida"]').click());
+await new Promise((r) => setTimeout(r, 300));
+const devuelta = await p.evaluate(() => {
+    const d = Alpine.$data(document.querySelector('[x-data^="wizard"]'));
+    return d.camposQueFaltan(4).map((e) => e.campo);
+});
+di('y al desmarcarla vuelven las tres',
+    ['region_id', 'commune_id', 'direccion'].every((c) => devuelta.includes(c)),
+    devuelta.join(', '));
+
+/* ══════════════════════════════════════════════════════════════════ */
+t('El editor de actividades de «Mi cuenta»');
+
+await p.goto(`${B}/mi-cuenta/login`, { waitUntil: 'networkidle2' });
+if (p.url().includes('/login')) {
+    await p.type('input[name="email"]', 'organizador@ong-laravel.test');
+    await p.type('input[name="password"]', 'organizador1234');
+    await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type="submit"]')]);
+}
+
+await p.goto(`${B}/mi-cuenta/actividades`, { waitUntil: 'networkidle2' });
+const editar = await p.evaluate(() => document.querySelector('a[href*="/editar"]')?.href ?? null);
+
+if (! editar) {
+    di('el organizador tiene alguna actividad que editar', false);
+} else {
+    await p.goto(editar, { waitUntil: 'networkidle2' });
+    await p.waitForFunction(() => window.Alpine !== undefined);
+
+    const raiz = '[x-data^="editorActividad"]';
+    const faltanAqui = () => p.evaluate((r) =>
+        Alpine.$data(document.querySelector(r)).camposQueFaltan().map((e) => e.campo), raiz);
+
+    di('la pantalla carga', await p.$(raiz) !== null);
+    di('no hay resumen visible sin errores', await textoResumen() === null);
+
+    const cajasAqui = await p.$$eval('[data-campo][data-obligatorio]', (n) => n.map((e) => e.dataset.campo));
+    di('los campos obligatorios están marcados',
+        ['titulo', 'descripcion', 'fecha_inicio', 'direccion', 'commune_id', 'temas', 'publicos']
+            .every((c) => cajasAqui.includes(c)),
+        cajasAqui.join(', '));
+
+    /*
+     * «Características» lleva asterisco en el HTML fuente y su regla dice
+     * `nullable`, y hay actividades sembradas sin ninguna. Hasta que se decida,
+     * la revisión previa sigue a la REGLA, igual que se hizo con «Dirección»
+     * antes de que Jonas la decidiera.
+     */
+    di('«características» sigue a la regla y no al asterisco',
+        ! cajasAqui.includes('caracteristicas'));
+    di('y «accesibilidad», que es opcional, tampoco', ! cajasAqui.includes('accesos'));
+
+    di('los dos grupos obligatorios lo dicen con la palabra',
+        await p.$$eval('[data-campo] .marca-obligatoria',
+            (n) => n.map((e) => e.closest('[data-campo]').dataset.campo).join(',')) === 'temas,publicos');
+
+    // Aquí el encabezado va dentro de `.lbl`, que es flex en columna: la
+    // marca salía estirada a todo el ancho y en su propio renglón.
+    const marcasMc = await p.$$eval('.marca-obligatoria', (n) => n.map((e) => {
+        const r = e.getBoundingClientRect();
+        const previo = e.parentElement.getBoundingClientRect();
+        return { ancho: Math.round(r.width), mismaLinea: r.top - previo.top < r.height };
+    }));
+    di('la marca es una pastilla y va en la misma línea',
+        marcasMc.every((m) => m.ancho > 0 && m.ancho < 130 && m.mismaLinea),
+        JSON.stringify(marcasMc));
+
+    di('el título ya no lleva el `required` del navegador',
+        await p.$eval('input[name="titulo"]', (e) => ! e.required));
+
+    // Las dos fechas con máscara y calendario.
+    di('las dos fechas tienen calendario',
+        await p.$$eval('.campo-fecha-boton', (n) => n.length) === 2);
+    di('y las dos siguen siendo de texto',
+        await p.$$eval('input[name="fecha_inicio"], input[name="fecha_termino"]',
+            (n) => n.every((e) => e.type === 'text')));
+
+    // Seleccionar todo y reescribir encima, que es lo que se hace para cambiar
+    // una fecha que ya estaba puesta.
+    await p.focus('input[name="fecha_inicio"]');
+    await p.keyboard.down('Control');
+    await p.keyboard.press('KeyA');
+    await p.keyboard.up('Control');
+    await p.type('input[name="fecha_inicio"]', '09032027');
+    di('se puede reescribir encima de la fecha que había',
+        await p.$eval('input[name="fecha_inicio"]', (e) => e.value) === '09 / 03 / 2027',
+        await p.$eval('input[name="fecha_inicio"]', (e) => e.value));
+
+    /* ── Vaciar lo obligatorio y guardar ── */
+    await p.evaluate(() => {
+        document.querySelector('input[name="titulo"]').value = '';
+        document.querySelector('input[name="direccion"]').value = '';
+    });
+    await p.evaluate((r) => {
+        // Desmarcar todos los públicos, que es el caso del reporte.
+        const d = Alpine.$data(document.querySelector(r));
+        d.sel.publicos = [];
+    }, raiz);
+    await new Promise((r) => setTimeout(r, 300));
+
+    const pendientesAqui = await faltanAqui();
+    di('detecta los tres que faltan',
+        ['titulo', 'direccion', 'publicos'].every((c) => pendientesAqui.includes(c)),
+        pendientesAqui.join(', '));
+
+    await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await new Promise((r) => setTimeout(r, 300));
+
+    const urlEdit = p.url();
+    await p.evaluate(() => [...document.querySelectorAll('button[type=submit]')]
+        .find((b) => b.textContent.includes('Actualizar')).click());
+    await new Promise((r) => setTimeout(r, 800));
+
+    di('no se guarda', p.url() === urlEdit);
+
+    const resEdit = await textoResumen();
+    di('aparece el resumen', resEdit !== null, JSON.stringify(resEdit?.slice(0, 90)));
+    di('dice cuántos faltan', /Faltan 3 campos/.test(resEdit ?? ''));
+    di('nombra los tres', /Nombre de la actividad/.test(resEdit ?? '')
+        && /Dirección/.test(resEdit ?? '') && /Público beneficiado/.test(resEdit ?? ''));
+    di('el resumen quedó EN PANTALLA', await enPantalla('[data-resumen-errores]') === true);
+
+    const marcadasAqui = await p.$$eval('.campo-fallido', (n) => n.map((e) => e.dataset.campo));
+    di('marca las tres cajas', marcadasAqui.length === 3, marcadasAqui.join(', '));
+
+    // El renglón salta, y al rellenar se limpia.
+    await p.evaluate(() => document.querySelector('[data-resumen-errores] .resumen-errores-salto').click());
+    await new Promise((r) => setTimeout(r, 700));
+    di('el renglón salta a su campo', await enPantalla('[data-campo="titulo"]') === true);
+
+    await p.type('input[name="titulo"]', 'Título recuperado');
+    await new Promise((r) => setTimeout(r, 300));
+    di('al rellenarlo sale del resumen', /Faltan 2 campos/.test(await textoResumen() ?? ''));
+
+    /* ── Y el camino del servidor: la dirección vacía ahora la rechaza él ── */
+    await p.evaluate(() => { document.querySelector('input[name="direccion"]').value = ''; });
+    await p.evaluate((r) => {
+        const f = document.querySelector('form[action*="/mi-cuenta/actividades/"]');
+        f.setAttribute('x-on:submit', '');
+        f.submit();
+    }, raiz);
+    await p.waitForNavigation({ waitUntil: 'networkidle2' });
+    await p.waitForFunction(() => window.Alpine !== undefined);
+    await new Promise((r) => setTimeout(r, 800));
+
+    const servEdit = await textoResumen();
+    di('el servidor rechaza la dirección vacía', /Dirección/.test(servEdit ?? ''),
+        JSON.stringify(servEdit?.slice(0, 90)));
+    di('y lo dice con el motivo', /permanente|obligatori/i.test(servEdit ?? ''));
+    di('con el resumen EN PANTALLA', await enPantalla('[data-resumen-errores]') === true);
+}
 
 /* ══════════════════════════════════════════════════════════════════ */
 t('Sin errores en la consola');

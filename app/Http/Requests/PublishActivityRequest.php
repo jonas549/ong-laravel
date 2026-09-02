@@ -101,7 +101,7 @@ class PublishActivityRequest extends FormRequest
             'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
             'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
-            'direccion' => ['nullable', 'string', 'max:255'],
+            'direccion' => ['nullable', 'required_without:sin_fecha_definida', 'string', 'max:255'],
 
             'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -146,6 +146,7 @@ class PublishActivityRequest extends FormRequest
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:00.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
             'region_id.required_without' => 'Elige la región donde ocurre la actividad.',
+            'direccion.required_without' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
             'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
             'email.unique' => 'Ya existe una cuenta con ese correo. Inicia sesión para publicar otra actividad.',
             'password.confirmed' => 'Las contraseñas no coinciden.',

@@ -23,7 +23,13 @@ use Illuminate\Support\MessageBag;
  */
 final class CamposDeActividad
 {
-    /** Campo => [etiqueta que se le enseña a la persona, paso del wizard]. */
+    /**
+     * Campo => [etiqueta que se le enseña a la persona, paso del wizard].
+     *
+     * El paso es `null` en los campos que sólo existen en el editor de
+     * «Mi cuenta», que no tiene pasos. La guía lo tiene en cuenta: sin paso,
+     * no intenta cambiar de pantalla antes de saltar al campo.
+     */
     public const CAMPOS = [
         // Paso 3 — tu organización
         'org_nombre' => ['Nombre de la organización', 3],
@@ -57,6 +63,13 @@ final class CamposDeActividad
         'enlace_web' => ['Enlace a página web', 4],
         'imagen' => ['Imagen de portada', 4],
         'colaboradores' => ['Organizaciones colaboradoras', 4],
+
+        // Sólo en el editor de «Mi cuenta», que no tiene pasos.
+        'fecha_termino' => ['Fecha de término', null],
+        'cupos_disponibles' => ['Cupos disponibles', null],
+        'info_previa' => ['Qué deben saber antes de asistir', null],
+        'accesos' => ['Accesibilidad', null],
+        'abierta_publico' => ['Actividad abierta al público', null],
     ];
 
     public static function etiqueta(string $campo): string

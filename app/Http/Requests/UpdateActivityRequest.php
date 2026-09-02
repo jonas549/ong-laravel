@@ -106,7 +106,7 @@ class UpdateActivityRequest extends FormRequest
             'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
 
             'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
-            'direccion' => ['nullable', 'string', 'max:255'],
+            'direccion' => ['nullable', 'required_without:sin_fecha_definida', 'string', 'max:255'],
 
             'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -154,6 +154,7 @@ class UpdateActivityRequest extends FormRequest
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:30.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
             'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
+            'direccion.required_without' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
             'imagen.max' => 'La imagen no puede pesar más de 2 MB.',
             'imagen.mimes' => 'La imagen debe ser JPG, PNG o WEBP.',
         ];

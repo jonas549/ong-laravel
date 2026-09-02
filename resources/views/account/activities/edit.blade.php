@@ -8,6 +8,13 @@
 
 <main style="flex:1;">
 @php
+    use App\Support\CamposDeActividad;
+
+    // Lo que el servidor rechazó, con el nombre en castellano de cada campo.
+    // Misma tabla que pinta los `data-etiqueta` de abajo: así el aviso del
+    // servidor y el del navegador no pueden decir cosas distintas.
+    $erroresDelServidor = CamposDeActividad::resumen($errors->getBag('default'));
+
     $tono = $activity->estado_color;
 
     $seleccion = fn (string $grupo, string $campo) => old($campo, $activity->termsDe($grupo)->pluck('id')->all());
@@ -33,6 +40,7 @@
         colaboradores: {{ Js::from(array_values($colaboradores)) }},
         descLen: {{ mb_strlen(\App\Support\Formulario::viejo('descripcion', $activity->descripcion ?? '')) }},
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null, accesos: null },
+        errores: {{ Js::from($erroresDelServidor) }},
      })">
 
     <div class="crumb" style="margin-bottom:20px;">Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Editar</div>
@@ -61,13 +69,22 @@
         </div>
     @endif
 
-    @if ($errors->any())
-        <div class="alert alert-error" style="margin-bottom:24px;">
-            Revisa los campos marcados: hay {{ $errors->count() }} {{ \App\Support\Texto::plural('dato', $errors->count()) }} por corregir.
-        </div>
-    @endif
+    {{--
+        Antes aquí ponía «Revisa los campos marcados: hay 1 dato por corregir»,
+        que dice que algo falla y deja el trabajo de buscarlo. Lo que hacía
+        saltar al campo era el `required` del navegador, que sólo cubría el
+        título: en los grupos de chips —que son tres y dos son obligatorios— no
+        hay `required` que valga.
+    --}}
+    <x-resumen-errores :errores="$erroresDelServidor" style="margin-bottom:24px;" />
 
-    <form method="POST" action="{{ route('account.activities.update', $activity) }}" enctype="multipart/form-data">
+    {{-- Los dos manejadores de abajo van en el formulario y no campo a campo:
+         uno solo cubre los treinta y pico, y al rellenar uno se le quita la
+         marca en el acto. Ver resources/js/formularios.js. --}}
+    <form method="POST" action="{{ route('account.activities.update', $activity) }}" enctype="multipart/form-data"
+          x-on:submit="revisarAntesDeEnviar($event)"
+          x-on:input="revisarCampo($event.target.closest('[data-campo]')?.dataset.campo)"
+          x-on:change="revisarCampo($event.target.closest('[data-campo]')?.dataset.campo)">
         @csrf
         @method('PUT')
 
@@ -78,13 +95,18 @@
                 <div class="seclabel" style="margin-bottom:18px;">Sobre la actividad</div>
 
                 <div style="display:flex;flex-direction:column;gap:18px;">
-                    <label class="lbl">Nombre de la actividad *
+                    <label class="lbl" data-campo="titulo" data-obligatorio
+                           data-etiqueta="{{ CamposDeActividad::etiqueta('titulo') }}">Nombre de la actividad *
+                        {{-- Sin `required`: lo cubre la guía, y teniéndolo un campo
+                             frenaba con el globo del navegador y el de al lado con el
+                             resumen, sin ninguna lógica visible desde fuera. --}}
                         <input class="fld @error('titulo') is-invalid @enderror" name="titulo"
-                               value="@viejo('titulo', $activity->titulo)" required>
+                               value="@viejo('titulo', $activity->titulo)">
                         @error('titulo') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
-                    <label class="lbl">Descripción * — máx. 1.000 caracteres
+                    <label class="lbl" data-campo="descripcion" data-obligatorio
+                           data-etiqueta="{{ CamposDeActividad::etiqueta('descripcion') }}">Descripción * — máx. 1.000 caracteres
                         <textarea class="fld @error('descripcion') is-invalid @enderror" name="descripcion" rows="4"
                                   style="resize:vertical;" maxlength="1000"
                                   x-on:input="descLen = $event.target.value.length">{{ \App\Support\Formulario::viejo('descripcion', $activity->descripcion) }}</textarea>
@@ -124,19 +146,59 @@
                     campos nativos de fecha y hora.
                 --}}
                 <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                    <label class="lbl">Fecha de inicio *
-                        <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
-                               placeholder="dd / mm / aaaa" inputmode="numeric"
-                               x-bind:disabled="sinFecha"
-                               value="@viejo('fecha_inicio', $activity->fecha_inicio?->format('d / m / Y'))">
+                    <label class="lbl" data-campo="fecha_inicio" data-obligatorio
+                           data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_inicio') }}"
+                           x-data="campoFecha()">Fecha de inicio *
+                        <span class="campo-fecha">
+                            <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
+                                   x-ref="fecha" inputmode="numeric" autocomplete="off"
+                                   placeholder="dd / mm / aaaa"
+                                   x-on:input="alEscribir($event)" x-on:blur="normalizar()"
+                                   x-bind:disabled="sinFecha"
+                                   value="@viejo('fecha_inicio', $activity->fecha_inicio?->format('d / m / Y'))">
+                        {{-- El botón abre el desplegable; el input[type=date] está
+                             debajo, transparente y sin recibir clics, sólo para que
+                             el calendario salga anclado aquí. --}}
+                        <input type="date" class="campo-fecha-nativo" x-ref="calendario"
+                               tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
+                               x-on:change="desdeCalendario()">
+
+                        <button type="button" class="campo-fecha-boton"
+                                x-bind:disabled="sinFecha"
+                                x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
+                                aria-label="Elegir la fecha en un calendario">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
+                        </button>
+                </span>
+                        <span class="helper">Ej. 04 / 12 / 2026</span>
                         @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
-                    <label class="lbl">Fecha de término
-                        <input class="fld @error('fecha_termino') is-invalid @enderror" name="fecha_termino"
-                               placeholder="dd / mm / aaaa" inputmode="numeric"
-                               x-bind:disabled="sinFecha"
-                               value="@viejo('fecha_termino', $activity->fecha_termino?->format('d / m / Y'))">
+                    <label class="lbl" data-campo="fecha_termino"
+                           data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_termino') }}"
+                           x-data="campoFecha()">Fecha de término
+                        <span class="campo-fecha">
+                            <input class="fld @error('fecha_termino') is-invalid @enderror" name="fecha_termino"
+                                   x-ref="fecha" inputmode="numeric" autocomplete="off"
+                                   placeholder="dd / mm / aaaa"
+                                   x-on:input="alEscribir($event)" x-on:blur="normalizar()"
+                                   x-bind:disabled="sinFecha"
+                                   value="@viejo('fecha_termino', $activity->fecha_termino?->format('d / m / Y'))">
+                        {{-- El botón abre el desplegable; el input[type=date] está
+                             debajo, transparente y sin recibir clics, sólo para que
+                             el calendario salga anclado aquí. --}}
+                        <input type="date" class="campo-fecha-nativo" x-ref="calendario"
+                               tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
+                               x-on:change="desdeCalendario()">
+
+                        <button type="button" class="campo-fecha-boton"
+                                x-bind:disabled="sinFecha"
+                                x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
+                                aria-label="Elegir la fecha en un calendario">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
+                        </button>
+                </span>
+                        <span class="helper">Opcional, si dura más de un día.</span>
                         @error('fecha_termino') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
@@ -163,13 +225,18 @@
 
                 <label style="display:flex;align-items:flex-start;gap:11px;cursor:pointer;margin-bottom:20px;">
                     <input type="checkbox" name="sin_fecha_definida" value="1" x-model="sinFecha"
+                           x-on:change="$nextTick(() => repasar())"
                            style="width:18px;height:18px;accent-color:var(--naranjo);margin-top:2px;">
                     <span style="font-size:14.5px;color:var(--ink);">Disponible de forma permanente
                         <span class="helper" style="display:block;margin-top:3px;">Al marcar esta opción, los campos de fecha y hora se deshabilitarán. Usa esta opción para actividades que no tienen una fecha específica.</span>
                     </span>
                 </label>
 
-                <label class="lbl">Dirección *
+                {{-- `data-obligatorio-salvo` es el `required_without` de la regla:
+                     una actividad permanente puede no tener sitio fijo. --}}
+                <label class="lbl" data-campo="direccion" data-obligatorio
+                       data-obligatorio-salvo="sin_fecha_definida"
+                       data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección *
                     <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
                            value="@viejo('direccion', $activity->direccion)">
                     @error('direccion') <span class="field-error">{{ $message }}</span> @enderror
@@ -181,7 +248,9 @@
                     geocodificación no hay de dónde deducirlas, así que se pide
                     la comuna igual que en el paso 4 del wizard.
                 --}}
-                <label class="lbl" style="margin-top:16px;max-width:340px;">Comuna *
+                <label class="lbl" style="margin-top:16px;max-width:340px;" data-campo="commune_id" data-obligatorio
+                       data-obligatorio-salvo="sin_fecha_definida"
+                       data-etiqueta="{{ CamposDeActividad::etiqueta('commune_id') }}">Comuna *
                     <select class="fld @error('commune_id') is-invalid @enderror" name="commune_id">
                         <option value="">Selecciona una comuna</option>
                         @foreach ($regiones as $region)
@@ -201,32 +270,50 @@
             <div style="padding:30px;border-bottom:1px solid var(--linea);">
                 <div class="seclabel" style="margin-bottom:18px;">Temas y público</div>
 
+                {{--
+                    `obliga` sale de las reglas de UpdateActivityRequest, no del
+                    asterisco de la etiqueta. Los dos no coinciden en
+                    «características»: lleva asterisco en el HTML fuente y su regla
+                    dice `nullable`, y hay cuatro actividades sembradas sin ninguna,
+                    que dejarían de poder guardarse. Está anotado en el backlog para
+                    que Jonas lo decida, como se decidió el de «Dirección».
+                --}}
                 @foreach ([
-                    ['grupo' => 'temas', 'items' => $temas, 'label' => 'Temas de la actividad (hasta 3) *', 'ayuda' => null, 'margen' => '0 0 9px'],
-                    ['grupo' => 'caracteristicas', 'items' => $caracteristicas, 'label' => '¿Qué características tiene tu actividad? *', 'ayuda' => 'Selecciona hasta 5 características.', 'margen' => '24px 0 9px'],
-                    ['grupo' => 'publicos', 'items' => $publicos, 'label' => '¿Quién es el público beneficiado por esta actividad? *', 'ayuda' => 'Selecciona todas las que correspondan.', 'margen' => '24px 0 9px'],
-                    ['grupo' => 'accesos', 'items' => $accesos, 'label' => '¿La actividad es accesible para personas con discapacidad?', 'ayuda' => 'Marca todas las características que correspondan.', 'margen' => '24px 0 9px'],
+                    ['grupo' => 'temas', 'items' => $temas, 'label' => 'Temas de la actividad (hasta 3) *', 'obliga' => true, 'ayuda' => null, 'margen' => '0 0 9px'],
+                    ['grupo' => 'caracteristicas', 'items' => $caracteristicas, 'label' => '¿Qué características tiene tu actividad? *', 'obliga' => false, 'ayuda' => 'Selecciona hasta 5 características.', 'margen' => '24px 0 9px'],
+                    ['grupo' => 'publicos', 'items' => $publicos, 'label' => '¿Quién es el público beneficiado por esta actividad? *', 'obliga' => true, 'ayuda' => 'Selecciona todas las que correspondan.', 'margen' => '24px 0 9px'],
+                    ['grupo' => 'accesos', 'items' => $accesos, 'label' => '¿La actividad es accesible para personas con discapacidad?', 'obliga' => false, 'ayuda' => 'Marca todas las características que correspondan.', 'margen' => '24px 0 9px'],
                 ] as $bloque)
-                    <div class="lbl" style="margin:{{ $bloque['margen'] }};">{{ $bloque['label'] }}</div>
+                    <div data-campo="{{ $bloque['grupo'] }}" @if ($bloque['obliga']) data-obligatorio @endif
+                         data-etiqueta="{{ CamposDeActividad::etiqueta($bloque['grupo']) }}"
+                         style="margin:{{ $bloque['margen'] }};">
 
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                        @foreach ($bloque['items'] as $t)
-                            <button type="button"
-                                    x-bind:class="marcado('{{ $bloque['grupo'] }}', {{ $t->id }}) ? 'chip on' : 'chip'"
-                                    x-bind:aria-pressed="marcado('{{ $bloque['grupo'] }}', {{ $t->id }}) ? 'true' : 'false'"
-                                    x-on:click="alternar('{{ $bloque['grupo'] }}', {{ $t->id }})">{{ $t->nombre }}</button>
-                        @endforeach
+                        {{-- `display:block` y no el flex de `.lbl`: esto es un
+                             encabezado, no una etiqueta que envuelve a su campo, y
+                             en columna la marca se iba a un renglón propio estirada
+                             a todo el ancho. Se ve igual, porque un flex en columna
+                             con un solo texto dentro se pinta igual. --}}
+                        <div class="lbl" style="display:block;margin-bottom:9px;">{{ $bloque['label'] }}@if ($bloque['obliga'])<x-marca-obligatoria :grupo="$bloque['grupo']" />@endif</div>
+
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            @foreach ($bloque['items'] as $t)
+                                <button type="button"
+                                        x-bind:class="marcado('{{ $bloque['grupo'] }}', {{ $t->id }}) ? 'chip on' : 'chip'"
+                                        x-bind:aria-pressed="marcado('{{ $bloque['grupo'] }}', {{ $t->id }}) ? 'true' : 'false'"
+                                        x-on:click="alternar('{{ $bloque['grupo'] }}', {{ $t->id }})">{{ $t->nombre }}</button>
+                            @endforeach
+                        </div>
+
+                        <template x-for="id in sel['{{ $bloque['grupo'] }}']" x-bind:key="id">
+                            <input type="hidden" name="{{ $bloque['grupo'] }}[]" x-bind:value="id">
+                        </template>
+
+                        @if ($bloque['ayuda'])
+                            <div class="helper" style="margin-top:8px;">{{ $bloque['ayuda'] }}</div>
+                        @endif
+
+                        @error($bloque['grupo']) <span class="field-error">{{ $message }}</span> @enderror
                     </div>
-
-                    <template x-for="id in sel['{{ $bloque['grupo'] }}']" x-bind:key="id">
-                        <input type="hidden" name="{{ $bloque['grupo'] }}[]" x-bind:value="id">
-                    </template>
-
-                    @if ($bloque['ayuda'])
-                        <div class="helper" style="margin-top:8px;">{{ $bloque['ayuda'] }}</div>
-                    @endif
-
-                    @error($bloque['grupo']) <span class="field-error">{{ $message }}</span> @enderror
                 @endforeach
             </div>
 
@@ -425,59 +512,10 @@
 </main>
 @endsection
 
-@push('scripts')
-<script>
-    function editorActividad(inicial) {
-        return {
-            sel: {
-                temas: inicial.temas.map(Number),
-                caracteristicas: inicial.caracteristicas.map(Number),
-                publicos: inicial.publicos.map(Number),
-                accesos: inicial.accesos.map(Number),
-            },
-            limites: inicial.limites,
+{{--
+    El componente `editorActividad` vivía aquí en un <script> suelto. Se mudó a
+    resources/js/editor-actividad.js al darle la guía de errores, que es un
+    objeto compartido con el wizard y con el formulario de inscripción. Se
+    registra con Alpine.data en resources/js/app.js.
+--}}
 
-            formato: inicial.formato,
-            sinFecha: inicial.sinFecha,
-            abierta: inicial.abierta,
-            insc: inicial.insc,
-            descLen: inicial.descLen,
-
-            colaboradores: inicial.colaboradores,
-            colab: inicial.colaboradores.length > 0,
-
-            modalCancelar: false,
-
-            marcado(grupo, id) {
-                return this.sel[grupo].includes(id);
-            },
-
-            // Igual que en el wizard: al pasarse del tope, sale el más antiguo.
-            alternar(grupo, id) {
-                const lista = this.sel[grupo];
-                const i = lista.indexOf(id);
-
-                if (i !== -1) {
-                    lista.splice(i, 1);
-                    return;
-                }
-
-                const tope = this.limites[grupo];
-                if (tope && lista.length >= tope) {
-                    lista.shift();
-                }
-
-                lista.push(id);
-            },
-
-            activarColab() {
-                this.colab = true;
-
-                if (this.colaboradores.length === 0) {
-                    this.colaboradores.push({ nombre: '', tipo: '' });
-                }
-            },
-        };
-    }
-</script>
-@endpush

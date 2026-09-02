@@ -149,7 +149,11 @@
         </div>
 
         <label style="display:flex;align-items:flex-start;gap:11px;cursor:pointer;margin-bottom:20px;">
+            {{-- Al marcarla dejan de hacer falta la fecha, la región, la comuna
+                 y la dirección: hay que repasar el resumen, o se quedaría
+                 pidiendo campos que acaban de dejar de pedirse. --}}
             <input type="checkbox" name="sin_fecha_definida" value="1" x-model="sinFecha"
+                   x-on:change="$nextTick(() => repasar())"
                    style="width:18px;height:18px;accent-color:var(--naranjo);margin-top:2px;">
             <span style="font-size:14.5px;color:var(--ink);">Disponible de forma permanente
                 <span class="helper" style="display:block;margin-top:3px;">Los campos de fecha y hora se deshabilitan. Úsalo para actividades sin fecha específica.</span>
@@ -158,6 +162,7 @@
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <label class="lbl" data-campo="region_id" data-obligatorio
+                   data-obligatorio-salvo="sin_fecha_definida"
                    data-etiqueta="{{ CamposDeActividad::etiqueta('region_id') }}">Región *
                 <select class="fld @error('region_id') is-invalid @enderror" name="region_id"
                         x-model="regionId" x-on:change="cambiarRegion()">
@@ -170,6 +175,7 @@
             </label>
 
             <label class="lbl" data-campo="commune_id" data-obligatorio
+                   data-obligatorio-salvo="sin_fecha_definida"
                    data-etiqueta="{{ CamposDeActividad::etiqueta('commune_id') }}">Comuna *
                 <select class="fld @error('commune_id') is-invalid @enderror" name="commune_id" x-model="communeId">
                     <option value="">Selecciona</option>
@@ -181,12 +187,10 @@
             </label>
         </div>
 
-        {{-- Sin `data-obligatorio` a propósito: el prototipo le pone
-             asterisco pero la regla del servidor dice `nullable`. Hasta
-             que se decida cuál de los dos manda, la revisión previa sigue a
-             la regla; exigir aquí lo que el servidor no exige es el mismo
-             fallo con los papeles cambiados. --}}
-        <label class="lbl" style="margin-top:16px;" data-campo="direccion"
+        {{-- `data-obligatorio-salvo` es el `required_without` de la regla: una
+             actividad disponible de forma permanente puede no tener sitio fijo. --}}
+        <label class="lbl" style="margin-top:16px;" data-campo="direccion" data-obligatorio
+               data-obligatorio-salvo="sin_fecha_definida"
                data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección *
             <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
                    value="@viejo('direccion')" placeholder="Calle, número, referencia">

@@ -90,6 +90,37 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
     },
 
     /**
+     * `required_without` leído del DOM.
+     *
+     * Tres campos del wizard —región, comuna y dirección— dejan de hacer
+     * falta al marcar «disponible de forma permanente», porque una actividad
+     * sin fecha puede no tener sitio fijo. La regla del servidor lo dice con
+     * `required_without:sin_fecha_definida`; aquí se dice con
+     * `data-obligatorio-salvo="sin_fecha_definida"` en la caja.
+     *
+     * **Esto no es opcional, es corrección.** Sin ello el formulario exige
+     * más que el servidor: frena un envío que el servidor habría aceptado, y
+     * lo frena pidiendo un campo que ya no hace falta. Es el mismo fallo que
+     * toda esta guía viene a arreglar, con los papeles cambiados.
+     *
+     * La fecha no lo necesita porque ahí el `x-bind:disabled` ya la apaga, y
+     * un control deshabilitado no cuenta.
+     */
+    loReleva(caja) {
+        const nombre = caja.dataset.obligatorioSalvo;
+
+        if (! nombre) return false;
+
+        const otro = this.ambito.querySelector('[name="' + CSS.escape(nombre) + '"]');
+
+        if (! otro) return false;
+
+        return otro.type === 'checkbox' || otro.type === 'radio'
+            ? otro.checked
+            : String(otro.value ?? '').trim() !== '';
+    },
+
+    /**
      * ¿Este campo se le está pidiendo AHORA a esta persona?
      *
      * Hay campos que sólo aparecen según lo que se haya contestado antes —
@@ -140,6 +171,7 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
         return this.cajas()
             .filter((caja) => caja.hasAttribute('data-obligatorio'))
             .filter((caja) => paso === null || this.pasoDe(caja) === paso)
+            .filter((caja) => ! this.loReleva(caja))
             .filter((caja) => this.seLePide(caja) && ! this.tieneValor(caja))
             .map((caja) => this.describir(caja));
     },
@@ -290,6 +322,23 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
      * Dejar en rojo lo que ya se corrigió es la otra mitad de no enterarse: no
      * se sabe qué queda.
      */
+    /**
+     * Repasa el resumen entero.
+     *
+     * Para cuando cambia algo que cambia QUÉ hace falta, y no sólo si un
+     * campo está relleno: marcar «disponible de forma permanente» releva a
+     * tres campos de golpe, y dejarlos en el resumen sería pedir algo que ya
+     * no se pide.
+     */
+    repasar() {
+        if (this.errores.length === 0) return;
+
+        const siguenFaltando = this.camposQueFaltan().map((e) => e.campo);
+
+        this.errores = this.errores.filter((e) => siguenFaltando.includes(e.campo));
+        this.marcarCajas();
+    },
+
     revisarCampo(nombre) {
         if (! nombre) return;
 

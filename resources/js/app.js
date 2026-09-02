@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import { iniciarAnclas } from './anclas';
+import { editorActividad } from './editor-actividad';
 import { campoFecha, formularioGuiado } from './formularios';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import { selectorMedio, subidorMedios } from './medios';
@@ -118,6 +119,7 @@ Alpine.data('selectorMedio', selectorMedio);
 // El wizard de publicar y la guia de errores que comparte con los formularios
 // publicos sueltos (inscripcion). Ver resources/js/formularios.js.
 Alpine.data('wizard', wizard);
+Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);
 

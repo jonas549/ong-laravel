@@ -1890,6 +1890,10 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
 .marca-obligatoria {
     display: inline-flex;
     align-items: center;
+    /* Dentro de un contenedor flex en columna —`.lbl` lo es— un hijo se
+     * estira a todo el ancho: la pastilla salía como una barra. */
+    align-self: flex-start;
+    width: fit-content;
     gap: 5px;
     margin-left: 9px;
     vertical-align: 1px;
