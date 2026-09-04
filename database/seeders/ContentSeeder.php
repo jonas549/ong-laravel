@@ -151,11 +151,11 @@ class ContentSeeder extends Seeder
             ['nombre' => 'Scotiabank', 'logo_path' => 'img/logo-scotiabank-red.svg', 'grupo' => 'auspician', 'tamano' => 'grande'],
             ['nombre' => 'Sodimac', 'logo_path' => 'img/sodimac-horizontalalta.jpg', 'grupo' => 'auspician', 'tamano' => 'grande'],
 
-            // «Participan» va en el tamaño intermedio por decisión del cliente
-            // (reunión del 2026-09-01): auspician grande, participan mediano,
-            // colaboran pequeño.
-            ['nombre' => 'Reale Seguros', 'logo_path' => 'img/logoreale.png', 'grupo' => 'participan', 'tamano' => 'mediano'],
-            ['nombre' => 'Anglo American', 'logo_path' => 'img/anglo-american-color.svg', 'grupo' => 'participan', 'tamano' => 'mediano'],
+            // «Participan» se pidió mediano el 2026-09-01 y grande el 2026-09-04,
+            // para que se lea igual que «Auspician». En las bases que ya existen
+            // lo cambia la migración 2025_01_14_000001.
+            ['nombre' => 'Reale Seguros', 'logo_path' => 'img/logoreale.png', 'grupo' => 'participan', 'tamano' => 'grande'],
+            ['nombre' => 'Anglo American', 'logo_path' => 'img/anglo-american-color.svg', 'grupo' => 'participan', 'tamano' => 'grande'],
 
             ['nombre' => 'La Araucana', 'logo_path' => 'img/photo-2025-07-15-16-52-34-26218c16.jpg', 'grupo' => 'colaboran', 'tamano' => 'chico'],
             ['nombre' => 'Mundo', 'logo_path' => 'img/logo-mundo.svg', 'grupo' => 'colaboran', 'tamano' => 'chico'],

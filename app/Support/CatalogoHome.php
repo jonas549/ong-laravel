@@ -194,6 +194,7 @@ class CatalogoHome
                     'label_auspician' => ['label' => 'Título del primer grupo', 'tipo' => 'texto', 'defecto' => 'Auspician'],
                     'label_participan' => ['label' => 'Título del segundo grupo', 'tipo' => 'texto', 'defecto' => 'Participan'],
                     'label_colaboran' => ['label' => 'Título del tercer grupo', 'tipo' => 'texto', 'defecto' => 'Colaboran'],
+                    'label_alianzas' => ['label' => 'Título del cuarto grupo', 'tipo' => 'texto', 'defecto' => 'Alianzas estratégicas'],
                 ],
                 'crud' => ['ruta' => 'admin.content.index', 'parametros' => ['tipo' => 'partners'], 'texto' => 'Editar los logos'],
             ],
@@ -205,6 +206,24 @@ class CatalogoHome
                     'antetitulo' => ['label' => 'Título de la tira', 'tipo' => 'texto', 'defecto' => 'Organizaciones e instituciones participantes'],
                 ],
                 'crud' => ['ruta' => 'admin.content.index', 'parametros' => ['tipo' => 'partners'], 'texto' => 'Editar los logos', 'nota' => 'La marquesina muestra los logos del grupo «participante».'],
+            ],
+
+            /*
+             * Va la última a propósito: el cliente pidió este orden de bloques
+             * de logos —auspiciadores, alianzas, participantes y somos parte
+             * de— y los dos primeros viven dentro de «Partners — grilla». Éste
+             * tiene que quedar por debajo de la marquesina, así que es una
+             * sección aparte y la última del home.
+             *
+             * Mientras su grupo no tenga logos no se pinta nada, ni el título.
+             */
+            'somos-parte' => [
+                'titulo' => 'Somos parte de',
+                'resumen' => 'La fila de logos del final, del grupo «Somos parte de».',
+                'campos' => [
+                    'antetitulo' => ['label' => 'Título del bloque', 'tipo' => 'texto', 'defecto' => 'Somos parte de'],
+                ],
+                'crud' => ['ruta' => 'admin.content.index', 'parametros' => ['tipo' => 'partners'], 'texto' => 'Editar los logos', 'nota' => 'Muestra los logos del grupo «Somos parte de». Sin logos en ese grupo, la sección no se pinta.'],
             ],
         ];
     }

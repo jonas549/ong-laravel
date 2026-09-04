@@ -10,13 +10,26 @@ class Partner extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /** Los cinco bloques de logos del home. */
+    /**
+     * Los bloques de logos del home, en el orden en que se pintan.
+     *
+     * Los cuatro primeros van juntos en la sección «Partners — grilla»; la
+     * marquesina y «Somos parte de» tienen su propia sección, y por eso el
+     * orden del cliente —auspiciadores, alianzas, participantes, somos parte
+     * de— sale de combinar los dos sitios.
+     *
+     * `sponsor` es el único que **no pinta nadie**: quedó de la siembra
+     * original y `HomeController` no lo pasa a ninguna vista. Está anotado en
+     * el backlog.
+     */
     public const GRUPOS = [
         'auspician' => 'Auspician',
         'participan' => 'Participan',
         'colaboran' => 'Colaboran',
-        'sponsor' => 'Marquesina',
+        'alianzas' => 'Alianzas estratégicas',
         'participante' => 'Organizaciones participantes',
+        'somos-parte' => 'Somos parte de',
+        'sponsor' => 'Marquesina (sin uso)',
     ];
 
     /**

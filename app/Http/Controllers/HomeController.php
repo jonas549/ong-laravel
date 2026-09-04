@@ -60,8 +60,10 @@ class HomeController extends Controller
                 $etiquetas->texto('label_auspician', $borrador) => $partners->get('auspician', collect()),
                 $etiquetas->texto('label_participan', $borrador) => $partners->get('participan', collect()),
                 $etiquetas->texto('label_colaboran', $borrador) => $partners->get('colaboran', collect()),
+                $etiquetas->texto('label_alianzas', $borrador) => $partners->get('alianzas', collect()),
             ]),
             'participantes' => $partners->get('participante', collect()),
+            'somosParte' => $partners->get('somos-parte', collect()),
         ];
     }
 

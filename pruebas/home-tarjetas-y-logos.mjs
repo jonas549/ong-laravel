@@ -109,29 +109,57 @@ try {
     await alternar();
     di('y vuelve a encenderse', sql(`SELECT activo FROM participation_cards WHERE id=${ID}`) === '1');
 
-    t('Los tres tamaños de logo');
+    t('Los bloques de logos, y en el orden que pidió el cliente');
+    // Los dos grupos nuevos van vacíos hasta que lleguen los logos del Excel,
+    // así que la prueba se los pone y se los quita: sin filas no se pintan, y
+    // entonces no habría nada que comprobar.
+    sql(`INSERT INTO partners (nombre,logo_path,grupo,tamano,orden,activo,created_at,updated_at) VALUES
+      ('ZZ Alianza Uno','img/logo-mundo.svg','alianzas','mediano',900,1,NOW(),NOW()),
+      ('ZZ Alianza Dos','img/logoreale.png','alianzas','mediano',901,1,NOW(),NOW()),
+      ('ZZ Somos Uno','img/logo-scotiabank-red.svg','somos-parte','chico',902,1,NOW(),NOW())`);
+
     await ir(`${B}/`);
     await cargarTodo();
+
     const filas = await p.$$eval('.logos-fila', (n) => n.map((f) => ({
       clase: f.className.replace('logos-fila ', ''),
+      rotulo: f.parentElement.querySelector('.dato-editable')?.textContent.trim(),
       hueco: getComputedStyle(f).gap,
+      arriba: Math.round(f.getBoundingClientRect().top + window.scrollY),
       chips: [...f.querySelectorAll('.logo-chip')].map((c) => {
         const i = c.querySelector('img');
         return {
           clase: c.className.replace('logo-chip ', ''),
           caja: Math.round(c.getBoundingClientRect().height),
           logo: i ? Math.round(i.getBoundingClientRect().height) : null,
-          alt: i?.alt,
         };
       }),
     })));
-    di('hay tres filas de logos', filas.length === 3, JSON.stringify(filas.map((f) => f.clase)));
-    di('auspician va grande', filas[0].clase === 'logos-fila--grande' && filas[0].chips.every((c) => c.caja === 124), `${filas[0].chips.map((c) => c.caja)}`);
-    di('participan va mediano', filas[1].clase === 'logos-fila--mediano' && filas[1].chips.every((c) => c.caja === 100), `${filas[1].chips.map((c) => c.caja)}`);
-    di('colaboran va pequeño', filas[2].clase === 'logos-fila--chico' && filas[2].chips.every((c) => c.caja === 76), `${filas[2].chips.map((c) => c.caja)}`);
-    di('los tres tamaños son distintos y en orden', filas[0].chips[0].caja > filas[1].chips[0].caja && filas[1].chips[0].caja > filas[2].chips[0].caja);
-    di('Reale y Anglo crecieron respecto a pequeño', filas[1].chips.every((c) => c.logo > filas[2].chips[0].logo), `${filas[1].chips.map((c) => c.logo)} vs ${filas[2].chips.map((c) => c.logo)}`);
+
+    di('hay cinco filas de logos', filas.length === 5, JSON.stringify(filas.map((f) => f.rotulo)));
+    di('1º Auspician, 2º Participan, 3º Colaboran', JSON.stringify(filas.slice(0, 3).map((f) => f.rotulo)) === '["Auspician","Participan","Colaboran"]', JSON.stringify(filas.slice(0, 3).map((f) => f.rotulo)));
+    di('4º Alianzas estratégicas', filas[3].rotulo === 'Alianzas estratégicas', filas[3].rotulo);
+    di('5º y última, «Somos parte de»', filas[4].rotulo === 'Somos parte de', filas[4].rotulo);
+
+    // La marquesina va entre medias, y eso es la mitad del encargo.
+    const marquesina = await p.$eval('.marquee', (e) => Math.round(e.getBoundingClientRect().top + window.scrollY));
+    di('la marquesina queda DESPUÉS de Alianzas', marquesina > filas[3].arriba, `marquesina ${marquesina} · alianzas ${filas[3].arriba}`);
+    di('y ANTES de «Somos parte de»', marquesina < filas[4].arriba, `marquesina ${marquesina} · somos parte ${filas[4].arriba}`);
+
+    t('Los tamaños');
+    di('Auspician va grande', filas[0].chips.every((c) => c.caja === 124), `${filas[0].chips.map((c) => c.caja)}`);
+    di('Participan igual que Auspician, como pidió el cliente', filas[1].chips.every((c) => c.caja === 124), `${filas[1].chips.map((c) => c.caja)}`);
+    di('Colaboran va pequeño', filas[2].chips.every((c) => c.caja === 76), `${filas[2].chips.map((c) => c.caja)}`);
+    di('el tamaño intermedio sigue disponible y funciona', filas[3].chips.every((c) => c.caja === 100), `${filas[3].chips.map((c) => c.caja)}`);
+    di('Reale y Anglo se ven más que en pequeño', filas[1].chips.every((c) => c.logo > filas[2].chips[0].logo), `${filas[1].chips.map((c) => c.logo)} vs ${filas[2].chips.map((c) => c.logo)}`);
     di('el hueco de la fila acompaña al tamaño', parseFloat(filas[0].hueco) > parseFloat(filas[2].hueco), `${filas[0].hueco} / ${filas[2].hueco}`);
+
+    t('Un grupo vacío no deja un título huérfano');
+    sql("DELETE FROM partners WHERE nombre LIKE 'ZZ Somos%'");
+    await ir(`${B}/`);
+    di('sin logos, «Somos parte de» no se pinta', !(await p.$$eval('.logos-fila', (n) => n.map((f) => f.parentElement.querySelector('.dato-editable')?.textContent.trim()))).includes('Somos parte de'));
+    di('y su título tampoco anda suelto por ahí', !(await p.content()).includes('>Somos parte de<'));
+    sql("DELETE FROM partners WHERE nombre LIKE 'ZZ %'");
 
     t('Y el tamaño se cambia desde el CRUD, sin tocar código');
     const PID = sql("SELECT id FROM partners WHERE nombre='Reale Seguros'");
@@ -139,16 +167,19 @@ try {
     const sel = await p.$eval('[name=tamano]', (e) => ({ opciones: [...e.options].map((o) => o.value), elegido: e.value })).catch(() => null);
     di('hay un select de tamaño en el formulario', sel !== null, JSON.stringify(sel));
     di('con los tres tamaños', ['grande', 'mediano', 'chico'].every((x) => sel?.opciones.includes(x)), JSON.stringify(sel?.opciones));
-    di('y Reale sale en mediano', sel?.elegido === 'mediano', sel?.elegido);
+    di('y Reale sale en grande', sel?.elegido === 'grande', sel?.elegido);
 
-    await p.select('[name=tamano]', 'grande');
+    const grupos = await p.$eval('[name=grupo]', (e) => [...e.options].map((o) => o.value));
+    di('el select de grupo trae los dos nuevos', ['alianzas', 'somos-parte'].every((g) => grupos.includes(g)), JSON.stringify(grupos));
+
+    await p.select('[name=tamano]', 'mediano');
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.$eval('[name=nombre]', (e) => e.form.requestSubmit())]);
     await ir(`${B}/`);
     await cargarTodo();
     const tras = await p.$$eval('.logos-fila', (n) => n.map((f) => ({ clase: f.className, altos: [...f.querySelectorAll('.logo-chip')].map((c) => Math.round(c.getBoundingClientRect().height)) })));
-    di('el cambio se ve en el home al momento', tras[1].altos.includes(124), JSON.stringify(tras[1].altos));
+    di('el cambio se ve en el home al momento', tras[1].altos.includes(100), JSON.stringify(tras[1].altos));
     di('y un grupo puede mezclar tamaños', new Set(tras[1].altos).size === 2, JSON.stringify(tras[1].altos));
-    sql(`UPDATE partners SET tamano='mediano' WHERE id=${PID}`);
+    sql(`UPDATE partners SET tamano='grande' WHERE id=${PID}`);
 
     t('El logo de Fundación Trascender en «Voces del movimiento»');
     await ir(`${B}/`);

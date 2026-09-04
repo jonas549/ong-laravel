@@ -10,6 +10,7 @@
 // La verificación no es «la pantalla carga»: se publica de verdad y se lee el
 // home público para ver si cambió.
 import { execFileSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const MYSQL = process.env.DPS_MYSQL ?? 'C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe';
@@ -84,7 +85,12 @@ const original = [
 for (const [que, texto] of original) di(`aparece ${que}`, home.includes(texto));
 
 di('el video del fuente está puesto', home.includes('data-video="e8iqqzO3s7k"'));
-di('las 12 secciones tienen fila en la base', sql('SELECT COUNT(*) FROM home_sections') === '12');
+// Contra los parciales que hay y no contra un número escrito a mano: al añadir
+// «Somos parte de» esto decía 12 y falló sin que hubiera nada roto. Cada sección
+// del home es un parcial, así que contarlos es contar las secciones.
+const enCatalogo = readdirSync(new URL('../resources/views/public/home/sections/', import.meta.url))
+  .filter((f) => f.endsWith('.blade.php')).length;
+di('cada sección del home tiene su fila en la base', Number(sql('SELECT COUNT(*) FROM home_sections')) === enCatalogo, `${sql('SELECT COUNT(*) FROM home_sections')} de ${enCatalogo}`);
 
 /* ------------------------------------------ 2) publicar y ver el cambio */
 
