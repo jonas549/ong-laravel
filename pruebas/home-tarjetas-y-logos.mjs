@@ -150,6 +150,18 @@ try {
     di('y un grupo puede mezclar tamaños', new Set(tras[1].altos).size === 2, JSON.stringify(tras[1].altos));
     sql(`UPDATE partners SET tamano='mediano' WHERE id=${PID}`);
 
+    t('El logo de Fundación Trascender en «Voces del movimiento»');
+    await ir(`${B}/`);
+    await cargarTodo();
+    const voz = await p.$$eval('#voces figure, section figure', (n) => {
+      const f = n.find((x) => x.textContent.includes('Fundación Trascender'));
+      const i = f?.querySelector('img');
+      return i ? { archivo: i.currentSrc.split('/').pop(), natural: `${i.naturalWidth}x${i.naturalHeight}`, ajuste: getComputedStyle(i).objectFit, alto: Math.round(i.getBoundingClientRect().height) } : null;
+    });
+    di('lleva su logo y no el genérico de Comunidad', voz?.archivo === 'logo-fundacion-trascender.png', voz?.archivo);
+    di('el nombre del archivo va sin tildes ni espacios', /^[a-z0-9.-]+$/.test(voz?.archivo ?? ''), voz?.archivo);
+    di('carga y no se deforma', voz?.natural === '386x130' && voz?.ajuste === 'contain', JSON.stringify(voz));
+
     t('La imagen de «¿Qué es el Patrimonio Social?»');
     await ir(`${B}/`);
     await cargarTodo();

@@ -28,17 +28,10 @@
             @php
                 $org = $activity->organization;
 
-                /*
-                 * Los dos enlaces del organizador se guardan por duplicado: el
-                 * wizard los escribe a la vez en la actividad y en la
-                 * organización, el editor de mi-cuenta sólo en la actividad y
-                 * la ficha del panel sólo en la organización. Manda el de la
-                 * actividad y la organización queda de reserva, porque el
-                 * editor de mi-cuenta es donde el organizador los cambia: al
-                 * revés, tocaría el campo y no vería cambiar nada.
-                 */
-                $web = $activity->enlace_web ?: $org->enlace_web;
-                $red = $activity->enlace_red_social ?: $org->enlace_red_social;
+                // Los dos enlaces viven sólo en la organización: son el dato
+                // de la entidad y no de cada actividad. Ver 2025_01_12_000001.
+                $web = $org->enlace_web;
+                $red = $org->enlace_red_social;
             @endphp
             <div class="org-firma">
                 @if ($org->logo_url)

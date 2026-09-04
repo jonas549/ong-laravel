@@ -56,7 +56,7 @@ class Activity extends Model
         'participantes_estimados', 'cupos_totales', 'cupos_disponibles',
         'abierta_publico', 'inscripcion_habilitada', 'tiene_accesibilidad',
         'accesibilidad_detalle', 'publico_otro', 'info_previa',
-        'imagen_portada', 'correo_contacto', 'enlace_red_social', 'enlace_web',
+        'imagen_portada', 'correo_contacto',
         'estado', 'observaciones_revision', 'destacada', 'orden', 'published_at',
         'publicada_automaticamente',
     ];

@@ -381,6 +381,11 @@
                 <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                 @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror
             </label>
+
+            {{-- Ver la nota del mismo par de campos en account/activities/edit. --}}
+            <p class="helper" style="grid-column:1/-1;margin:-4px 0 0;">
+                El enlace a red social y el de página web son datos de tu organización: se muestran en todas tus actividades.
+            </p>
         </div>
     </div>
 

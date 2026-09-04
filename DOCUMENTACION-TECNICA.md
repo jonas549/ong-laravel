@@ -339,6 +339,22 @@ tarde. Si la ruta recibe un `FormRequest`, **el permiso va en su `authorize()`**
 Y en las pantallas públicas se responde **404 y no 403**: un 403 confirmaría
 que esa dirección existe.
 
+### El sitio web y la red social son de la ORGANIZACIÓN, no de la actividad
+
+Estuvieron en las dos tablas hasta el 2026-09-04, y cada pantalla escribía en
+una: el wizard en las dos a la vez, el editor de mi-cuenta sólo en la actividad y
+la ficha del panel sólo en la organización. Podían decir cosas distintas del
+mismo organizador y la ficha pública tenía que elegir.
+
+Ahora viven **sólo en `organizations`**. Los dos formularios que los piden —el
+paso 4 del wizard y el editor de mi-cuenta— escriben ahí, y la ficha pública lee
+de ahí. La consecuencia hay que tenerla presente al tocar esas pantallas:
+**cambiarlos desde una actividad los cambia para todas**, y por eso el formulario
+lo dice con una nota bajo el par de campos.
+
+Los rótulos y las ayudas de esos campos son los del HTML fuente y no se tocaron;
+la nota es aparte.
+
 ### Los dos accesos están separados a propósito
 
 `/admin/login` y `/mi-cuenta/login` son dos puertas, y cada una rechaza a la

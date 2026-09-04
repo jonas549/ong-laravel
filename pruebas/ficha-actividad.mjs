@@ -3,7 +3,8 @@
 // Los tres puntos que trajo Jonas de la reunión del 2026-09-01:
 //   - el organizador bajo el título, con logo y con peso (antes iba apagado
 //     en la ficha lateral);
-//   - su sitio web y su red social, que se capturaban y no se pintaban;
+//   - su sitio web y su red social, que se capturaban y no se pintaban, y que
+//     desde el 2026-09-04 viven **sólo en la organización**;
 //   - botones de compartir, y que al compartir salga la imagen correcta.
 //
 // Necesita Chrome, y por dos motivos que no son de comodidad: el portapapeles
@@ -39,8 +40,7 @@ const guardado = {
 };
 const nulo = (v) => (v === '' ? 'NULL' : `'${v}'`);
 const devolver = () => sql(
-  `UPDATE organizations SET logo_path=${nulo(guardado.logo)}, enlace_web=${nulo(guardado.web)}, enlace_red_social=${nulo(guardado.red)} WHERE id=${ORG};`
-  + ` UPDATE activities SET enlace_web=NULL, enlace_red_social=NULL WHERE slug IN ('${SLUG}','${OTRA}');`,
+  `UPDATE organizations SET logo_path=${nulo(guardado.logo)}, enlace_web=${nulo(guardado.web)}, enlace_red_social=${nulo(guardado.red)} WHERE id=${ORG}`,
 );
 
 const nav = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
@@ -98,13 +98,33 @@ try {
     di('la red se rotula por su dominio', e[1]?.texto === 'Instagram', e[1]?.texto);
     di('abren fuera, con noopener nofollow ugc', e.every((x) => x.destino === '_blank' && ['noopener', 'nofollow', 'ugc'].every((r) => x.rel.includes(r))), e[0]?.rel);
 
-    // Los de la actividad mandan sobre los de la organización: son los que el
-    // organizador edita desde /mi-cuenta.
-    sql(`UPDATE activities SET enlace_web='https://reforestemos.cl', enlace_red_social='https://www.linkedin.com/company/x' WHERE slug='${SLUG}'`);
+    // Un solo sitio: la columna de la actividad ya no existe.
+    di('`activities` ya no guarda enlaces', sql("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ong_laravel' AND table_name='activities' AND COLUMN_NAME LIKE 'enlace%'") === '0');
+
+    t('Editar desde mi-cuenta escribe en la ORGANIZACIÓN, no en la actividad');
+    // Es el cambio de fondo: antes cada actividad llevaba su copia y las dos
+    // pantallas podían decir cosas distintas del mismo organizador.
+    const ID = sql(`SELECT id FROM activities WHERE slug='${SLUG}'`);
+    await p.goto(`${B}/mi-cuenta/login`, { waitUntil: 'networkidle2' });
+    await p.type('input[name=email]', 'organizador@ong-laravel.test');
+    await p.type('input[name=password]', 'organizador1234');
+    await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type=submit]')]);
+    await p.goto(`${B}/mi-cuenta/actividades/${ID}/editar`, { waitUntil: 'networkidle2' });
+    await esperar(400);
+
+    di('el campo llega relleno con el de la organización', (await p.$eval('[name=enlace_web]', (x) => x.value)) === 'https://juntoalbarrio.cl');
+    di('y el formulario avisa de que es dato de la cuenta', (await p.$$eval('.helper', (n) => n.map((x) => x.textContent))).some((x) => x.includes('datos de tu organización')));
+
+    await p.$eval('[name=enlace_web]', (x) => { x.value = ''; });
+    await p.type('[name=enlace_web]', 'https://reforestemos.cl');
+    await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.$eval('[name=titulo]', (x) => x.form.requestSubmit())]);
+    di('guarda sin rebotar', !p.url().includes('/editar'), p.url());
+    di('el cambio va a la organización', sql(`SELECT enlace_web FROM organizations WHERE id=${ORG}`) === 'https://reforestemos.cl');
+
     await ir(SLUG);
-    e = await enlaces();
-    di('los de la actividad ganan a los de la organización', e[0]?.href === 'https://reforestemos.cl/', e[0]?.href);
-    di('y su red también se reconoce', e[1]?.texto === 'LinkedIn', e[1]?.texto);
+    di('la ficha editada lo enseña', (await enlaces())[0]?.href === 'https://reforestemos.cl/');
+    await ir(OTRA);
+    di('y OTRA actividad de la misma organización también', (await enlaces())[0]?.href === 'https://reforestemos.cl/', 'un solo sitio, sin duplicados');
 
     sql(`UPDATE organizations SET enlace_web=NULL, enlace_red_social=NULL WHERE id=${ORG}`);
     await ir(OTRA);

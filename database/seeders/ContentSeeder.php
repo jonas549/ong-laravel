@@ -90,7 +90,10 @@ class ContentSeeder extends Seeder
                     . 'tú puedes destinar, podemos construir una sociedad más justa y equitativa. ¡Súmate!',
                 'autor' => 'Claudia Castañeda',
                 'cargo' => 'Fundación Trascender',
-                'logo_path' => 'img/logo-cos-color.png',
+                // Llevaba el logo genérico de Comunidad; el cliente pidió el de
+                // su fundación el 2026-09-01. En las bases que ya existen lo
+                // cambia la migración 2025_01_12_000002.
+                'logo_path' => 'img/logo-fundacion-trascender.png',
                 'color' => 'var(--naranjo)',
                 'bleed' => false,
             ],

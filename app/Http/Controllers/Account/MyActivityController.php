@@ -112,9 +112,21 @@ class MyActivityController extends Controller
                 'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
                 'info_previa' => $datos['info_previa'] ?? null,
                 'correo_contacto' => $datos['correo_contacto'] ?? null,
-                'enlace_red_social' => $datos['enlace_red_social'] ?? null,
-                'enlace_web' => $datos['enlace_web'] ?? null,
             ]);
+
+            /*
+             * Los dos enlaces son de la organización y no de la actividad, así
+             * que se guardan ahí. Antes se escribían en la actividad y la ficha
+             * del panel escribía en la organización, con lo que las dos podían
+             * decir cosas distintas del mismo organizador.
+             *
+             * La consecuencia hay que tenerla presente: **cambiarlos desde una
+             * actividad los cambia para todas**. El formulario lo dice.
+             */
+            $activity->organization->fill([
+                'enlace_web' => $datos['enlace_web'] ?? null,
+                'enlace_red_social' => $datos['enlace_red_social'] ?? null,
+            ])->save();
 
             // El título sólo rehace el slug mientras la ficha no se haya publicado:
             // después ya hay enlaces circulando.

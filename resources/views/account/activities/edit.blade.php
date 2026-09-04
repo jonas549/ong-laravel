@@ -415,17 +415,30 @@
 
                     <label class="lbl">Enlace a red social
                         <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" name="enlace_red_social"
-                               value="@viejo('enlace_red_social', $activity->enlace_red_social)">
+                               value="@viejo('enlace_red_social', $activity->organization->enlace_red_social)">
                         <span class="helper">Instagram, Facebook u otro.</span>
                         @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Enlace a página web (opcional)
                         <input class="fld @error('enlace_web') is-invalid @enderror" type="url" name="enlace_web"
-                               placeholder="https://tusitio.cl" value="@viejo('enlace_web', $activity->enlace_web)">
+                               placeholder="https://tusitio.cl" value="@viejo('enlace_web', $activity->organization->enlace_web)">
                         <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                         @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
+
+                    {{--
+                        Los rótulos y las ayudas de los dos campos son los del
+                        HTML fuente y no se tocan. Esta nota es aparte, y hace
+                        falta: desde el 2026-09-04 los dos enlaces viven en la
+                        organización, así que cambiarlos aquí los cambia en
+                        todas sus actividades. Un campo que parece de la ficha y
+                        es de la cuenta, sin decirlo, sorprende al borrarse solo
+                        en otra parte.
+                    --}}
+                    <p class="helper" style="grid-column:1/-1;margin:-4px 0 0;">
+                        El enlace a red social y el de página web son datos de tu organización: se muestran en todas tus actividades.
+                    </p>
                 </div>
             </div>
 

@@ -137,8 +137,8 @@ class PublishController extends Controller
                         ? 'storage/'.$portada->store('actividades', 'public')
                         : null,
                     'correo_contacto' => $correoPublico,
-                    'enlace_red_social' => $datos['enlace_red_social'] ?? null,
-                    'enlace_web' => $datos['enlace_web'] ?? null,
+                    // Los dos enlaces van arriba, en `$campos`: son de la
+                    // organización. Ver 2025_01_12_000001.
                     'estado' => 'borrador',
                 ]);
 
