@@ -33,7 +33,8 @@
      x-data="selectorMedio({
         urlBuscar: {{ Js::from(route('admin.medios.buscar')) }},
         urlSubir: {{ Js::from(route('admin.medios.store')) }},
-        valor: {{ Js::from($actual ? asset($actual) : '') }},
+        valor: {{ Js::from($actual ?: '') }},
+        vista: {{ Js::from($actual ? asset($actual) : '') }},
         maxBytes: {{ $limites['efectivo'] }},
         maxTexto: {{ Js::from(\App\Models\Media::pesoLegible($limites['efectivo'])) }},
      })"

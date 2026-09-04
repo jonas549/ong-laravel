@@ -179,7 +179,55 @@ try {
     const tras = await p.$$eval('.logos-fila', (n) => n.map((f) => ({ clase: f.className, altos: [...f.querySelectorAll('.logo-chip')].map((c) => Math.round(c.getBoundingClientRect().height)) })));
     di('el cambio se ve en el home al momento', tras[1].altos.includes(100), JSON.stringify(tras[1].altos));
     di('y un grupo puede mezclar tamaños', new Set(tras[1].altos).size === 2, JSON.stringify(tras[1].altos));
+
+    /*
+     * Guardar el formulario NO puede tocar la ruta de la imagen. El selector
+     * arrancaba con la URL absoluta en el campo que viaja al servidor, así que
+     * abrir y guardar sin tocar la imagen dejaba
+     * `http://127.0.0.1:8123/img/...` metido en la base. Se veía igual —`asset()`
+     * devuelve tal cual lo que ya es una URL— y rompía el dominio y el detector
+     * de «dónde se usa» de la biblioteca. Ver 2025_01_15_000002.
+     */
+    di('guardar no convierte la ruta en URL absoluta', sql(`SELECT logo_path FROM partners WHERE id=${PID}`) === 'img/logoreale.png', sql(`SELECT logo_path FROM partners WHERE id=${PID}`));
+    di('y ninguna fila tiene la ruta con dominio', sql("SELECT COUNT(*) FROM partners WHERE logo_path LIKE 'http%'") === '0');
+
     sql(`UPDATE partners SET tamano='grande' WHERE id=${PID}`);
+
+    t('Los tres logos que mandó el cliente el 2026-09-04');
+    await ir(`${B}/`);
+    await cargarTodo();
+    const imgs = await p.$$eval('.logos-fila .logo-chip img', (n) => Object.fromEntries(n.map((i) => [i.alt, {
+      archivo: i.currentSrc.split('/').pop(),
+      natural: `${i.naturalWidth}x${i.naturalHeight}`,
+      cargada: i.naturalWidth > 0,
+    }])));
+    di('Anglo American es el archivo nuevo y carga', imgs['Anglo American']?.archivo === 'logo-anglo-american.png' && imgs['Anglo American'].cargada, JSON.stringify(imgs['Anglo American']));
+    di('Sodimac también', imgs['Sodimac']?.archivo === 'logo-sodimac.png' && imgs['Sodimac'].cargada, JSON.stringify(imgs['Sodimac']));
+    di('La Araucana también', imgs['La Araucana']?.archivo === 'logo-la-araucana.png' && imgs['La Araucana'].cargada, JSON.stringify(imgs['La Araucana']));
+    di('los tres traen resolución para 2x', ['Anglo American', 'Sodimac', 'La Araucana'].every((k) => Number(imgs[k].natural.split('x')[0]) >= 600), '');
+    di('Scotiabank y Mundo siguen en SVG, que era mejor', imgs['Scotiabank']?.archivo.endsWith('.svg') && imgs['Mundo']?.archivo.endsWith('.svg'));
+    di('Reale Seguros no se tocó', imgs['Reale Seguros']?.archivo === 'logoreale.png', imgs['Reale Seguros']?.archivo);
+
+    // Anglo iba en un SVG que se pintaba en negro: le faltaba el <style> que
+    // define sus clases. El archivo nuevo tiene que traer color de verdad.
+    const colorAnglo = await p.evaluate(async () => {
+      const i = [...document.querySelectorAll('.logos-fila img')].find((x) => x.alt === 'Anglo American');
+      const c = document.createElement('canvas');
+      c.width = i.naturalWidth; c.height = i.naturalHeight;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(i, 0, 0);
+      const { data } = g.getImageData(0, 0, c.width, c.height);
+      let azul = 0, calido = 0;
+      for (let k = 0; k < data.length; k += 4) {
+        const [r, gg, b] = [data[k], data[k + 1], data[k + 2]];
+        if (r > 240 && gg > 240 && b > 240) continue;
+        if (b > r + 40 && b > gg + 40) azul++;
+        if (r > b + 40 && r > gg + 40) calido++;
+      }
+      return { azul, calido };
+    });
+    di('el logo lleva azul, no negro', colorAnglo.azul > 500, `${colorAnglo.azul} px azules`);
+    di('y su triángulo naranja', colorAnglo.calido > 100, `${colorAnglo.calido} px cálidos`);
 
     t('El logo de Fundación Trascender en «Voces del movimiento»');
     await ir(`${B}/`);

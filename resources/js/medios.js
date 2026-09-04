@@ -156,7 +156,17 @@ export const subidorMedios = ({ url, maxBytes, maxArchivos, maxTexto }) => ({
 
 /* ── El selector, que se abre desde un campo de imagen ──── */
 
-export const selectorMedio = ({ urlBuscar, urlSubir, valor, maxBytes, maxTexto }) => ({
+/*
+ * `valor` es la RUTA relativa —lo que viaja al servidor— y `vista` la URL
+ * absoluta con la que se pinta la miniatura. Son dos cosas y hay que recibirlas
+ * por separado: mientras se inicializaban las dos con la URL absoluta, abrir
+ * cualquier formulario con imagen y guardarlo sin tocarla escribía la URL
+ * entera en la base, porque el campo oculto va atado a `ruta`. Se veía igual
+ * —`asset()` devuelve tal cual lo que ya es una URL— y dejaba guardado un
+ * `http://localhost:8123/...` que se rompe al cambiar de dominio y que el
+ * detector de «dónde se usa» de la biblioteca no reconoce.
+ */
+export const selectorMedio = ({ urlBuscar, urlSubir, valor, vista, maxBytes, maxTexto }) => ({
     abierto: false,
     cargando: false,
     subiendo: false,
@@ -168,7 +178,7 @@ export const selectorMedio = ({ urlBuscar, urlSubir, valor, maxBytes, maxTexto }
     totalTexto: '',
     medios: [],
     ruta: valor || '',
-    vistaPrevia: valor || '',
+    vistaPrevia: vista || '',
     temporizador: null,
 
     abrir() {
