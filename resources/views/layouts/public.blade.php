@@ -23,7 +23,9 @@
         // valor por defecto para las que no declaran nada.
         $seoTitulo = trim($__env->yieldContent('title')) ?: (\App\Models\Setting::get('seo_titulo') ?: config('app.name'));
         $seoDescripcion = trim($__env->yieldContent('meta')) ?: (\App\Models\Setting::get('seo_descripcion') ?: '');
-        $seoImagen = \App\Models\Setting::get('seo_imagen');
+        // La imagen de compartir también la manda la vista: una actividad tiene
+        // la suya y sin esto todas se compartían con la genérica del sitio.
+        $seoImagen = trim($__env->yieldContent('imagen')) ?: \App\Models\Setting::get('seo_imagen');
     @endphp
 
     <title>{{ $seoTitulo }}</title>

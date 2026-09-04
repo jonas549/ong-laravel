@@ -2,6 +2,8 @@
 
 @section('title', $activity->titulo . ' · ' . config('app.name'))
 @section('meta', Str::limit(strip_tags($activity->descripcion), 150))
+{{-- Al compartir sale la portada de ESTA actividad, no la genérica del sitio. --}}
+@section('imagen', $activity->imagen_url)
 
 @section('content')
 <article style="max-width:1180px;margin:0 auto;padding:40px 40px 88px;">
@@ -15,6 +17,69 @@
             </div>
 
             <h1 style="font-weight:800;font-size:36px;line-height:1.12;margin:26px 0 14px;letter-spacing:-.02em;">{{ $activity->titulo }}</h1>
+
+            {{--
+                Quién organiza, pegado al título y con peso propio.
+
+                Antes era una línea más de la ficha lateral, en gris y sin logo,
+                y el cliente pidió lo contrario: que se vea de quién es la
+                actividad al mismo tiempo que se lee de qué va.
+            --}}
+            @php
+                $org = $activity->organization;
+
+                /*
+                 * Los dos enlaces del organizador se guardan por duplicado: el
+                 * wizard los escribe a la vez en la actividad y en la
+                 * organización, el editor de mi-cuenta sólo en la actividad y
+                 * la ficha del panel sólo en la organización. Manda el de la
+                 * actividad y la organización queda de reserva, porque el
+                 * editor de mi-cuenta es donde el organizador los cambia: al
+                 * revés, tocaría el campo y no vería cambiar nada.
+                 */
+                $web = $activity->enlace_web ?: $org->enlace_web;
+                $red = $activity->enlace_red_social ?: $org->enlace_red_social;
+            @endphp
+            <div class="org-firma">
+                @if ($org->logo_url)
+                    <img loading="lazy" decoding="async" class="org-logo" src="{{ $org->logo_url }}" alt="Logo de {{ $org->nombre }}">
+                @else
+                    {{--
+                        Sin logo van las iniciales. Un hueco vacío junto al nombre
+                        se lee como una imagen que no cargó, y hoy ninguna de las
+                        organizaciones de la base tiene logo.
+                    --}}
+                    <span class="org-logo org-logo--iniciales" aria-hidden="true">{{ $org->iniciales }}</span>
+                @endif
+
+                <div class="org-datos">
+                    <span class="seclabel">Organiza</span>
+                    <span class="org-nombre dato-editable">{{ $org->nombre }}</span>
+
+                    @if ($web || $red)
+                        {{--
+                            `nofollow ugc`: son direcciones que escribe cualquiera
+                            desde el wizard, así que no reparten autoridad ni
+                            responden de a dónde llevan.
+                        --}}
+                        <span class="org-enlaces">
+                            @if ($web)
+                                <a href="{{ $web }}" target="_blank" rel="noopener nofollow ugc">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                    Sitio web
+                                </a>
+                            @endif
+
+                            @if ($red)
+                                <a href="{{ $red }}" target="_blank" rel="noopener nofollow ugc">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                    {{ \App\Support\RedSocial::nombre($red) }}
+                                </a>
+                            @endif
+                        </span>
+                    @endif
+                </div>
+            </div>
 
             <p style="font-size:16px;line-height:1.7;color:var(--gris-700);white-space:pre-line;margin:0 0 24px;">{{ $activity->descripcion }}</p>
 
@@ -44,6 +109,8 @@
                     <p style="margin:0;font-size:15px;color:var(--gris-700);">{{ $activity->collaborators->pluck('nombre')->implode(' · ') }}</p>
                 </div>
             @endif
+
+            @include('public.partials.compartir', ['activity' => $activity])
         </div>
 
         <aside style="position:sticky;top:100px;">
@@ -70,11 +137,6 @@
                     <div>
                         <div class="helper" style="font-weight:700;">Formato</div>
                         <div style="color:var(--gris-700);">{{ $activity->formato }}</div>
-                    </div>
-
-                    <div>
-                        <div class="helper" style="font-weight:700;">Organiza</div>
-                        <div style="color:var(--gris-700);">{{ $activity->organization->nombre }}</div>
                     </div>
 
                     @if ($activity->cupos_disponibles !== null)

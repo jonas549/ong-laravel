@@ -94,6 +94,40 @@ class Organization extends Model
         return $this->hasManyThrough(Registration::class, Activity::class);
     }
 
+    /** El logo listo para pintar, o null si esta organización no subió ninguno. */
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo_path ? asset($this->logo_path) : null;
+    }
+
+    /**
+     * Las iniciales, para la ficha pública cuando no hay logo.
+     *
+     * No todas las organizaciones suben uno —hoy ninguna de las tres de local—
+     * y dejar el hueco vacío se lee como una imagen rota. Dos letras dan algo
+     * reconocible sin inventar un logo que no existe.
+     *
+     * Las palabras de enlace no cuentan: «Fundación de la Casa» da «FC» y no
+     * «FD», que no diría nada.
+     */
+    public function getInicialesAttribute(): string
+    {
+        $vacias = ['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'para', 'por', 'en', 'a'];
+
+        $palabras = preg_split('/\s+/u', trim((string) $this->nombre), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $utiles = array_values(array_filter(
+            $palabras,
+            fn ($p) => ! in_array(mb_strtolower($p), $vacias, true),
+        ));
+
+        $fuente = $utiles ?: $palabras;
+
+        $letras = mb_substr($fuente[0] ?? '', 0, 1)
+            .(count($fuente) > 1 ? mb_substr($fuente[1], 0, 1) : '');
+
+        return mb_strtoupper($letras) ?: '·';
+    }
+
     /** El nombre del tipo, resolviendo el campo libre cuando es "Otra". */
     public function getTipoLabelAttribute(): string
     {

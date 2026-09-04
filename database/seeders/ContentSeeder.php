@@ -35,13 +35,18 @@ class ContentSeeder extends Seeder
                 'titulo' => 'Quiero ser voluntario',
                 'descripcion' => 'Encuentra actividades solidarias cerca de ti e inscríbete para ser voluntario.',
                 'cta' => 'Inscríbete',
-                'href' => '#voluntario',
+                // El prototipo traía '#voluntario', que no existe como ancla ni
+                // aquí ni en el fuente. Mismo caso que '#panorama' de la
+                // siguiente tarjeta: se cambia por el destino de verdad.
+                'href' => '/actividades',
                 'color' => 'var(--naranjo)',
                 'icono' => 'user',
                 'mask_path' => 'img/tarjeta-01-crop.png',
                 'art_path' => 'img/dps-elementos-1080x1080-010726-limpieza.png',
-                // Venía comentada en el prototipo: queda cargada pero apagada.
-                'activo' => false,
+                // Venía comentada en el prototipo y se sembró apagada. El
+                // cliente la pidió encendida el 2026-09-01; en las bases que ya
+                // existen lo hace la migración 2025_01_11_000001.
+                'activo' => true,
             ],
             [
                 'titulo' => 'Quiero ir a un panorama solidario',
@@ -143,8 +148,11 @@ class ContentSeeder extends Seeder
             ['nombre' => 'Scotiabank', 'logo_path' => 'img/logo-scotiabank-red.svg', 'grupo' => 'auspician', 'tamano' => 'grande'],
             ['nombre' => 'Sodimac', 'logo_path' => 'img/sodimac-horizontalalta.jpg', 'grupo' => 'auspician', 'tamano' => 'grande'],
 
-            ['nombre' => 'Reale Seguros', 'logo_path' => 'img/logoreale.png', 'grupo' => 'participan', 'tamano' => 'chico'],
-            ['nombre' => 'Anglo American', 'logo_path' => 'img/anglo-american-color.svg', 'grupo' => 'participan', 'tamano' => 'chico'],
+            // «Participan» va en el tamaño intermedio por decisión del cliente
+            // (reunión del 2026-09-01): auspician grande, participan mediano,
+            // colaboran pequeño.
+            ['nombre' => 'Reale Seguros', 'logo_path' => 'img/logoreale.png', 'grupo' => 'participan', 'tamano' => 'mediano'],
+            ['nombre' => 'Anglo American', 'logo_path' => 'img/anglo-american-color.svg', 'grupo' => 'participan', 'tamano' => 'mediano'],
 
             ['nombre' => 'La Araucana', 'logo_path' => 'img/photo-2025-07-15-16-52-34-26218c16.jpg', 'grupo' => 'colaboran', 'tamano' => 'chico'],
             ['nombre' => 'Mundo', 'logo_path' => 'img/logo-mundo.svg', 'grupo' => 'colaboran', 'tamano' => 'chico'],

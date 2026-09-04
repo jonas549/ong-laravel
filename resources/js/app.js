@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { iniciarAnclas } from './anclas';
 import { editorActividad } from './editor-actividad';
+import { compartir } from './compartir';
 import { campoFecha, campoHora, formularioGuiado } from './formularios';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import { selectorMedio, subidorMedios } from './medios';
@@ -123,6 +124,9 @@ Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);
 Alpine.data('campoHora', campoHora);
+
+// Los botones de compartir de la ficha de actividad. Ver resources/js/compartir.js.
+Alpine.data('compartir', compartir);
 
 window.Alpine = Alpine;
 Alpine.start();

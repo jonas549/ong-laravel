@@ -12,7 +12,7 @@
         <figure class="reveal" style="margin:0;position:relative;overflow:visible;">
             <span class="adorno" style="position:absolute;top:-18px;right:-18px;width:72px;height:72px;border-radius:18px;background:var(--amarillo);z-index:-1;opacity:.9;"></span>
             <div style="border-radius:26px;overflow:hidden;aspect-ratio:16/11;background:var(--gris-100);box-shadow:0 26px 50px -28px rgba(7,79,113,.4);">
-                <img loading="lazy" decoding="async" width="1376" height="771" src="{{ asset($seccion->imagen('imagen', $b)) }}"
+                <img loading="lazy" decoding="async" width="1376" height="946" src="{{ asset($seccion->imagen('imagen', $b)) }}"
                      alt="{{ $seccion->texto('imagen_alt', $b) }}"
                      style="width:100%;height:100%;object-fit:cover;display:block;">
             </div>

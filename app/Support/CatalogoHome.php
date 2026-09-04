@@ -124,7 +124,7 @@ class CatalogoHome
                     'remate' => ['label' => 'Frase destacada del final', 'tipo' => 'texto', 'defecto' => 'Nuestro mayor Patrimonio Social es la solidaridad.'],
                     'cta_texto' => ['label' => 'Botón', 'tipo' => 'texto', 'defecto' => 'Conoce más'],
                     'cta_enlace' => ['label' => 'A dónde lleva el botón', 'tipo' => 'enlace', 'defecto' => '/actividades'],
-                    'imagen' => ['label' => 'Imagen', 'tipo' => 'imagen', 'defecto' => 'img/group-people-shaking-hands-with-one-that-says-h-it.jpg'],
+                    'imagen' => ['label' => 'Imagen', 'tipo' => 'imagen', 'defecto' => 'img/manos-patrimonio-social.jpg'],
                     'imagen_alt' => ['label' => 'Descripción de la imagen', 'tipo' => 'texto', 'defecto' => 'Personas dándose la mano en una jornada solidaria'],
                 ],
             ],

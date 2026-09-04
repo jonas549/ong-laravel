@@ -64,6 +64,7 @@ class ContentController extends Controller
             'campos' => [
                 'nombre' => ['label' => 'Nombre', 'tipo' => 'text', 'reglas' => 'required|string|max:255'],
                 'grupo' => ['label' => 'Grupo', 'tipo' => 'select', 'reglas' => 'required|string|max:30', 'opciones' => Partner::GRUPOS],
+                'tamano' => ['label' => 'Tamaño del logo', 'tipo' => 'select', 'reglas' => 'required|string|in:grande,mediano,chico,normal', 'opciones' => Partner::TAMANOS, 'ayuda' => 'Sólo se aplica en Auspician, Participan y Colaboran. En la marquesina todas las pastillas van del mismo alto.'],
                 'logo_path' => ['label' => 'Logo', 'tipo' => 'imagen', 'reglas' => 'nullable|string|max:255'],
                 'url' => ['label' => 'Enlace', 'tipo' => 'text', 'reglas' => 'nullable|url|max:255'],
                 'color' => ['label' => 'Color (si no hay logo)', 'tipo' => 'text', 'reglas' => 'nullable|string|max:40'],
