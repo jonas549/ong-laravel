@@ -44,16 +44,57 @@ class PlantillaMail extends Mailable implements ShouldQueue
     private array $render;
 
     /**
+     * Imágenes que viajan DENTRO del correo, **en base64**.
+     *
+     * @var array<string, array{datos: string, nombre: string, mime: string}>
+     */
+    public array $incrustadas = [];
+
+    /**
      * @param  array<string, string|null>  $datos
      * @param  array<int, string>  $adjuntos  Rutas relativas en el disco público.
+     * @param  array<string, array{datos: string, nombre: string, mime: string}>  $incrustadas
+     *         Imágenes que viajan DENTRO del correo, con los bytes EN CRUDO. La
+     *         clave es el nombre con el que se citan desde el cuerpo:
+     *         `<img src="cid:qr">`.
+     *
+     *         Van incrustadas y no enlazadas a propósito. Una imagen enlazada
+     *         necesita una URL pública —y la descarga del QR pide sesión— y
+     *         además muchos clientes de correo no cargan imágenes remotas hasta
+     *         que la persona lo autoriza. Incrustada llega con el correo y no
+     *         depende de nada. La sustitución del `cid:` se hace en
+     *         `resources/views/emails/plantilla.blade.php`.
      */
     public function __construct(
         public EmailTemplate $plantilla,
         public array $datos = [],
         public array $adjuntos = [],
         public ?Model $relacionado = null,
+        array $incrustadas = [],
     ) {
         $this->marcarEnvio();
+
+        /*
+         * ── Por qué se guardan en base64 y no en crudo ──
+         *
+         * **Este mailable es `ShouldQueue`, y la cola serializa sus propiedades
+         * a JSON.** Un PNG en crudo no es UTF-8 válido, así que `json_encode`
+         * falla con «Malformed UTF-8 characters» y el correo no llega a
+         * encolarse nunca. Y falla EN SILENCIO: `CorreoTransaccional` atrapa la
+         * excepción, deja una línea en el log y devuelve false, de modo que el
+         * organizador no recibe su aviso y nadie se entera.
+         *
+         * Que es, exactamente, el fallo mudo del bloque A con otra cara.
+         *
+         * En base64 el contenido es texto ASCII y la cola lo lleva sin
+         * enterarse. El coste es un tercio más de tamaño sobre un PNG de 600
+         * bytes: nada. **Si alguien "limpia" esto quitando el base64, el correo
+         * de actividad publicada deja de salir.**
+         */
+        $this->incrustadas = array_map(
+            fn (array $imagen) => ['datos' => base64_encode($imagen['datos'])] + $imagen,
+            $incrustadas,
+        );
 
         $this->render = app(EmailTemplateRenderer::class)->render($plantilla, $datos);
     }
@@ -79,6 +120,7 @@ class PlantillaMail extends Mailable implements ShouldQueue
     {
         return new Content(view: 'emails.plantilla', with: [
             'cuerpo' => $this->render['html'],
+            'incrustadas' => $this->incrustadas,
         ]);
     }
 

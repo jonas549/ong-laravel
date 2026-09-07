@@ -84,6 +84,20 @@ class EmailTemplateSeeder extends Seeder
                 ),
             ],
 
+            'actividad_publicada' => [
+                'asunto' => 'Tu actividad ya está publicada',
+                'cuerpo_html' => $this->cuerpo(
+                    'Tu actividad ya está publicada',
+                    '<p style="margin:0 0 14px;">Hola {{ nombre }}, <strong>{{ actividad }}</strong> ya es parte del Día del Patrimonio Social y aparece en el calendario público.</p>
+                     <p style="margin:0 0 6px;"><strong>Cuándo:</strong> {{ fecha }}</p>
+                     <p style="margin:0 0 14px;"><strong>Dónde:</strong> {{ lugar }}</p>
+                     <p style="margin:0 0 14px;">Abajo tienes el código QR de tu actividad. Al escanearlo, quien haya participado llega a una encuesta breve para contarte cómo le fue; sus respuestas las verás junto al resto de la edición.</p>
+                     {{ bloque_qr }}',
+                    'Ver la actividad publicada',
+                    '{{ enlace_actividad }}',
+                ),
+            ],
+
             'inscripcion_cancelada' => [
                 'asunto' => '{{ actividad }} fue cancelada',
                 'cuerpo_html' => $this->cuerpo(

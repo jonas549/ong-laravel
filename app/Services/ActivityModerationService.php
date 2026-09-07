@@ -15,7 +15,14 @@ use Throwable;
  */
 class ActivityModerationService
 {
-    /** Mailable por estado destino. */
+    /**
+     * Mailable por estado destino.
+     *
+     * `publicada` sigue aquí pero como RESPALDO, no como camino normal: ese
+     * aviso pasó a ser una plantilla editable desde el panel, porque es el que
+     * lleva el QR de la encuesta y la ONG tiene que poder redactarlo. Ver
+     * `avisarDePublicacion()`.
+     */
     private const AVISOS = [
         'revision' => \App\Mail\ActivityReceived::class,
         'publicada' => \App\Mail\ActivityPublished::class,
@@ -113,6 +120,12 @@ class ActivityModerationService
             return;
         }
 
+        // El de publicación va por la plantilla del panel, que es la que lleva
+        // el QR. Sólo si esa plantilla no existe se cae al mailable de siempre.
+        if ($estado === 'publicada' && $this->avisarDePublicacion($actividad)) {
+            return;
+        }
+
         try {
             app(SmtpConfigService::class)->aplicar();
             Mail::to($destino)->send(new $mailable($actividad));
@@ -123,5 +136,38 @@ class ActivityModerationService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * El aviso de «tu actividad ya está publicada», con su código QR dentro.
+     *
+     * **Este es el único punto por el que se genera el QR, y por eso funciona
+     * igual con aprobación automática.** Los dos caminos —la revisión a mano y
+     * la regla que publica sola— acaban en `cambiar($actividad, 'publicada')`,
+     * así que no hay una segunda rama que recordar. Si mañana aparece un tercer
+     * camino, hereda el QR sin tocar nada.
+     *
+     * Un fallo generando el QR no puede impedir el aviso: si el código no sale,
+     * el correo se manda igual y el bloque del QR desaparece entero. Es
+     * preferible un correo sin código a que el organizador no se entere de que
+     * su actividad está publicada.
+     *
+     * @return bool  true si la plantilla existe y se encoló; false para que
+     *               quien llama use el mailable de respaldo.
+     */
+    private function avisarDePublicacion(Activity $actividad): bool
+    {
+        $png = '';
+
+        try {
+            $png = app(CodigoQr::class)->png($actividad, CodigoQr::LADO_CORREO);
+        } catch (Throwable $e) {
+            Log::warning('No se pudo generar el QR de la actividad', [
+                'activity' => $actividad->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return app(CorreoTransaccional::class)->actividadPublicada($actividad, $png);
     }
 }

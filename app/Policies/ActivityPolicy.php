@@ -65,6 +65,19 @@ class ActivityPolicy
     }
 
     /**
+     * Descargar el QR de la encuesta para imprimirlo.
+     *
+     * Va con permiso aunque lo que codifica sea una dirección pública. No es
+     * por secreto: es porque el QR es material de trabajo del organizador —lo
+     * imprime y lo pega en su actividad— y una descarga abierta invita a que
+     * cualquiera fabrique carteles de una actividad ajena.
+     */
+    public function qr(?User $user, Activity $activity): Response
+    {
+        return $this->respuesta($user, $activity);
+    }
+
+    /**
      * La lista de inscritos, su exportación y los cupos.
      *
      * Las inscripciones no tienen permiso propio porque no se llegan a tocar

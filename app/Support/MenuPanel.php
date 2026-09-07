@@ -43,6 +43,16 @@ class MenuPanel
                 self::nodo('Exportar', 'admin.registrations.exportar', [], [], 'admin.registrations.descargar'),
             ]),
 
+            /*
+             * Evaluaciones. Va junto a Inscripciones y no dentro de
+             * Actividades porque es lo mismo que aquéllas: gente de fuera
+             * dejando datos sobre una actividad, no la actividad en sí.
+             */
+            self::nodo('Evaluaciones', null, [], [
+                self::nodo('Respuestas', 'admin.evaluaciones.index', [], [], 'admin.evaluaciones.exportar'),
+                self::nodo('Fotografías', 'admin.evaluaciones.fotos'),
+            ]),
+
             self::nodo('Organizaciones', null, [], [
                 self::nodo('Listado', 'admin.organizations.index'),
                 self::nodo('Verificación', 'admin.organizations.verificacion'),

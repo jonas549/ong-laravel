@@ -37,6 +37,13 @@ class EmailTemplate extends Model
             'descripcion' => 'Se envía a las personas inscritas los días previos a la actividad.',
             'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'dias', 'enlace_actividad', 'enlace_cancelar', 'bloque_calendario', 'sitio'],
         ],
+        'actividad_publicada' => [
+            'nombre' => 'Aviso de actividad publicada',
+            'descripcion' => 'Se envía al organizador cuando su actividad queda publicada, ya sea tras la revisión o por aprobación automática. '
+                .'Es el correo que lleva el código QR de la encuesta de evaluación.',
+            'variables' => ['nombre', 'organizacion', 'actividad', 'fecha', 'lugar', 'enlace_actividad', 'enlace_qr', 'bloque_qr', 'sitio'],
+        ],
+
         'inscripcion_cancelada' => [
             'nombre' => 'Aviso de actividad cancelada',
             'descripcion' => 'Se envía a las personas inscritas cuando la actividad se cancela.',

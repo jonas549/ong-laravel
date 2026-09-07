@@ -126,6 +126,19 @@ class SettingsSeeder extends Seeder
                 'descripcion' => 'La portada del panel avisa cuando una actividad lleva más de estos días esperando revisión.',
             ],
             [
+                'grupo' => 'general', 'clave' => 'evaluacion_apertura', 'tipo' => 'opciones', 'valor' => 'publicacion',
+                'label' => 'Cuándo se abre la encuesta de evaluación',
+                'descripcion' => 'El QR de una actividad lleva a su encuesta. Aquí se decide desde cuándo se puede responder: '
+                    .'desde que la actividad se publica (así el organizador puede probar su propio QR antes del día) '
+                    .'o sólo desde el día en que ocurre.',
+            ],
+            [
+                'grupo' => 'general', 'clave' => 'evaluacion_dias_abierta', 'tipo' => 'int', 'valor' => '30',
+                'label' => 'Días que la encuesta sigue abierta tras la actividad',
+                'descripcion' => 'Pasados estos días desde que termina la actividad, el QR sigue funcionando pero enseña un aviso de encuesta cerrada. '
+                    .'Un 0 la deja abierta para siempre.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'acceso_intentos', 'tipo' => 'int', 'valor' => '5',
                 'label' => 'Intentos de acceso antes de bloquear',
                 'descripcion' => 'Cuántas contraseñas erróneas seguidas se admiten antes de cerrar el acceso a esa cuenta desde esa IP.',

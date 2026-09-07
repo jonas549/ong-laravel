@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import { iniciarAnclas } from './anclas';
 import { editorActividad } from './editor-actividad';
 import { compartir } from './compartir';
+import { encuestaEvaluacion } from './evaluacion';
 import { campoFecha, campoHora, formularioGuiado } from './formularios';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import { selectorMedio, subidorMedios } from './medios';
@@ -124,6 +125,11 @@ Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);
 Alpine.data('campoHora', campoHora);
+
+// La encuesta de evaluacion a la que lleva el QR. Reusa la guia de errores del
+// bloque K y ademas reduce la fotografia antes de subirla, que es lo que evita
+// el 419 mudo al pasarse de post_max_size. Ver resources/js/evaluacion.js.
+Alpine.data('encuestaEvaluacion', encuestaEvaluacion);
 
 // Los botones de compartir de la ficha de actividad. Ver resources/js/compartir.js.
 Alpine.data('compartir', compartir);

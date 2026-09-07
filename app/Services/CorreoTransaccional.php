@@ -100,6 +100,86 @@ class CorreoTransaccional
         ], $inscripcion);
     }
 
+    /**
+     * Aviso al organizador de que su actividad ya está publicada.
+     *
+     * Es el correo que lleva el QR de la encuesta de evaluación, y va DENTRO
+     * de éste y no en un correo aparte a propósito: es el mismo momento, y la
+     * persona recibe todo junto en vez de dos correos que tiene que relacionar.
+     *
+     * Antes era un mailable con vista fija (`App\Mail\ActivityPublished`), que
+     * la ONG no podía editar. Ahora es una plantilla del panel como las otras
+     * cinco. Si la plantilla no existiera —una base a la que todavía no ha
+     * llegado la siembra— esto devuelve false y quien llama vuelve al mailable
+     * de siempre, para que nadie se quede sin su aviso.
+     *
+     * @param  string  $qr  el PNG del código, ya generado
+     */
+    public function actividadPublicada(Activity $actividad, string $qr = ''): bool
+    {
+        $destino = $actividad->organization?->user?->email;
+
+        if (blank($destino)) {
+            return false;
+        }
+
+        return $this->enviar('actividad_publicada', $destino, [
+            'nombre' => $actividad->organization?->user?->name ?? '',
+            'organizacion' => $actividad->organization?->nombre ?? '',
+            'actividad' => $actividad->titulo,
+            'fecha' => $actividad->fecha_larga,
+            'lugar' => $actividad->lugar,
+            'enlace_actividad' => route('activities.show', $actividad),
+            'enlace_qr' => route('account.activities.edit', $actividad),
+            'bloque_qr' => $this->bloqueQr($actividad, $qr !== ''),
+            'sitio' => config('app.name'),
+        ], $actividad, incrustadas: $qr === '' ? [] : [
+            'qr' => ['datos' => $qr, 'nombre' => 'qr-evaluacion.png', 'mime' => 'image/png'],
+        ]);
+    }
+
+    /**
+     * El bloque del QR, montado aquí y no dejado a la plantilla.
+     *
+     * Mismo motivo que el `bloque_calendario`: las plantillas las edita la ONG
+     * desde el panel y no tienen condicionales. Con la imagen y el enlace como
+     * variables sueltas, un correo en el que el QR no se hubiera podido generar
+     * dejaría un `<img>` roto debajo de un texto que sigue hablando de un
+     * código. Así el bloque entero desaparece y no queda nada a medias.
+     *
+     * **Lleva imagen Y enlace, y eso no es redundancia.** Muchos clientes de
+     * correo no cargan imágenes hasta que la persona lo autoriza: sin el enlace
+     * debajo, para esa gente el correo no diría nada. El enlace lleva a su
+     * actividad en «Mi cuenta», que es donde puede descargarlo para imprimir.
+     */
+    private function bloqueQr(Activity $actividad, bool $conImagen): string
+    {
+        $enlace = e(route('account.activities.edit', $actividad));
+
+        $imagen = $conImagen
+            ? '<img src="cid:qr" width="200" height="200" alt="Código QR de la encuesta de evaluación"'
+                .' style="display:block;margin:0 auto 14px;width:200px;height:200px;border:1px solid #eceef0;border-radius:12px;">'
+            : '';
+
+        return trim(<<<HTML
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;">
+            <tr>
+                <td style="padding:20px;background:#faf7f3;border:1px solid #eceef0;border-radius:16px;text-align:center;">
+                    <p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#33363a;">El código QR de tu actividad</p>
+                    {$imagen}
+                    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6;color:#63666a;">
+                        Imprímelo y ponlo a la vista el día de la actividad. Quien lo escanee podrá
+                        contarte cómo le fue en menos de un minuto.
+                    </p>
+                    <a href="{$enlace}" style="display:inline-block;background:#ffffff;color:#cc6600;font-weight:600;font-size:13.5px;padding:10px 20px;border:1.5px solid #e57200;border-radius:999px;text-decoration:none;">
+                        Descargar el QR para imprimir
+                    </a>
+                </td>
+            </tr>
+        </table>
+        HTML);
+    }
+
     /** @return array<string, string> */
     private function datosDeActividad(?Activity $actividad): array
     {
@@ -132,7 +212,7 @@ class CorreoTransaccional
      * quien se acaba de inscribir no tiene por qué ver un error 500 porque el
      * SMTP esté caído.
      */
-    private function enviar(string $clave, string $destino, array $datos, ?Model $relacionado = null): bool
+    private function enviar(string $clave, string $destino, array $datos, ?Model $relacionado = null, array $incrustadas = []): bool
     {
         $plantilla = EmailTemplate::porClave($clave);
 
@@ -142,7 +222,7 @@ class CorreoTransaccional
 
         try {
             $this->smtp->aplicar();
-            Mail::to($destino)->send(new PlantillaMail($plantilla, $datos, relacionado: $relacionado));
+            Mail::to($destino)->send(new PlantillaMail($plantilla, $datos, relacionado: $relacionado, incrustadas: $incrustadas));
 
             return true;
         } catch (Throwable $e) {

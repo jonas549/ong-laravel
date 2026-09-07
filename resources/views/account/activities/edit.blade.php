@@ -53,6 +53,23 @@
             </span>
             <div style="font-size:14.5px;line-height:1.6;color:#0d6b64;">Esta actividad está publicada. Los cambios que guardes se actualizarán inmediatamente en el sitio web.<br><span style="color:#3f8b85;">Si modificas la fecha, el lugar o la hora, te recomendamos informar también a las personas inscritas.</span></div>
         </div>
+
+        {{--
+            El QR de la encuesta.
+
+            Sólo con la actividad publicada, que es cuando el código lleva a
+            algún sitio: antes de publicarse la encuesta no está abierta y un
+            cartel impreso desde aquí enseñaría un aviso de «todavía no».
+
+            Es el mismo bloque que se enseña en el panel; vive en un componente
+            para que los dos digan lo mismo.
+        --}}
+        <div style="margin-bottom:26px;">
+            <x-qr-actividad
+                :activity="$activity"
+                :ruta-png="route('account.activities.qr.png', $activity)"
+                :ruta-svg="route('account.activities.qr.svg', $activity)" />
+        </div>
     @else
         {{-- El prototipo sólo dibuja el aviso de "publicada"; el resto de los
              estados usa el mismo bloque con su propio color y su propio texto. --}}

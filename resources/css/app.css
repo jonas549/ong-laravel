@@ -2624,3 +2624,656 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
     .vista-conmutador { display: flex; }
     .vista-btn { flex: 1; justify-content: center; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+ * Encuesta de evaluación (el QR de cada actividad)
+ * ══════════════════════════════════════════════════════════════
+ *
+ * El wireframe la dibuja a 375 px porque se llega escaneando un cartel, pero va
+ * en las dos versiones. En escritorio no cambia de forma: es la misma columna
+ * con un ancho máximo, centrada. Una encuesta de siete campos repartida en dos
+ * columnas se lee peor, no mejor.
+ *
+ * Su diseño es neutro —grises y negro— y aquí se traduce a la identidad del
+ * sitio. Lo que se conserva del wireframe es la ESTRUCTURA: el bloque con el
+ * nombre de la actividad, las cinco cajas de la escala con su línea de fondo,
+ * los extremos en letra pequeña debajo, el separador «Opcional» y la
+ * autorización sangrada bajo la fotografía.
+ *
+ * OJO CON EL `box-sizing`: aquí no hay reset global —ninguno de los tres HTML
+ * fuente lo tiene— así que todo lo que lleve `max-width` o `width` junto con
+ * padding tiene que declararlo, o el padding se suma por fuera. Ya ha mordido
+ * tres veces en este proyecto.
+ */
+
+.evaluacion-envoltorio {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 24px 72px;
+    display: flex;
+    justify-content: center;
+}
+
+.evaluacion-caja {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 560px;
+    padding: 34px 32px 30px;
+}
+
+.evaluacion-titulo {
+    margin: 0 0 14px;
+    font-size: 27px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: var(--ink);
+    text-wrap: pretty;
+}
+
+.evaluacion-estas {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--gris);
+}
+
+/* El bloque que dice qué se está evaluando. En el wireframe es gris; aquí es el
+ * naranja suave del sitio, que hace el mismo trabajo de destacarlo sin
+ * introducir un color que no existe en ninguna otra pantalla. */
+.evaluacion-actividad {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--naranjo-600);
+    background: var(--naranjo-100);
+    border: 1px solid #f6ddc2;
+    border-radius: 12px;
+}
+
+.evaluacion-linea {
+    height: 1px;
+    margin: 26px 0;
+    border: 0;
+    background: var(--linea);
+}
+
+.evaluacion-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.evaluacion-campo {
+    /* `fieldset` trae borde, margen y padding propios del navegador; las dos
+     * escalas usan uno de verdad —es lo correcto para un grupo de radios— y hay
+     * que devolverlo a la caja neutra que son los demás campos. */
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.evaluacion-lbl {
+    display: block;
+    margin-bottom: 7px;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--gris-700);
+}
+
+/* ── Las escalas 1-5 ─────────────────────────────────────── */
+
+.evaluacion-notas {
+    position: relative;
+    display: flex;
+    gap: 8px;
+}
+
+/* La línea que une las cinco cajas, como en el wireframe. Va detrás y no se
+ * asoma por los extremos. */
+.evaluacion-notas::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 50%;
+    height: 1px;
+    background: var(--linea);
+}
+
+.evaluacion-nota {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+/* El radio de verdad sigue ahí y sigue recibiendo el foco: se saca de la vista
+ * sin `display:none`, que lo dejaría fuera del recorrido del teclado. */
+.evaluacion-nota input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.evaluacion-nota span {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 48 px es el objetivo táctil que pide el wireframe y el mínimo cómodo para
+     * un dedo. Esta pantalla se rellena de pie y con una mano. */
+    height: 48px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gris);
+    background: #fff;
+    border: 1.5px solid #e4e6e8;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.evaluacion-nota:hover span { border-color: var(--naranjo); color: var(--naranjo-600); }
+
+.evaluacion-nota input:checked + span {
+    background: var(--naranjo);
+    border-color: var(--naranjo);
+    color: #fff;
+}
+
+/* El foco del teclado, que sin esto desaparecería con el radio. */
+.evaluacion-nota input:focus-visible + span {
+    outline: none;
+    border-color: var(--naranjo);
+    box-shadow: 0 0 0 4px rgba(229, 114, 0, .18);
+}
+
+.evaluacion-extremos {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 7px;
+    font-size: 11.5px;
+    color: var(--gris);
+}
+
+/* ── Respuesta abierta ───────────────────────────────────── */
+
+.evaluacion-texto {
+    min-height: 88px;
+    resize: vertical;
+    line-height: 1.55;
+}
+
+.evaluacion-contador { display: block; margin-top: 6px; }
+
+/* ── Separador de la parte opcional ──────────────────────── */
+
+.evaluacion-separador {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.evaluacion-separador span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--gris);
+}
+
+.evaluacion-separador::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--linea);
+}
+
+/* ── Fotografía ──────────────────────────────────────────── */
+
+.evaluacion-foto {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: #fff;
+    border: 1.5px dashed #e4e6e8;
+    border-radius: 12px;
+}
+
+.evaluacion-foto-previa {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    overflow: hidden;
+    color: #b3b6ba;
+    background: var(--gris-100);
+    border-radius: 10px;
+}
+
+.evaluacion-foto-imagen { width: 100%; height: 100%; object-fit: cover; }
+
+.evaluacion-foto-icono { display: grid; place-items: center; }
+
+.evaluacion-foto-datos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    min-width: 0;
+}
+
+/* El input de archivo se esconde y lo dispara la etiqueta, que es la que lleva
+ * el aspecto de botón del sitio. Se esconde sin `display:none` para que siga
+ * recibiendo el foco del teclado. */
+.evaluacion-foto-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.evaluacion-foto-boton { cursor: pointer; }
+
+.evaluacion-foto-input:focus-visible ~ .evaluacion-foto-pie {
+    outline: 2px solid var(--naranjo);
+    outline-offset: 3px;
+}
+
+.evaluacion-foto-pie { flex-basis: 100%; }
+
+.evaluacion-foto-nombre {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--gris-700);
+}
+
+/* ── La autorización, sangrada bajo la foto ──────────────── */
+
+.evaluacion-autorizacion {
+    margin: 12px 0 0 14px;
+    padding-left: 14px;
+    border-left: 2px solid var(--linea);
+}
+
+.evaluacion-autorizacion-lbl {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--gris-700);
+    cursor: pointer;
+}
+
+.evaluacion-autorizacion-lbl input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    accent-color: var(--naranjo);
+}
+
+/* ── El campo trampa del anti-spam ───────────────────────── */
+
+/*
+ * Fuera de la vista y fuera del alcance, pero presente en el HTML: un robot que
+ * lo lea lo va a rellenar. NO se usa `display:none` ni `type="hidden"` porque
+ * los robots que valen algo saltan justo eso.
+ */
+.evaluacion-trampa {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.evaluacion-enviar { justify-content: center; width: 100%; }
+
+.evaluacion-privacidad { margin: 0; text-align: center; }
+
+/* ── Confirmación y encuesta cerrada ─────────────────────── */
+
+.evaluacion-gracias {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 32px 42px;
+}
+
+.evaluacion-tic {
+    display: grid;
+    place-items: center;
+    width: 66px;
+    height: 66px;
+    margin-bottom: 22px;
+    color: #0d6b64;
+    background: #eaf6f5;
+    border-radius: 999px;
+}
+
+.evaluacion-tic-neutro { color: var(--gris); background: var(--gris-100); }
+
+.evaluacion-gracias-titulo {
+    margin: 0 0 14px;
+    font-size: 24px;
+    line-height: 1.3;
+    font-weight: 800;
+    color: var(--ink);
+    text-wrap: pretty;
+}
+
+.evaluacion-gracias-nota {
+    margin: 0 0 14px;
+    font-size: 13.5px;
+    color: var(--naranjo-600);
+}
+
+.evaluacion-gracias-texto {
+    margin: 0 0 28px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--gris);
+    text-wrap: pretty;
+}
+
+.evaluacion-gracias-boton { margin-bottom: 16px; }
+
+.evaluacion-gracias-otro { font-size: 13.5px; }
+
+/* ── Móvil ───────────────────────────────────────────────── */
+
+@media (max-width: 560px) {
+    .evaluacion-envoltorio { padding: 22px 14px 56px; }
+
+    .evaluacion-caja {
+        padding: 26px 18px 24px;
+        border-radius: 18px;
+    }
+
+    .evaluacion-titulo { font-size: 23px; }
+
+    .evaluacion-notas { gap: 6px; }
+
+    .evaluacion-nota span { height: 52px; font-size: 15px; border-radius: 10px; }
+
+    .evaluacion-notas::before { left: 12px; right: 12px; }
+
+    /* En una columna estrecha, la miniatura y el botón uno al lado del otro
+     * dejan el nombre del archivo en tres letras y puntos suspensivos. */
+    .evaluacion-foto { align-items: flex-start; }
+
+    .evaluacion-gracias { padding: 40px 20px 34px; }
+
+    .evaluacion-gracias-titulo { font-size: 21px; }
+}
+
+/* ── El QR en el panel y en la cuenta del organizador ────── */
+
+.qr-caja {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px;
+    background: #fff;
+    border: 1.5px solid var(--linea);
+    border-radius: 14px;
+}
+
+.qr-imagen {
+    flex: none;
+    width: 108px;
+    height: 108px;
+    border-radius: 10px;
+}
+
+.qr-datos { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.qr-enlace {
+    font-size: 12.5px;
+    color: var(--gris);
+    word-break: break-all;
+}
+
+.qr-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 560px) {
+    .qr-caja { flex-direction: column; align-items: flex-start; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Evaluaciones en el panel
+ * ══════════════════════════════════════════════════════════════ */
+
+.panel-filtros-fecha { display: flex; align-items: center; gap: 7px; }
+
+.panel-filtros-fecha input.fld { width: 152px; }
+
+/* ── Promedios y reparto ─────────────────────────────────── */
+
+.eval-resumen {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.eval-resumen-tarjeta { padding: 20px 22px; }
+
+.eval-resumen-pregunta {
+    margin: 0 0 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--gris-700);
+}
+
+.eval-resumen-nota {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 0 0 14px;
+}
+
+.eval-resumen-nota strong {
+    font-family: var(--font-title);
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--naranjo);
+}
+
+.eval-resumen-de { font-size: 14px; color: var(--gris); }
+
+.eval-resumen-sin { font-size: 15px; color: var(--gris); }
+
+.eval-reparto { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+
+.eval-reparto-fila { display: flex; align-items: center; gap: 9px; }
+
+.eval-reparto-nota {
+    flex: none;
+    width: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gris);
+    text-align: right;
+}
+
+.eval-reparto-barra {
+    flex: 1;
+    height: 8px;
+    min-width: 0;
+    background: var(--gris-100);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.eval-reparto-relleno {
+    display: block;
+    height: 100%;
+    background: var(--naranjo);
+    border-radius: 999px;
+}
+
+.eval-reparto-cuantas {
+    flex: none;
+    width: 26px;
+    font-size: 12px;
+    color: var(--gris);
+    text-align: right;
+}
+
+.eval-resumen-extremos {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0 0;
+}
+
+/* ── La tabla ────────────────────────────────────────────── */
+
+.eval-nota {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin-right: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--naranjo-600);
+    background: var(--naranjo-100);
+    border: 1px solid #f6ddc2;
+    border-radius: 8px;
+}
+
+.eval-nota-motivacion {
+    color: #0d6b64;
+    background: #eaf6f5;
+    border-color: #cbe7e5;
+}
+
+/*
+ * El texto se enseña entero, y por eso necesita un ancho máximo: sin él, una
+ * respuesta de trescientos caracteres estira la tabla y todas las demás
+ * columnas se quedan sin sitio.
+ *
+ * `overflow-wrap` porque aquí entra texto de fuera, y una persona puede pegar
+ * una palabra de doscientas letras. Es la misma razón de `dato-editable` en el
+ * home, y va acotado a esta celda por lo mismo: no se pone en un contenedor.
+ */
+.eval-texto {
+    max-width: 380px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--gris-700);
+    overflow-wrap: anywhere;
+}
+
+/* ── Pestañas de las fotos ───────────────────────────────── */
+
+.eval-pestanas {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.eval-pestana {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--gris);
+    background: #fff;
+    border: 1.5px solid var(--linea);
+    border-radius: 999px;
+}
+
+.eval-pestana:hover { color: var(--naranjo-600); border-color: var(--naranjo); }
+
+.eval-pestana.activa {
+    color: #fff;
+    background: var(--naranjo);
+    border-color: var(--naranjo);
+}
+
+.eval-pestana-cuenta {
+    display: inline-grid;
+    place-items: center;
+    min-width: 22px;
+    padding: 1px 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--gris-700);
+    background: var(--gris-100);
+    border-radius: 999px;
+}
+
+.eval-pestana.activa .eval-pestana-cuenta {
+    color: var(--naranjo-600);
+    background: #fff;
+}
+
+/* ── Cuadrícula de fotos ─────────────────────────────────── */
+
+.eval-fotos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+}
+
+.eval-foto { overflow: hidden; padding: 0; }
+
+.eval-foto-marco {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: var(--gris-100);
+}
+
+.eval-foto-marco img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.eval-foto-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 13px 15px 15px;
+}
+
+.eval-foto-actividad {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--ink);
+}
+
+@media (max-width: 900px) {
+    .eval-resumen { grid-template-columns: 1fr; }
+    .eval-texto { max-width: 260px; }
+}
+
+@media (max-width: 760px) {
+    .panel-filtros-fecha input.fld { width: 138px; }
+}

@@ -63,6 +63,17 @@
     </section>
 
     <aside style="display:flex;flex-direction:column;gap:18px;">
+        @if ($activity->estado === 'publicada')
+            {{-- El mismo QR que ve el organizador en su cuenta: aquí para poder
+                 reimprimirlo o mandárselo si lo pierde. --}}
+            <section class="card" style="padding:24px;">
+                <x-qr-actividad
+                    :activity="$activity"
+                    :ruta-png="route('admin.activities.qr.png', $activity)"
+                    :ruta-svg="route('admin.activities.qr.svg', $activity)" />
+            </section>
+        @endif
+
         <section class="card" style="padding:24px;">
             <h3 style="font-size:16px;font-weight:700;margin:0 0 16px;">Moderación</h3>
 

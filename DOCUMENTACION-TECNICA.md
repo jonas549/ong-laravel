@@ -252,7 +252,26 @@ Manda el recordatorio a las personas inscritas en las actividades que se acercan
 09:00, y se protege él solo de mandar dos veces lo mismo. Está aquí por si hay
 que forzarlo o comprobar qué haría.
 
-Los cuatro comandos aceptan `--help`. `dps:instalar` además tiene `--seco`, que
+```bash
+php artisan dps:qr
+php artisan dps:qr --actividad=mi-actividad
+```
+
+Comprueba lo que la encuesta de evaluación necesita **del entorno y no del
+código**, que es lo único de ese bloque que no se puede arreglar después:
+
+- **`APP_URL`**, que es lo que va codificado en cada QR. Si está mal en el
+  servidor, todos los carteles impresos apuntan a un sitio equivocado y no hay
+  vuelta atrás. Es la razón de ser del comando.
+- Los límites de subida de PHP (`upload_max_filesize` y `post_max_size`) contra
+  los 5 MB de fotografía que promete el formulario.
+- Que la plantilla de correo y los dos ajustes de la encuesta estén sembrados.
+
+Con `--actividad` enseña además la dirección que codifica esa actividad, si su
+encuesta está abierta y cuándo cierra, y escribe su QR en `storage/app` para
+poder mirarlo.
+
+Los cinco comandos aceptan `--help`. `dps:instalar` además tiene `--seco`, que
 dice qué falta sin escribir nada.
 
 ---
@@ -425,6 +444,48 @@ guarda **sólo lo que se ha cambiado**, así que una sección sin fila se pinta 
 su texto original, vaciar un campo desde el panel lo devuelve al original, y el
 home se ve bien con la tabla recién migrada y sin sembrar. Para cambiar un texto
 por defecto hay que tocar el catálogo y desplegar.
+
+### El QR de la encuesta se genera al vuelo y no se guarda
+
+`App\Services\CodigoQr` lo construye en cada descarga, en un par de
+milisegundos. Guardarlo obligaría a invalidarlo cuando cambiara algo y no
+ahorraría nada apreciable; además, así arreglar un `APP_URL` equivocado arregla
+todas las descargas futuras sin tener que acordarse de borrar ningún archivo.
+
+**Se usa `endroid/qr-code` y no se pinta a mano**, que es lo contrario de lo que
+se hizo con el `.ics` del calendario. La diferencia: un `.ics` son quince líneas
+de texto plano, y un QR mal generado **se ve perfecto y no escanea**. Las dos
+formas de romperlo son mudas —una zona tranquila demasiado corta y una escala
+fraccionaria que deja los módulos a medio píxel— y las dos se descubren cuando
+ya hay cien carteles impresos. `pruebas/qr-evaluacion.mjs` lo decodifica de
+verdad, con `jsQR`, a tamaño completo y reducido al 12,5%.
+
+### Las fotos de la encuesta van al disco privado
+
+`storage/app/private/evaluaciones/AAAA/MM`, y se sirven por una ruta del panel
+que pide sesión de administrador. **No van a `storage/app/public`**, que se
+sirve por URL directa: son fotografías de asistentes con su nombre y su correo
+en la fila de al lado, y ahí cualquiera con el enlace las vería, autorizadas o
+no. Tampoco se indexan en la biblioteca de medios; para las autorizadas hay un
+botón que las pasa, y entonces es la decisión de una persona.
+
+### Una imagen incrustada en un correo viaja en base64 por la cola
+
+`PlantillaMail` es `ShouldQueue`, y la cola serializa sus propiedades a JSON. Un
+PNG en crudo no es UTF-8 válido: `json_encode` falla con «Malformed UTF-8
+characters», el correo no llega a encolarse y **el fallo es mudo**, porque
+`CorreoTransaccional` atrapa la excepción y devuelve false. Por eso el
+constructor codifica en base64 y la vista descodifica. Quitar ese base64 deja el
+aviso de actividad publicada sin salir.
+
+### Una subida que se pasa de `post_max_size` no da un error de validación
+
+PHP descarta la petición **antes de que Laravel exista**: `$_POST` y `$_FILES`
+llegan vacíos, y vacío quiere decir sin token CSRF, así que lo siguiente es un
+419 «Page Expired» en inglés que no menciona ninguna fotografía. Una regla
+`max:5120` no ayuda, porque la validación nunca se ejecuta. Lo ataja el
+middleware `AvisaSiLaSubidaEsDemasiadoGrande`, que va **el primero del grupo
+`web`**, antes del CSRF, y lo convierte en un aviso que se entiende.
 
 ---
 

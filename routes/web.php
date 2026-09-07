@@ -3,11 +3,13 @@
 use App\Http\Controllers\Account;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PublishController;
+use App\Http\Controllers\QrController;
 use App\Http\Controllers\RegistrationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -31,6 +33,25 @@ Route::post('/actividades/{activity:slug}/inscribirse', [RegistrationController:
     ->name('registrations.store');
 Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'cancel'])
     ->name('registrations.cancel');
+
+/*
+ * La encuesta de evaluación, a la que lleva el QR de cada actividad.
+ *
+ * Va con `{activity:slug}` y no con un token propio porque **el slug ya no
+ * cambia una vez publicada la actividad** (ver MyActivityController): un QR
+ * impreso no se rompe porque el organizador reescriba el título después.
+ *
+ * El POST lleva freno propio. Es un formulario público, sin cuenta, que acepta
+ * una fotografía: sin límite es la vía más barata de llenar el disco. Cinco por
+ * minuto y por IP es de sobra para una persona —sólo puede dejar una respuesta
+ * por actividad— y corta en seco un robot. Las otras tres capas del anti-spam
+ * están en `EvaluationRequest`.
+ */
+Route::get('/evaluar/{activity:slug}', [EvaluationController::class, 'show'])->name('evaluar.show');
+Route::post('/evaluar/{activity:slug}', [EvaluationController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('evaluar.store');
+Route::get('/evaluar/{activity:slug}/gracias', [EvaluationController::class, 'gracias'])->name('evaluar.gracias');
 
 // El wizard es sólo para quien no tiene cuenta: crea una nueva y entra con
 // ella, así que a quien ya está dentro se le manda a sumar la actividad desde
@@ -131,6 +152,17 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
             ->name('participants.export');
         Route::patch('/actividades/{activity}/cupos', [Account\ParticipantController::class, 'updateCupos'])
             ->name('participants.cupos');
+
+        /*
+         * El QR de la encuesta, para imprimirlo. Dos formatos y no uno: el PNG
+         * para pegar en un documento y el SVG para llevar a imprenta, que es
+         * vectorial y vale igual para una pegatina que para un pendón.
+         *
+         * Quién puede lo decide `ActivityPolicy::qr()`, no este prefijo: el
+         * mismo controlador atiende la puerta del panel.
+         */
+        Route::get('/actividades/{activity}/qr.png', [QrController::class, 'png'])->name('activities.qr.png');
+        Route::get('/actividades/{activity}/qr.svg', [QrController::class, 'svg'])->name('activities.qr.svg');
     });
 });
 
@@ -212,6 +244,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/organizaciones/{organization}/estado', [Admin\OrganizationController::class, 'alternar'])->name('organizations.alternar');
         Route::delete('/organizaciones/{organization}', [Admin\OrganizationController::class, 'destroy'])->name('organizations.destroy');
         Route::post('/organizaciones/{id}/restaurar', [Admin\OrganizationController::class, 'restaurar'])->name('organizations.restaurar');
+
+        /*
+         * Evaluaciones. `fotos`, `exportar` y `foto` van ANTES de cualquier
+         * comodín, que es la piedra con la que ya tropezaron «exportar» en
+         * organizaciones y «buscar» en medios.
+         */
+        Route::get('/evaluaciones', [Admin\EvaluationController::class, 'index'])->name('evaluaciones.index');
+        Route::get('/evaluaciones/fotos', [Admin\EvaluationController::class, 'fotos'])->name('evaluaciones.fotos');
+        Route::get('/evaluaciones/exportar', [Admin\EvaluationController::class, 'descargar'])->name('evaluaciones.exportar');
+        Route::get('/evaluaciones/{evaluacion}/foto', [Admin\EvaluationController::class, 'foto'])->name('evaluaciones.foto');
+        Route::post('/evaluaciones/{evaluacion}/biblioteca', [Admin\EvaluationController::class, 'aBiblioteca'])->name('evaluaciones.biblioteca');
+        Route::delete('/evaluaciones/{evaluacion}', [Admin\EvaluationController::class, 'destroy'])->name('evaluaciones.destroy');
+
+        // La misma descarga del QR que en la cuenta del organizador.
+        Route::get('/actividades/{activity}/qr.png', [QrController::class, 'png'])->name('activities.qr.png');
+        Route::get('/actividades/{activity}/qr.svg', [QrController::class, 'svg'])->name('activities.qr.svg');
 
         Route::get('/inscripciones', [Admin\RegistrationController::class, 'index'])->name('registrations.index');
         Route::get('/inscripciones/exportar', [Admin\RegistrationController::class, 'exportar'])->name('registrations.exportar');

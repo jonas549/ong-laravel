@@ -20,6 +20,8 @@ const rutas = [
   '/admin/configuracion', '/admin/configuracion/smtp', '/admin/configuracion/seo',
   '/admin/regiones', '/admin/taxonomias', '/admin/contenido/noticias',
   '/admin/paginas/privacidad', '/admin/buscar?q=dps', '/admin/usuarios/2/editar',
+  // Bloque O: las evaluaciones que llegan por el QR.
+  '/admin/evaluaciones', '/admin/evaluaciones/fotos',
 ];
 
 let malas = 0;

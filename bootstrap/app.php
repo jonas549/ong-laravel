@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplySmtpSettings;
+use App\Http\Middleware\AvisaSiLaSubidaEsDemasiadoGrande;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\SoloInvitados;
 use App\Listeners\LogSentMail;
@@ -20,6 +21,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        /*
+         * ANTES que nada del grupo web, y en particular antes del CSRF.
+         *
+         * Una subida que se pasa de `post_max_size` llega con `$_POST` vacío
+         * —PHP la descarta antes de que Laravel exista— y sin token CSRF, así
+         * que lo siguiente sería un 419 en inglés que no menciona ninguna
+         * fotografía. Esto lo convierte en un aviso que se entiende.
+         */
+        $middleware->prependToGroup('web', AvisaSiLaSubidaEsDemasiadoGrande::class);
+
         // La configuración SMTP vive en la base de datos, no en el .env,
         // así que hay que aplicarla en cada request antes de enviar nada.
         $middleware->appendToGroup('web', ApplySmtpSettings::class);

@@ -80,6 +80,51 @@ class Biblioteca
     }
 
     /**
+     * Trae a la biblioteca un archivo que ya vive en otro sitio del servidor.
+     *
+     * Lo usa el panel de evaluaciones para las fotos autorizadas: nacen en el
+     * disco privado, fuera de la biblioteca a propósito, y sólo entran aquí
+     * cuando una persona decide que esa foto se va a usar para difusión. Es
+     * una copia y no un traslado —el original se queda donde está, que es lo
+     * que sigue respaldando la autorización—.
+     *
+     * @param  string  $absoluta  ruta completa del archivo de origen
+     */
+    public function adoptar(string $absoluta, string $nombreVisible, ?string $carpeta = null, ?User $usuario = null): Media
+    {
+        $extension = strtolower(pathinfo($absoluta, PATHINFO_EXTENSION) ?: 'jpg');
+
+        $subcarpeta = 'medios/'.now()->format('Y/m');
+        $nombreArchivo = $this->nombreLibre($subcarpeta, $nombreVisible, $extension);
+
+        $destino = storage_path('app/public/'.$subcarpeta);
+
+        if (! is_dir($destino)) {
+            mkdir($destino, 0775, true);
+        }
+
+        copy($absoluta, $destino.'/'.$nombreArchivo);
+
+        $ruta = 'storage/'.$subcarpeta.'/'.$nombreArchivo;
+        $copiada = public_path($ruta);
+
+        [$ancho, $alto] = $this->medidas($copiada);
+
+        return Media::create([
+            'ruta' => $ruta,
+            'origen' => Media::ORIGEN_SUBIDO,
+            'nombre' => $nombreVisible,
+            'mime' => $this->mime($copiada, $extension),
+            'extension' => $extension,
+            'peso' => is_file($copiada) ? filesize($copiada) : 0,
+            'ancho' => $ancho,
+            'alto' => $alto,
+            'carpeta' => $carpeta ?: null,
+            'subido_por' => $usuario?->id,
+        ]);
+    }
+
+    /**
      * Reemplaza el archivo conservando la fila —y por tanto la URL— para que
      * todo lo que ya apunta ahí siga apuntando a algo.
      *

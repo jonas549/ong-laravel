@@ -9,7 +9,17 @@
 
         @foreach ($ajustes as $a)
             <div>
-                @if ($a->tipo === 'bool')
+                @php $opciones = \App\Support\CatalogoAjustes::opciones($a->clave); @endphp
+
+                @if ($opciones)
+                    {{-- Ajuste de lista cerrada: se elige, no se escribe. --}}
+                    <label class="helper" for="s-{{ $a->clave }}" style="display:block;margin-bottom:6px;font-weight:600;">{{ $a->label }}</label>
+                    <select class="fld" id="s-{{ $a->clave }}" name="{{ $a->clave }}">
+                        @foreach ($opciones as $valor => $texto)
+                            <option value="{{ $valor }}" @selected(($valores[$a->clave] ?? null) === $valor)>{{ $texto }}</option>
+                        @endforeach
+                    </select>
+                @elseif ($a->tipo === 'bool')
                     <label style="display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--gris-700);cursor:pointer;">
                         <input type="checkbox" name="{{ $a->clave }}" value="1" @checked($valores[$a->clave] ?? false)>
                         {{ $a->label }}

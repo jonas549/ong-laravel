@@ -53,9 +53,21 @@ class EmailTemplateRenderer
             'enlace_actividades' => url('/actividades'),
             'enlace_cancelar' => url('/inscripcion/ejemplo/cancelar'),
             'enlace_participantes' => route('account.activities.index'),
+            'enlace_qr' => route('account.activities.index'),
             'bloque_calendario' => '<p style="margin:22px 0 0;font-size:14px;color:#63666A;">'
                 .'Añádelo a tu calendario: <a href="#" style="color:#cc6600;font-weight:600;">Google Calendar</a>'
                 .' &nbsp;·&nbsp; <a href="#" style="color:#cc6600;font-weight:600;">Apple, Outlook y otros</a></p>',
+            /*
+             * En la vista previa el QR se enseña como un hueco y no como una
+             * imagen: el código de verdad viaja incrustado en el correo y aquí
+             * no hay correo al que incrustarlo, así que un `<img src="cid:qr">`
+             * saldría roto. Un hueco que dice lo que va ahí informa; una imagen
+             * rota hace pensar que la plantilla está mal.
+             */
+            'bloque_qr' => '<div style="margin:24px 0 0;padding:20px;background:#faf7f3;border:1px dashed #e4e6e8;'
+                .'border-radius:16px;text-align:center;font-size:13px;color:#8f9399;">'
+                .'Aquí va el código QR de la actividad, con su botón de descarga. '
+                .'En el correo de verdad se ve la imagen.</div>',
         ];
 
         return collect($plantilla->variablesDisponibles())

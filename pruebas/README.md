@@ -6,7 +6,24 @@ sistema.** Están aquí porque esa distinción es la que costó una jornada ente
 el bloque A pasó tres pases de QA automático mientras en el servidor no salía un
 solo correo.
 
-Ninguno necesita dependencias: sólo Node 18+ y la aplicación levantada.
+Casi ninguno necesita dependencias: basta Node 18+ y la aplicación levantada.
+Las excepciones son los que conducen Chrome, que usan `puppeteer-core`, y los
+tres del bloque O, que además necesitan un decodificador de QR:
+
+```bash
+cd pruebas && npm install
+```
+
+`pruebas/package.json` está fuera de git a propósito —es andamiaje, no
+proyecto—, así que si falta, esto lo repone:
+
+```bash
+cd pruebas && npm install puppeteer-core jsqr pngjs
+```
+
+`jsqr` es lo que hace que `qr-evaluacion.mjs` valga para algo: **decodifica el
+QR sobre los píxeles crudos, igual que la cámara de un teléfono**. Sin él sólo
+se podría comprobar que el archivo existe, que es justo lo que no falla nunca.
 
 ---
 
@@ -56,7 +73,7 @@ contra producción: varios borran filas y cambian contraseñas.
 
 | Script | Qué comprueba |
 |---|---|
-| `humo.mjs` | Las 26 pantallas públicas y del panel cargan con 200, y el editor de plantillas tiene variables, vista previa y envío de prueba. Es el que hay que correr después de cualquier cambio. |
+| `humo.mjs` | Las 28 pantallas públicas y del panel cargan con 200, y el editor de plantillas tiene variables, vista previa y envío de prueba. Es el que hay que correr después de cualquier cambio. |
 | `bloqueo.mjs` | El bloqueo por intentos, en cinco casos. Incluye **vaciar la caché a mitad de la tanda**, que es lo que lo rompía en producción. |
 | `clave-admin.mjs` | Un admin le cambia la contraseña a un organizador: que la nueva sirva, que la anterior no, que quede en el registro con el autor, que salga el correo y que se cierren las sesiones. |
 | `flujos.mjs` | Registro y «olvidé mi contraseña» de punta a punta. Deja los correos encolados; hay que correr `queue:work` después para ver si llegan. |
@@ -76,6 +93,11 @@ contra producción: varios borran filas y cambian contraseñas.
 | `calendario-actividades.mjs` | la vista de calendario de `/actividades`: que las columnas empiecen en lunes, que una actividad de varios días se pinte en **todas** sus casillas y siga en el mes siguiente, que la casilla llena pliegue lo que no cabe sin perderlo, que la franja de las «sin fecha» no dependa del mes, que los filtros sean los mismos que los de la lista, y que en 390 px la rejilla se convierta en lista de días (**necesita Chrome**) |
 | `ficha-actividad.mjs` | la ficha pública: el organizador bajo el título con su logo —o sus iniciales, que no todas tienen logo—, su sitio web y su red social rotulada por el dominio, los tres botones de compartir con el portapapeles de verdad, y que el Open Graph lleve la portada de **esa** actividad y no la genérica del sitio (**necesita Chrome**) |
 | `home-tarjetas-y-logos.mjs` | la tercera tarjeta del home encendida y administrable de punta a punta —enlace incluido—, los tres tamaños de logo medidos en píxeles y cambiables desde el CRUD, y la imagen de «¿Qué es el Patrimonio Social?» (**necesita Chrome**) |
+| `qr-evaluacion.mjs` | el código QR de cada actividad. **Lo que de verdad prueba es que el QR SE LEE**: lo decodifica con `jsQR` sobre los píxeles crudos, igual que la cámara de un teléfono, a tamaño completo y reducido al 25% y al 12,5%. Lo demás —que la ruta responda, que el archivo pese— no serviría de nada: un QR mal generado se ve perfecto y no escanea, y eso se descubre cuando ya hay cien carteles impresos (**necesita Chrome**) |
+| `encuesta-evaluacion.mjs` | la pantalla a la que lleva el QR: las dos escalas del 1 al 5, el contador, la casilla de autorización que sólo aparece con foto, **la reducción de la fotografía a 1600 px en el navegador**, la guía de errores midiendo que el aviso caiga dentro de la pantalla, las cuatro capas de anti-spam, la segunda evaluación con el mismo correo, los estados de fuera de plazo y el móvil a 390 px (**necesita Chrome**) |
+| `panel-evaluaciones.mjs` | las evaluaciones en el panel: los promedios y su reparto, que se recalculen con el filtro y no sobre el total, el texto largo que no estira la tabla, la exportación a XLSX y CSV, y las fotos con las autorizadas separadas de las que no —incluida la comprobación de que **sin sesión no se pueden ver**, que es lo que justifica el disco privado (**necesita Chrome**) |
+| `datos-evaluacion.php` | **No es una prueba, es el escenario** de las dos anteriores: cuatro actividades —abierta, cerrada por plazo, futura y sin publicar— y cinco respuestas con notas elegidas para que los promedios den 3,00 y 4,00 exactos. Se limpia con `$limpiar = true`. **No puede convivir con el escenario del calendario**, ver abajo. |
+| `correo-publicada.php` | **No es una prueba de navegador**: manda el correo de «actividad publicada» por los dos caminos —la revisión a mano y la aprobación automática— con el transporte en memoria, y mira el MIME de verdad para comprobar que el QR viaja incrustado y que el `<img>` apunta a ese adjunto. Se corre con `php artisan tinker --execute="require base_path('pruebas/correo-publicada.php');"` |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---
@@ -131,7 +153,35 @@ dejarla como estaba:
 >>> User::where('email', 'organizador@ong-laravel.test')->first()->forceFill(['password' => 'organizador1234'])->save();
 ```
 
+`datos-evaluacion.php` deja cuatro actividades y unas cuantas respuestas, con
+sus fotos en el disco privado. Para dejarlo limpio:
+
+```bash
+php artisan tinker --execute="$limpiar = true; require base_path('pruebas/datos-evaluacion.php');"
+```
+
 `buzon.jsonl` se puede borrar sin más.
+
+---
+
+## Dos escenarios que no pueden convivir
+
+**El del calendario y el de la encuesta de evaluación.** Los dos siembran
+actividades publicadas con fecha del mes en curso, y `calendario-actividades.mjs`
+cuenta cuántas caen en cada casilla: dos de las de evaluación aterrizando en el
+mes le hacen contar seis donde espera cinco. El fallo parece del calendario y no
+lo es.
+
+Por eso `calendario-actividades.mjs` limpia el de evaluación antes de sembrar el
+suyo. **Si se añade un tercer escenario que siembre actividades publicadas con
+fecha, hay que hacer lo mismo.**
+
+Y de aquí sale una regla general para esta carpeta: **correr las suites
+seguidas, sin pausa, produce falsos fallos**. `artisan serve` es de un solo
+proceso, y un `fetch` que en solitario tarda 200 ms puede pasar de los 900 que
+espera una prueba. Cuando algo falle en una tanda, **repetirlo en solitario
+antes de dar nada por roto**: el 2026-09-07 fueron cuatro comprobaciones del
+bloque J, y en solitario dieron 49 de 49.
 
 ---
 

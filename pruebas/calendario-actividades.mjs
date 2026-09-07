@@ -31,6 +31,16 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const tinker = (linea) => execFileSync('php', ['artisan', 'tinker', '--execute', linea], { cwd: RAIZ, encoding: 'utf8' });
 
+/*
+ * Antes del escenario propio, se quita el de la encuesta de evaluación.
+ *
+ * Aquél también siembra actividades publicadas con fecha del mes en curso, y
+ * aquí se cuenta cuántas caen en cada casilla: dos de las suyas aterrizando en
+ * el mes hacen contar seis donde se esperan cinco, y entonces el fallo parece
+ * del calendario cuando lo que pasa es que los dos escenarios se pisan.
+ */
+tinker("$limpiar = true; require base_path('pruebas/datos-evaluacion.php');");
+
 // El escenario, y el mes al que pertenece: las fechas cuelgan de hoy.
 const sembrado = tinker("require base_path('pruebas/datos-calendario.php');");
 const MES = sembrado.match(/CALENDARIO-LISTO (\d{4}-\d{2})/)?.[1];

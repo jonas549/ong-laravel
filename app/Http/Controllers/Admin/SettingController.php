@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Support\CatalogoAjustes;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SettingController extends Controller
 {
@@ -40,6 +42,17 @@ class SettingController extends Controller
              */
             $reglas[$ajuste->clave] = match (true) {
                 $ajuste->tipo === 'bool' => ['nullable', 'boolean'],
+                /*
+                 * Los de lista cerrada se validan contra la lista, y no como
+                 * texto libre. Sin esto, un POST a mano podía dejar guardado un
+                 * valor que el `match` del servicio no sabe interpretar: la
+                 * encuesta se habría quedado con el comportamiento por defecto
+                 * sin que nada lo dijera.
+                 */
+                CatalogoAjustes::tieneOpciones($ajuste->clave) => [
+                    'required',
+                    Rule::in(array_keys(CatalogoAjustes::opciones($ajuste->clave))),
+                ],
                 $ajuste->tipo === 'int' => ['required', 'integer', 'min:0', 'max:365'],
                 str_contains($ajuste->clave, 'email') => ['required', 'email', 'max:255'],
                 default => ['required', 'string', 'max:255'],

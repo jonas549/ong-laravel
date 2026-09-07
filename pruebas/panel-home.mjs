@@ -55,9 +55,25 @@ const portada = async () => {
  */
 function kpi(html, etiqueta) {
   const trozos = html.split('class="kpi"');
+
   for (const t of trozos) {
-    if (t.includes(etiqueta)) return parseInt(t.match(/class="v"[^>]*>\s*([\d.]+)\s*</)?.[1] ?? 'NaN', 10);
+    const valor = t.match(/class="v"[^>]*>\s*([\d.]+)\s*</)?.[1];
+
+    /*
+     * Hace falta que el trozo tenga la etiqueta Y un número.
+     *
+     * Antes bastaba la etiqueta, y eso hacía que el primer trozo —todo lo que
+     * va ANTES de la primera tarjeta— se llevara la búsqueda en cuanto una
+     * alerta de arriba mencionara lo mismo: «Hay una actividad esperando
+     * revisión hace más de 3 días» contiene «esperando revisión», no tiene
+     * ningún `class="v"`, y la función devolvía NaN sin llegar a mirar la
+     * tarjeta de verdad. El KPI estaba bien; quien no miraba era esto.
+     */
+    if (t.includes(etiqueta) && valor !== undefined) {
+      return parseInt(valor, 10);
+    }
   }
+
   return NaN;
 }
 
@@ -204,6 +220,31 @@ const dias = num("SELECT COALESCE((SELECT valor FROM settings WHERE clave='alert
 console.log(`  el plazo sale de Configuración, no del código: ${dias} días  ${veredicto(dias > 0)}`);
 
 if (idBorrador) {
+  /*
+   * Antes de nada, apartar las OTRAS revisiones atrasadas.
+   *
+   * Esta sección comprueba que la alerta aparece y desaparece **por culpa de
+   * la actividad que mueve la prueba**, y eso sólo se puede afirmar si no hay
+   * ninguna más disparándola. Una base de trabajo acumula actividades paradas
+   * en revisión de sesiones anteriores —aquí había una del 2 de septiembre— y
+   * entonces la alerta no se va al restaurar, la prueba falla, y el fallo no
+   * dice nada de la aplicación: la alerta estaba haciendo justo lo suyo.
+   *
+   * Se les adelanta el `updated_at` mientras dura la comprobación y se les
+   * devuelve al final, para no dejar la base cambiada.
+   */
+  const otras = sql(
+    `SELECT GROUP_CONCAT(CONCAT(id, ':', UNIX_TIMESTAMP(updated_at))) FROM activities`
+    + ` WHERE estado='revision' AND deleted_at IS NULL AND id <> ${idBorrador}`
+  );
+
+  const aparcadas = (otras && otras !== 'NULL' ? otras.split(',') : []).map((par) => par.split(':'));
+
+  if (aparcadas.length) {
+    console.log(`  (aparto ${aparcadas.length} revisión(es) atrasada(s) que ya había en la base)`);
+    sql(`UPDATE activities SET updated_at=UTC_TIMESTAMP() WHERE id IN (${aparcadas.map(([id]) => id).join(',')})`);
+  }
+
   const estadoPrevio = sql(`SELECT estado FROM activities WHERE id=${idBorrador}`);
   // updated_at en UTC: Laravel escribe en UTC y NOW() da hora local, cuatro
   // horas de diferencia en esta máquina.
@@ -215,6 +256,11 @@ if (idBorrador) {
   sql(`UPDATE activities SET estado='${estadoPrevio}', updated_at=UTC_TIMESTAMP() WHERE id=${idBorrador}`);
   html = await portada();
   console.log(`  y al quitarla la alerta desaparece: ${veredicto(!/esperando revisi.n hace m.s de/.test(html))}`);
+
+  // Y se les devuelve su fecha, que es lo que hace que esto no ensucie nada.
+  for (const [id, momento] of aparcadas) {
+    sql(`UPDATE activities SET updated_at=FROM_UNIXTIME(${momento}) WHERE id=${id}`);
+  }
 } else {
   console.log('  (sin actividades para mover; me salto este caso)');
 }
