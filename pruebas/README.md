@@ -87,6 +87,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `bloque-g2.mjs` | filtros, orden, paginación, acciones masivas, reordenar arrastrando y exportar (**necesita Chrome**) |
 | `bloque-j.mjs` | la biblioteca de medios y el selector: subir, filtrar, elegir desde un formulario, editar, reemplazar y borrar (**necesita Chrome**) |
 | `wizard-errores.mjs` | que el usuario **vea** lo que falta, en el wizard, en el editor de actividades de mi-cuenta y en el formulario de inscripción: el resumen de arriba, el salto al campo, la marca «Obligatorio» de los chips, la máscara y el calendario del campo de fecha, y que lo obligatorio aquí sea exactamente lo obligatorio en el servidor (**necesita Chrome**) |
+| `boton-envio.mjs` | que el botón de enviar **no se quede cargando** cuando algo corta el envío. La guía del bloque K aborta con `preventDefault()` y el estado de carga del bloque H marcaba el botón igual: `.esta-cargando` lleva `pointer-events:none`, así que un intento fallido lo dejaba muerto para siempre y el formulario no se podía reenviar ni después de corregir. Cubre el wizard con y sin sesión, el editor de mi-cuenta, la inscripción, la encuesta y el panel al cancelar una acción masiva — y que el camino bueno SÍ siga marcando ocupado. No mira sólo la clase: **cuenta eventos `submit`**, que es lo que dice si se puede volver a pulsar (**necesita Chrome**) |
 | `login-puertas.mjs` | los dos accesos: que quien se equivoca de puerta vea el botón que lleva a la buena con su correo puesto, que la pista NO salga sin la contraseña correcta, que equivocarse no bloquee, y qué pasa al cambiarle el rol a alguien con la sesión abierta (**necesita Chrome**) |
 | `moderacion-ajustes.mjs` | el circuito «pedir ajustes → corregir → reenviar»: que guardar no mueva el estado y que el botón lo devuelva directo a revisión, sin paso intermedio (**necesita Chrome**) |
 | `calendario-y-aprobacion.mjs` | el `.ics` y el enlace de Google de los correos —incluidas las líneas de 75 octetos y las tildes al plegarlas—, y la aprobación automática con sus dos interruptores, el «ajustes» que la pausa y la marca que deja para poder repasarla (**necesita Chrome**) |
@@ -159,6 +160,14 @@ sus fotos en el disco privado. Para dejarlo limpio:
 ```bash
 php artisan tinker --execute="$limpiar = true; require base_path('pruebas/datos-evaluacion.php');"
 ```
+
+**Y hay que limpiarlo de verdad, no dejarlo puesto.** Sus cuatro actividades
+son las más recientes de la organización sembrada, así que encabezan
+`/mi-cuenta/actividades` — y no tienen comuna ni temas. `wizard-errores.mjs`
+edita **la primera** de ese listado y esperaba tres campos vacíos: con el
+escenario puesto encuentra cinco y da 3 fallos que parecen del wizard y no lo
+son. Pasó el 2026-09-10, con el escenario ahí desde el día 7. Limpiándolo,
+100 de 100.
 
 `buzon.jsonl` se puede borrar sin más.
 
