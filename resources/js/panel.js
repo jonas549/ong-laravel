@@ -433,6 +433,25 @@ export const iniciarEstadosDeCarga = () => {
 
         if (!(formulario instanceof HTMLFormElement) || formulario.dataset.sinCarga) return;
 
+        /*
+         * Si alguien ya cortó el envío, no hay nada que esperar: marcar el
+         * botón lo dejaría ocupado PARA SIEMPRE, porque `.esta-cargando` lleva
+         * `pointer-events:none` y nadie vuelve a soltarlo. El formulario no se
+         * podía reenviar ni después de corregir el campo que faltaba.
+         *
+         * Pasa en todo lo que aborta desde el propio formulario, y hoy son dos
+         * cosas: la guía de errores del bloque K —el wizard y el editor de
+         * mi-cuenta, que a propósito NO llevan `required` nativo, así que el
+         * `checkValidity()` de abajo los da por buenos— y el diálogo de
+         * confirmación de las acciones masivas cuando se cancela.
+         *
+         * Este manejador vive en el documento, así que cuando le llega el
+         * evento ya subió por el formulario y `defaultPrevented` dice la
+         * verdad. Los formularios públicos con `required` nativo no pasaban
+         * por aquí: ahí Chrome corta antes y el `submit` ni se dispara.
+         */
+        if (e.defaultPrevented) return;
+
         // Un formulario que no valida no llega a irse; marcarlo lo dejaría
         // ocupado para siempre.
         if (!formulario.checkValidity?.()) return;
