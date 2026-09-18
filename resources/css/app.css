@@ -271,6 +271,23 @@ a.textlink:hover { color: var(--naranjo-600); }
     color: var(--naranjo-600);
 }
 
+/* El aviso de «tu archivo sigue guardado» tras un rebote del formulario. */
+.archivo-retenido {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: #eaf6f5;
+    border: 1.5px solid #cbe7e5;
+    color: #0d6b64;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.archivo-retenido svg { flex: none; margin-top: 2px; }
+
 .fld:focus {
     outline: none;
     border-color: var(--naranjo);

@@ -41,7 +41,6 @@ class ParticipantController extends Controller
             'estado' => $estado,
             'total' => $total,
             'verTodos' => $verTodos,
-            'estados' => Registration::ESTADOS,
         ]);
     }
 
@@ -63,7 +62,7 @@ class ParticipantController extends Controller
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValuesWithStyle(
-                ['Nombre', 'Correo', 'Fecha inscripción', 'Mayor de edad', 'Estado'],
+                ['Nombre', 'Correo', 'Fecha inscripción', 'Mayor de edad', 'Baja'],
                 (new Style)->withFontBold(true),
             ));
 
@@ -73,7 +72,8 @@ class ParticipantController extends Controller
                     $i->correo,
                     $i->created_at->locale('es')->isoFormat('D MMM YYYY'),
                     $i->es_mayor_edad ? 'Sí' : 'No',
-                    $i->estado_label,
+                    // La misma regla que la pantalla: sólo se dice quién se dio de baja.
+                    $i->estado_visible ?? '',
                 ]));
             }
 
@@ -105,10 +105,14 @@ class ParticipantController extends Controller
                         ->orWhere('correo', 'like', "%{$busqueda}%");
                 });
             })
-            ->when(
-                in_array($estado, Registration::ESTADOS, true),
-                fn ($q) => $q->where('estado', $estado),
-            )
+            /*
+             * Sólo dos filtros, y no los tres estados de la columna: desde el
+             * 18/09 al organizador no se le enseña «Pendiente» —no lo cambia
+             * nunca nadie—, así que filtrar por él devolvería la lista entera
+             * y por «confirmado» una lista vacía. Ver `estado_visible`.
+             */
+            ->when($estado === 'cancelado', fn ($q) => $q->where('estado', 'cancelado'))
+            ->when($estado === 'activas', fn ($q) => $q->where('estado', '!=', 'cancelado'))
             ->latest('created_at');
     }
 }

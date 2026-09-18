@@ -57,7 +57,18 @@ class ResumenPanel
              * vaya a presentarse, y este número se lee como aforo.
              */
             'inscripciones' => Registration::activas()->count(),
-            'inscripcionesConfirmadas' => Registration::confirmadas()->count(),
+            /*
+             * Aquí había un `inscripcionesConfirmadas` que en producción valía
+             * SIEMPRE CERO: nada en la aplicación pasa una inscripción a
+             * `confirmado` —sólo lo hace el seeder de demostración— y el 18/09
+             * se decidió no construir la confirmación por correo. El panel
+             * llevaba desde el principio enseñando un cero que parecía un fallo
+             * de datos.
+             *
+             * No se sustituye por «activas» porque `inscripciones`, ahí arriba,
+             * YA es esa cuenta: sería el mismo número dos veces en la misma
+             * línea. Lo que se quita es la cifra que mentía.
+             */
             'inscripcionesCanceladas' => Registration::where('estado', 'cancelado')->count(),
 
             // Correos distintos: es la cifra de «cuánta gente», que no es la misma.

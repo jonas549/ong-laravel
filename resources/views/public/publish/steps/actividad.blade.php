@@ -350,6 +350,7 @@
                                         if ($event.target.files[0]) $refs.vista.src = URL.createObjectURL($event.target.files[0])">
                 </label>
                 <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 2 MB · 1200×600 px recomendado.</div>
+                <x-archivo-retenido campo="imagen" />
                 @error('imagen') <span class="field-error">{{ $message }}</span> @enderror
             </div>
         </div>

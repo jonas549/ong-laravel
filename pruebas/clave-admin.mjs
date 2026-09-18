@@ -103,5 +103,21 @@ const idAdmin = sql(`SELECT id FROM users WHERE email='${ADMIN}';`).split('\n')[
 r = await admin.post(`/admin/usuarios/${idAdmin}/contrasena`, { password: 'otra-cosa-1234', password_confirmation: 'otra-cosa-1234' }, `/admin/usuarios/${idAdmin}/editar`);
 console.log(`\n5) su propia contraseña -> redirige a ${r.destino.replace(BASE, '')} ${veredicto(r.destino.includes('/admin/perfil'))}`);
 
-// dejar la cuenta como estaba
+// ── Dejar la cuenta como estaba ──
+//
+// Esta suite CAMBIA la contraseña del organizador, que es justo lo que viene a
+// probar, y hasta el 18/09 la dejaba cambiada. Cualquier suite posterior que
+// entrara como organizador —`boton-envio`, `wizard-errores`, `permisos`—
+// fallaba en falso, y el síntoma no se parecía en nada a la causa: el listado
+// de actividades salía vacío, como si el organizador no tuviera ninguna.
+//
+// Se restaura por el mismo camino del panel y no con un UPDATE a la base: así
+// queda con el hash que use la aplicación, sea cual sea.
+await admin.post(`/admin/usuarios/${idOrg}/contrasena`,
+  { password: CLAVE_ORG, password_confirmation: CLAVE_ORG }, `/admin/usuarios/${idOrg}/editar`);
+
+const vuelta = await sesion().post('/mi-cuenta/login', { email: ORG, password: CLAVE_ORG }, '/mi-cuenta/login');
+const restaurada = vuelta.destino.includes('/mi-cuenta/actividades');
+console.log(`\n6) la contraseña del organizador queda restaurada ${veredicto(restaurada)}`);
+
 sql(`DELETE FROM access_logs WHERE email IN ('${ORG}','${ADMIN}');`);

@@ -48,7 +48,7 @@
     <a class="kpi" href="{{ route('admin.registrations.index', ['estado' => 'activas']) }}">
         <span class="v" style="color:var(--turquesa);">{{ $inscripciones }}</span>
         <span class="l">inscripciones</span>
-        <span class="l" style="opacity:.75;">de {{ $personas }} {{ \App\Support\Texto::plural('persona', $personas) }} · {{ $inscripcionesConfirmadas }} confirmadas · sin contar {{ $inscripcionesCanceladas }} canceladas</span>
+        <span class="l" style="opacity:.75;">de {{ $personas }} {{ \App\Support\Texto::plural('persona', $personas) }} · sin contar {{ $inscripcionesCanceladas }} {{ \App\Support\Texto::plural('cancelada', $inscripcionesCanceladas) }}</span>
     </a>
 
     <a class="kpi" href="{{ route('admin.organizations.index', ['filtro' => 'activas']) }}">

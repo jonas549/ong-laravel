@@ -8,7 +8,10 @@ use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
 use App\Support\FechaEscrita;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Support\ArchivosRetenidos;
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class PublishActivityRequest extends FormRequest
 {
@@ -31,7 +34,65 @@ class PublishActivityRequest extends FormRequest
             'fecha_inicio' => FechaEscrita::fecha($this->input('fecha_inicio')),
             'hora_inicio' => FechaEscrita::hora($this->input('hora_inicio')),
             'hora_termino' => FechaEscrita::hora($this->input('hora_termino')),
+
+            /*
+             * El nombre de la organizacion se normaliza ANTES de comprobar si
+             * esta repetido. Sin esto, «Fundacion X», «Fundacion  X» y
+             * «Fundacion X » son tres cadenas distintas para la comprobacion y
+             * la misma entidad para cualquier persona, que es justo como se
+             * cuelan los duplicados. Las mayusculas ya las iguala el cotejo de
+             * MySQL; los espacios de sobra, no.
+             */
+            'org_nombre' => is_string($this->input('org_nombre'))
+                ? preg_replace('/\s+/u', ' ', trim($this->input('org_nombre')))
+                : $this->input('org_nombre'),
         ]);
+    }
+
+    /**
+     * «Ese nombre de organizacion ya esta tomado».
+     *
+     * Punto 19 de la tanda del 11/09: en produccion hay dos organizaciones
+     * llamadas «deltadigital.cl» con correos distintos, creadas por el wizard
+     * sin que nada lo impidiera.
+     *
+     * Dos decisiones que hay que conocer:
+     *
+     * 1. **Va en el formulario y NO como indice unico en la base.** Lo decidio
+     *    Jonas el 18/09: mientras existan los duplicados de hoy, una migracion
+     *    que anada el indice se caeria al aplicarse. Queda como deuda, anotada
+     *    en BACKLOG-BACKEND.md.
+     * 2. **Se ignora la organizacion propia.** Quien ya tiene cuenta reusa su
+     *    organizacion al publicar una segunda actividad, y el formulario le
+     *    devuelve su propio nombre: sin el `ignore` no podria volver a
+     *    publicar nunca.
+     *
+     * Las borradas en blando no cuentan: su nombre vuelve a estar libre.
+     */
+    private function organizacionSinRepetir(): Unique
+    {
+        $regla = Rule::unique('organizations', 'nombre')->whereNull('deleted_at');
+
+        if ($propia = $this->user()?->organization) {
+            $regla->ignore($propia->id);
+        }
+
+        return $regla;
+    }
+
+    /**
+     * Antes de rechazar, conserva los archivos que SI venian bien.
+     *
+     * Un `<input type="file">` no se puede rellenar desde el servidor, asi que
+     * sin esto cada rebote del formulario tira lo que la persona ya habia
+     * subido — y como el logo es opcional, la organizacion se creaba sin el sin
+     * que nadie se enterara. El porque completo, en `ArchivosRetenidos`.
+     */
+    protected function failedValidation(ValidatorContract $validator): void
+    {
+        ArchivosRetenidos::guardar($this, $validator, ['org_logo', 'imagen']);
+
+        parent::failedValidation($validator);
     }
 
     /** @return array<string, mixed> */
@@ -40,7 +101,7 @@ class PublishActivityRequest extends FormRequest
         return [
             // Paso 3 — organización y acceso. El prototipo no pide descripción
             // de la organización, así que acá tampoco es obligatoria.
-            'org_nombre' => ['required', 'string', 'max:255'],
+            'org_nombre' => ['required', 'string', 'max:255', $this->organizacionSinRepetir()],
             'org_tipo' => ['required', Rule::in(Organization::TIPOS)],
             'org_tipo_otro' => ['nullable', 'required_if:org_tipo,Otra', 'string', 'max:255'],
             'org_descripcion' => ['nullable', 'string', 'max:2000'],
@@ -128,6 +189,9 @@ class PublishActivityRequest extends FormRequest
             'direccion.required' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
             'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
             'email.unique' => 'Ya existe una cuenta con ese correo. Inicia sesión para publicar otra actividad.',
+            'org_nombre.unique' => 'Ya hay una organización registrada con ese nombre. '
+                .'Si es la tuya, inicia sesión con la cuenta que la creó y podrás sumar la actividad desde ahí. '
+                .'Si es otra organización distinta, escribe un nombre que la diferencie.',
             'password.confirmed' => 'Las contraseñas no coinciden.',
             'org_tipo_otro.required_if' => 'Especifica qué tipo de organización es.',
             'org_unidad_educativa.required_if' => 'Indica qué unidad o comunidad educativa organiza.',

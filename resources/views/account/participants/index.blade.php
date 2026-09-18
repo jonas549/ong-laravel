@@ -70,11 +70,12 @@
             <input class="fld" style="flex:1;min-width:240px;" type="search" name="q"
                    value="{{ $busqueda }}" placeholder="Buscar por nombre o correo">
 
+            {{-- Filtrar por «pendiente» devolvería todo y por «confirmado» nada:
+                 las dos únicas respuestas útiles son con baja y sin baja. --}}
             <select class="fld" style="width:auto;min-width:180px;" name="estado" x-on:change="$el.form.submit()">
-                <option value="">Todos los estados</option>
-                @foreach ($estados as $e)
-                    <option value="{{ $e }}" @selected($estado === $e)>{{ ucfirst($e) }}</option>
-                @endforeach
+                <option value="">Todas las inscripciones</option>
+                <option value="activas" @selected($estado === 'activas')>Sin baja</option>
+                <option value="cancelado" @selected($estado === 'cancelado')>Dadas de baja</option>
             </select>
 
             @if ($verTodos)
@@ -98,13 +99,19 @@
                     </thead>
                     <tbody>
                         @foreach ($inscritos as $p)
-                            @php $c = $p->estado_color; @endphp
                             <tr>
                                 <td style="font-weight:600;color:var(--ink);">{{ $p->nombre }}</td>
                                 <td>{{ $p->correo }}</td>
                                 <td>{{ $p->created_at->locale('es')->isoFormat('D MMM YYYY') }}</td>
                                 <td>{{ $p->es_mayor_edad ? 'Sí' : 'No' }}</td>
-                                <td><span style="font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:999px;background:{{ $c['bg'] }};color:{{ $c['ink'] }};">{{ $p->estado_label }}</span></td>
+                                {{-- Sólo se rotula a quien se dio de baja: ver `estado_visible`. --}}
+                                <td>
+                                    @if ($p->estado_visible)
+                                        <span style="font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:999px;background:#fdeaf0;color:#a82249;">{{ $p->estado_visible }}</span>
+                                    @else
+                                        <span class="helper" aria-hidden="true">—</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

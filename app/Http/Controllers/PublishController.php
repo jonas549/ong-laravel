@@ -16,6 +16,9 @@ use App\Services\ControlDeAcceso;
 use App\Services\CorreoTransaccional;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\UniqueConstraintViolationException;
+use App\Support\ArchivosRetenidos;
+use Illuminate\Http\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -78,8 +81,16 @@ class PublishController extends Controller
                     'enlace_red_social' => $datos['enlace_red_social'] ?? null,
                 ];
 
+                /*
+                 * El logo puede venir de dos sitios: del formulario, o
+                 * retenido de un rebote anterior. Lo segundo es el punto 4 de
+                 * la tanda del 11/09 — ver `ArchivosRetenidos` para el porque.
+                 */
                 if ($logo = $request->file('org_logo')) {
                     $campos['logo_path'] = 'storage/'.$logo->store('organizaciones', 'public');
+                } elseif ($retenido = ArchivosRetenidos::rutaAbsoluta('org_logo')) {
+                    $campos['logo_path'] = 'storage/'.Storage::disk('public')
+                        ->putFile('organizaciones', new File($retenido));
                 }
 
                 if ($conSesion) {
@@ -110,6 +121,16 @@ class PublishController extends Controller
 
                 $comuna = Commune::find($datos['commune_id'] ?? null);
 
+                // Misma historia que el logo: formulario, o lo retenido.
+                $portadaGuardada = null;
+
+                if ($portada = $request->file('imagen')) {
+                    $portadaGuardada = 'storage/'.$portada->store('actividades', 'public');
+                } elseif ($retenida = ArchivosRetenidos::rutaAbsoluta('imagen')) {
+                    $portadaGuardada = 'storage/'.Storage::disk('public')
+                        ->putFile('actividades', new File($retenida));
+                }
+
                 $actividad = Activity::create([
                     'organization_id' => $organizacion->id,
                     'titulo' => $datos['titulo'],
@@ -133,9 +154,7 @@ class PublishController extends Controller
                         ? ($datos['accesibilidad_detalle'] ?? null)
                         : null,
                     'publico_otro' => $datos['publico_otro'] ?? null,
-                    'imagen_portada' => ($portada = $request->file('imagen'))
-                        ? 'storage/'.$portada->store('actividades', 'public')
-                        : null,
+                    'imagen_portada' => $portadaGuardada,
                     'correo_contacto' => $correoPublico,
                     // Los dos enlaces van arriba, en `$campos`: son de la
                     // organización. Ver 2025_01_12_000001.
@@ -203,6 +222,10 @@ class PublishController extends Controller
             // verificación. No bloquea nada: es para confirmar la dirección.
             event(new Registered($nuevoUsuario));
         }
+
+        // Ya están guardados donde tenían que estar: lo retenido sobra, y
+        // dejarlo colgando de la sesión ocuparía disco para siempre.
+        ArchivosRetenidos::limpiar();
 
         return redirect()
             ->route('publish.done', $actividad)

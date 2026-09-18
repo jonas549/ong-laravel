@@ -75,6 +75,7 @@
                                             if ($event.target.files[0]) $refs.vista.src = URL.createObjectURL($event.target.files[0])">
                     </label>
                     <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 500 KB · 400×400 px recomendado. Si no subes logo, se mostrará un ícono genérico.</div>
+                    <x-archivo-retenido campo="org_logo" />
                     @error('org_logo') <span class="field-error">{{ $message }}</span> @enderror
                 </div>
             </div>
