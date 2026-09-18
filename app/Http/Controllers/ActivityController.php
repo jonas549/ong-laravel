@@ -71,6 +71,21 @@ class ActivityController extends Controller
         // sin publicar no debería ni asomar para quien no es de la casa.
         abort_unless(Gate::allows('view', $activity), 404);
 
+        /*
+         * Una sola direccion buena por ficha.
+         *
+         * Manda la ID, asi que `/activity/5/lo-que-sea` encuentra la actividad
+         * igual; pero se responde con una redireccion permanente a la direccion
+         * con el slug de ahora, para que no haya diez direcciones distintas
+         * sirviendo el mismo contenido. Eso es lo que hace que un enlace ya
+         * enviado siga valiendo despues de que la ONG cambie el titulo.
+         */
+        $canonica = route('activities.show', $activity);
+
+        if ($request->fullUrl() !== $canonica && $request->url() !== $canonica) {
+            return redirect($canonica, 301);
+        }
+
         $activity->load(['organization', 'region', 'commune', 'terms', 'collaborators']);
 
         $relacionadas = Activity::published()
@@ -81,6 +96,24 @@ class ActivityController extends Controller
             ->get();
 
         return view('public.activities.show', compact('activity', 'relacionadas'));
+    }
+
+    /**
+     * La direccion de antes, `/actividades/{slug}`.
+     *
+     * Sigue viva y redirige permanente a la nueva. No es cortesia: esa
+     * direccion esta dentro de correos ya enviados —el de inscripcion, el de
+     * recordatorio, el de actividad publicada— y en lo que la gente haya
+     * compartido por WhatsApp. Romperla convertiria todo eso en un 404.
+     *
+     * Un 301 y no un 302 para que los buscadores trasladen la pagina en vez de
+     * quedarse con las dos.
+     */
+    public function showLegacy(Activity $activity)
+    {
+        abort_unless(Gate::allows('view', $activity), 404);
+
+        return redirect(route('activities.show', $activity), 301);
     }
 
     /**

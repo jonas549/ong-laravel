@@ -110,14 +110,25 @@ for (const [etq, ruta] of [
 /* ------------------------------------- 3) fichas sin publicar, en público */
 
 console.log('\n=== 3) La ficha de A no está publicada: nadie de fuera debe verla ===');
+// Desde el 18/09 la ficha vive en `/activity/{id}/{slug}` y la dirección vieja
+// redirige con un 301. Quien puede verla recibe ese 301; quien no, sigue
+// recibiendo un 404 — la comprobación de permiso corre ANTES de redirigir, así
+// que la dirección vieja tampoco delata que la actividad existe.
 for (const [quien, s, esperado] of [
-  ['sin sesión      ', NADIE, 404],
-  ['el organizador B', B, 404],
-  ['su dueño, A     ', A, 200],
-  ['un administrador', ADMIN, 200],
+  ['sin sesión      ', NADIE, [404]],
+  ['el organizador B', B, [404]],
+  ['su dueño, A     ', A, [200, 301]],
+  ['un administrador', ADMIN, [200, 301]],
 ]) {
   const r = await s.pedir(`/actividades/${D.a.slug}`);
-  console.log(`  /actividades/${D.a.slug}  ${quien} → ${r.status}  ${veredicto(r.status === esperado)}`);
+  console.log(`  /actividades/${D.a.slug}  ${quien} → ${r.status}  ${veredicto(esperado.includes(r.status))}`);
+
+  // Y si redirige, que la dirección nueva le sirva la ficha de verdad.
+  if (r.status === 301) {
+    const destino = new URL(r.headers.get('location'), BASE).pathname;
+    const f = await s.pedir(destino);
+    console.log(`  ${destino}  ${quien} → ${f.status}  ${veredicto(f.status === 200)}`);
+  }
 }
 
 console.log('\n=== 4) «Actividad enviada» era pública y enseñaba la ficha entera ===');

@@ -23,7 +23,26 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/actividades', [ActivityController::class, 'index'])->name('activities.index');
-Route::get('/actividades/{activity:slug}', [ActivityController::class, 'show'])->name('activities.show');
+/*
+ * La ficha de actividad: `/activity/{id}/{slug}`.
+ *
+ * La ID manda y el slug es texto. El `where` es lo que permite que la barra
+ * viaje dentro de un solo parametro; sin el, Laravel cortaria en el primer
+ * segmento y no encontraria la ruta.
+ */
+Route::get('/activity/{activity:id_slug}', [ActivityController::class, 'show'])
+    ->where('activity', '[0-9]+(/[^/]+)?')
+    ->name('activities.show');
+
+/*
+ * La direccion de antes. Redirige permanente a la nueva: esta metida en
+ * correos ya enviados y en enlaces compartidos, y no puede dar 404.
+ *
+ * OJO: `evaluar.show` NO se toca y sigue yendo por slug, porque es la que
+ * llevan codificada los QR ya impresos.
+ */
+Route::get('/actividades/{activity:slug}', [ActivityController::class, 'showLegacy'])
+    ->name('activities.show.legacy');
 // El «añadir a mi calendario» de los correos. Va por ruta y no como
 // adjunto: así el correo no engorda y no hace falta el trabajo de
 // adjuntos, que está aplazado.

@@ -269,6 +269,51 @@ class Activity extends Model
         return $this->registrations()->where('estado', '!=', 'cancelado')->count();
     }
 
+    /**
+     * La clave de la URL publica: «5/jornada-de-reforestacion».
+     *
+     * Punto 1 de la tanda del 11/09. Hasta ahora la ficha se dirigia solo por
+     * slug, y dos actividades con el mismo titulo —lo normal cuando la misma
+     * jornada se repite en otra ciudad o el ano siguiente— se peleaban por la
+     * direccion: la segunda acababa en «impermeabiliza-3», que no dice nada a
+     * nadie. Con la ID delante, cada ficha tiene una direccion propia y el
+     * slug pasa a ser lo que siempre debio ser, texto para que se lea.
+     *
+     * ── Por que un atributo y no `getRouteKey()` ──
+     *
+     * `getRouteKey()` es global: lo usan TODAS las rutas que reciben una
+     * actividad, incluidas las del panel (`/admin/actividades/{activity}`) y
+     * las de mi-cuenta, que van por id. Cambiarlo ahi las habria roto todas.
+     * Con un atributo, la ruta publica pide `{activity:id_slug}` y las demas
+     * siguen con su id.
+     *
+     * La barra sobrevive a la generacion de la URL porque Laravel la deja sin
+     * escapar a proposito (`RouteUrlGenerator`, mapa `dontEncode`).
+     */
+    public function getIdSlugAttribute(): string
+    {
+        return $this->id.'/'.$this->slug;
+    }
+
+    /**
+     * Manda la ID; el slug es decoracion.
+     *
+     * Que el slug NO decida es justamente lo que hace que un enlace impreso o
+     * ya enviado por correo siga funcionando cuando la ONG le cambia el titulo
+     * a la actividad: cambia el texto, la ID no. Si el slug que llega no es el
+     * de ahora, el controlador redirige al bueno en vez de dar un 404.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === 'id_slug') {
+            $id = (int) strtok((string) $value, '/');
+
+            return $id > 0 ? $this->newQuery()->whereKey($id)->first() : null;
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
     public function puedeRecibirInscripciones(): bool
     {
         return $this->estado === 'publicada'

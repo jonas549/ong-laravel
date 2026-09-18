@@ -166,7 +166,13 @@ try {
     t('Copiar el enlace de verdad');
     await p.$$eval('.compartir-btn', (n) => n.find((b) => b.tagName === 'BUTTON').click());
     await esperar(400);
-    di('el portapapeles trae la url canónica', (await p.evaluate(() => navigator.clipboard.readText())) === `${B}/actividades/${SLUG}`);
+    // Se compara con la url DE LA PÁGINA y no con una escrita a mano: desde el
+    // 18/09 la ficha vive en `/activity/{id}/{slug}` y la vieja redirige, así
+    // que una expectativa literal vuelve a caducar al siguiente cambio.
+    const canonica = p.url();
+    const copiado = await p.evaluate(() => navigator.clipboard.readText());
+    di('el portapapeles trae la url canónica', copiado === canonica, `${copiado} vs ${canonica}`);
+    di('y esa url es la nueva, con la ID delante', /\/activity\/\d+\//.test(copiado), copiado);
     const tras = await p.$eval('.compartir-botones button.compartir-btn', (b) => ({ txt: b.textContent.trim(), cls: b.className }));
     di('el botón avisa de que copió', tras.txt === 'Enlace copiado' && tras.cls.includes('--hecho'), tras.txt);
     await esperar(2600);

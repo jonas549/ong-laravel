@@ -205,7 +205,8 @@ await p.setViewport({ width: 1440, height: 1200 });
 await ir(cal(`&mes=${MES}`));
 const destino = await p.$eval('.cal-act', (a) => a.getAttribute('href'));
 await ir(`${B}${new URL(destino, B).pathname}`);
-di('la casilla lleva a su ficha', (await p.$('h1')) !== null && p.url().includes('/actividades/'), p.url());
+// Desde el 18/09 la ficha vive en `/activity/{id}/{slug}`; la vieja redirige.
+di('la casilla lleva a su ficha', (await p.$('h1')) !== null && /\/activity\/\d+\//.test(p.url()), p.url());
 
 console.log(`\n${ok} OK · ${mal} mal · consola: ${errores.length ? errores.join(' | ') : 'limpia'}`);
 console.log(`Capturas en ${S}`);
