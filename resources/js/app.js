@@ -4,6 +4,8 @@ import { editorActividad } from './editor-actividad';
 import { compartir } from './compartir';
 import { encuestaEvaluacion } from './evaluacion';
 import { campoFecha, campoHora, formularioGuiado } from './formularios';
+// Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
+import './campos';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
 import { selectorMedio, subidorMedios } from './medios';
 import {

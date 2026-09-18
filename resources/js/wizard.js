@@ -29,6 +29,20 @@ export const wizard = (inicial) => ({
     regionId: inicial.regionId ?? '',
     communeId: inicial.communeId ?? '',
     mismoCorreo: inicial.mismoCorreo,
+
+    /*
+     * Punto 28 de la tanda del 11/09. La casilla «usar el mismo correo»
+     * existía y no rellenaba nada: marcarla no tenía ningún efecto visible y
+     * el campo de contacto seguía vacío, así que o se escribía a mano o se
+     * publicaba sin correo de contacto.
+     *
+     * Son dos estados y no uno porque hay que poder DESmarcar: si el de
+     * contacto sólo reflejara al de la cuenta, al quitar la marca el usuario
+     * se quedaría con el correo de la cuenta escrito y sin saber de dónde
+     * salió. Guardando el suyo aparte, desmarcar le devuelve lo que tuviera.
+     */
+    correoCuenta: inicial.correoCuenta ?? '',
+    correoContacto: inicial.correoContacto ?? '',
     descLen: inicial.descLen,
 
     comunas: inicial.comunas,
@@ -46,6 +60,23 @@ export const wizard = (inicial) => ({
         // cinco pasos, no sólo en el que se esté viendo, así que su ámbito es
         // la raíz entera y no el <form>.
         this.iniciarGuia(this.$el);
+
+        // Marcar la casilla copia el correo de la cuenta; desmarcarla devuelve
+        // el que hubiera escrito. Y mientras está marcada, escribir en el de la
+        // cuenta arrastra al de contacto, que es lo que se espera de un espejo.
+        this.$watch('mismoCorreo', (activo) => {
+            if (activo) this.correoContacto = this.correoCuenta;
+        });
+
+        this.$watch('correoCuenta', (valor) => {
+            if (this.mismoCorreo) this.correoContacto = valor;
+        });
+
+        // Al abrir ya marcada —que es el valor por defecto— el espejo tiene que
+        // estar puesto desde el principio, sin esperar a que nadie la toque.
+        if (this.mismoCorreo && this.correoCuenta && ! this.correoContacto) {
+            this.correoContacto = this.correoCuenta;
+        }
     },
 
     /* ──────────────────────────────────────── navegación de pasos ── */

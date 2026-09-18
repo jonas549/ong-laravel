@@ -62,7 +62,7 @@
 
             <div>
                 <label class="helper" for="smtp_password" style="display:block;margin-bottom:6px;font-weight:600;">Contraseña</label>
-                <input class="fld" type="password" id="smtp_password" name="smtp_password"
+                <input class="fld" type="password" data-sin-visor id="smtp_password" name="smtp_password"
                        placeholder="{{ filled($v['smtp_password'] ?? null) ? '•••••••• (guardada)' : 'Sin configurar' }}" autocomplete="new-password">
                 <span class="helper">
                     Se guarda cifrada. Déjala en blanco para conservar la actual.

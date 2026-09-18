@@ -14,7 +14,7 @@
     @endif
 
     <p style="margin:22px 0 0;">
-        <a href="{{ route('account.activities.index') }}"
+        <a href="{{ route('account.activities.edit', $actividad) }}"
            style="display:inline-block;background:#e57200;color:#ffffff;font-weight:600;font-size:14px;padding:12px 22px;border-radius:999px;text-decoration:none;">
             Editar mi actividad
         </a>

@@ -227,6 +227,50 @@ a.textlink:hover { color: var(--naranjo-600); }
     transition: border-color .18s ease, box-shadow .18s ease;
 }
 
+/*
+ * El visor de contraseña (punto 29 de la tanda del 11/09).
+ *
+ * La caja la inyecta `campos.js` alrededor del input. El relleno de la derecha
+ * no desborda porque `.fld` sí lleva `box-sizing: border-box` acotado —aquí no
+ * hay reset global y sin eso el campo se saldría 44 px de su columna—.
+ */
+.campo-con-visor {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+.campo-con-visor .fld {
+    padding-right: 46px;
+}
+
+.campo-visor {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: var(--gris);
+    cursor: pointer;
+    transition: color .18s ease, background-color .18s ease;
+}
+
+.campo-visor:hover { color: var(--naranjo-600); background: var(--naranjo-100); }
+
+.campo-visor:focus-visible {
+    outline: 2px solid var(--naranjo);
+    outline-offset: 1px;
+    color: var(--naranjo-600);
+}
+
 .fld:focus {
     outline: none;
     border-color: var(--naranjo);

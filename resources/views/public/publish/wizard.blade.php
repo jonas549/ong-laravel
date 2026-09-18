@@ -40,6 +40,10 @@
         regionId: {{ Js::from(old('region_id')) }},
         communeId: {{ Js::from(old('commune_id')) }},
         mismoCorreo: {{ Js::from((bool) old('usar_correo_cuenta', true)) }},
+        {{-- Con sesión abierta el paso 3 no se pinta, así que el correo de la
+             cuenta tiene que venir del servidor y no del campo. --}}
+        correoCuenta: {{ Js::from(old('email', auth()->user()?->email ?? '')) }},
+        correoContacto: {{ Js::from(old('correo_contacto', '')) }},
         descLen: {{ mb_strlen(\App\Support\Formulario::viejo('descripcion')) }},
         otrosId: {{ Js::from(optional($publicos->firstWhere('nombre', 'Otros'))->id) }},
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null },

@@ -45,7 +45,12 @@
                 <template x-for="id in sel.caracteristicas" x-bind:key="id">
                     <input type="hidden" name="caracteristicas[]" x-bind:value="id">
                 </template>
-                <div class="helper" style="margin-top:8px;">Selecciona todas las que correspondan.</div>
+                {{--
+                    El número sale de `limiteDe` y no escrito a mano: es el mismo
+                    sitio del que sale el `max:` de los dos Form Requests, así que
+                    el texto no puede quedarse diciendo un tope que ya no es.
+                --}}
+                <div class="helper" style="margin-top:8px;">Selecciona hasta {{ \App\Models\TaxonomyTerm::limiteDe('caracteristica') }} opciones que correspondan.</div>
                 @error('caracteristicas') <span class="field-error">{{ $message }}</span> @enderror
             </div>
 
@@ -362,21 +367,28 @@
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <label class="lbl">Correo de contacto público
+                {{--
+                    `readonly` y no `disabled` mientras la casilla está marcada:
+                    un campo deshabilitado NO se envía, y el servidor se
+                    quedaría sin correo de contacto justo cuando el usuario ha
+                    dicho que quiere el de su cuenta.
+                --}}
                 <input class="fld @error('correo_contacto') is-invalid @enderror" type="email" name="correo_contacto"
-                       value="@viejo('correo_contacto')" placeholder="contacto@organizacion.cl">
+                       x-model="correoContacto" x-bind:readonly="mismoCorreo"
+                       placeholder="contacto@organizacion.cl">
                 <span class="helper">Para que las personas puedan escribirte con preguntas sobre la actividad.</span>
                 @error('correo_contacto') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Enlace a red social
-                <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" name="enlace_red_social"
+                <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_red_social"
                        value="@viejo('enlace_red_social', $organizacion?->enlace_red_social)" placeholder="https://instagram.com/...">
                 <span class="helper">Solo un enlace: Instagram, Facebook, LinkedIn o el que prefieras.</span>
                 @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Enlace a página web (opcional)
-                <input class="fld @error('enlace_web') is-invalid @enderror" type="url" name="enlace_web"
+                <input class="fld @error('enlace_web') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_web"
                        value="@viejo('enlace_web', $organizacion?->enlace_web)" placeholder="https://tusitio.cl">
                 <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                 @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror
@@ -416,7 +428,7 @@
                        placeholder="Escribe un nombre y presiona Enter…"
                        x-on:keydown.enter.prevent="agregarColaborador($event)">
             </div>
-            <div class="helper" style="margin-top:8px;">Cada organización se agrega como etiqueta.</div>
+            <div class="helper" style="margin-top:8px;">Escribe el nombre de cada organización, empresa o institución con la que colaboras. Presiona enter para crear cada etiqueta.</div>
         </div>
     </div>
 

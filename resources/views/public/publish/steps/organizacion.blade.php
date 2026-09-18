@@ -109,7 +109,7 @@
         <label class="lbl" style="margin-bottom:16px;" data-campo="email" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('email') }}">Correo electrónico *
             <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
-                   value="@viejo('email')" placeholder="contacto@organizacion.cl" autocomplete="email">
+                   x-model="correoCuenta" placeholder="contacto@organizacion.cl" autocomplete="email">
             <span class="helper">Con este correo entrarás a tu cuenta.</span>
             @error('email') <span class="field-error">{{ $message }}</span> @enderror
         </label>

@@ -339,7 +339,7 @@
                 --}}
                 @foreach ([
                     ['grupo' => 'temas', 'items' => $temas, 'label' => 'Temas de la actividad (hasta 3) *', 'obliga' => true, 'ayuda' => null, 'margen' => '0 0 9px'],
-                    ['grupo' => 'caracteristicas', 'items' => $caracteristicas, 'label' => '¿Qué características tiene tu actividad? *', 'obliga' => false, 'ayuda' => 'Selecciona hasta 5 características.', 'margen' => '24px 0 9px'],
+                    ['grupo' => 'caracteristicas', 'items' => $caracteristicas, 'label' => '¿Qué características tiene tu actividad? *', 'obliga' => false, 'ayuda' => 'Selecciona hasta '.\App\Models\TaxonomyTerm::limiteDe('caracteristica').' opciones que correspondan.', 'margen' => '24px 0 9px'],
                     ['grupo' => 'publicos', 'items' => $publicos, 'label' => '¿Quién es el público beneficiado por esta actividad? *', 'obliga' => true, 'ayuda' => 'Selecciona todas las que correspondan.', 'margen' => '24px 0 9px'],
                     ['grupo' => 'accesos', 'items' => $accesos, 'label' => '¿La actividad es accesible para personas con discapacidad?', 'obliga' => false, 'ayuda' => 'Marca todas las características que correspondan.', 'margen' => '24px 0 9px'],
                 ] as $bloque)
@@ -431,14 +431,14 @@
                     </label>
 
                     <label class="lbl">Enlace a red social
-                        <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" name="enlace_red_social"
+                        <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_red_social"
                                value="@viejo('enlace_red_social', $activity->organization->enlace_red_social)">
                         <span class="helper">Instagram, Facebook u otro.</span>
                         @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Enlace a página web (opcional)
-                        <input class="fld @error('enlace_web') is-invalid @enderror" type="url" name="enlace_web"
+                        <input class="fld @error('enlace_web') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_web"
                                placeholder="https://tusitio.cl" value="@viejo('enlace_web', $activity->organization->enlace_web)">
                         <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                         @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror
