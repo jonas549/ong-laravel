@@ -128,8 +128,12 @@ di('Son dos escalas', notas.length === 2);
 di('Cada una tiene cinco opciones', notas.every((e) => e.cuantas === 5));
 di('La primera rotula «Muy mala» y «Excelente»',
   notas[0]?.extremos.join(' → ') === 'Muy mala → Excelente', notas[0]?.extremos.join(' → '));
-di('La segunda rotula «Poco motivado» y «Muy motivado»',
-  notas[1]?.extremos.join(' → ') === 'Poco motivado → Muy motivado', notas[1]?.extremos.join(' → '));
+di('La segunda rotula «Nada dispuesto(a)» y «Muy dispuesto(a)»',
+  notas[1]?.extremos.join(' → ') === 'Nada dispuesto(a) → Muy dispuesto(a)', notas[1]?.extremos.join(' → '));
+// Punto 10 de la tanda del 11/09: el enunciado entero, no sólo los extremos.
+di('La segunda pregunta es la nueva, la de disposición a futuras actividades',
+  (notas[1]?.pregunta ?? '').includes('¿Qué tan dispuesto(a) estarías a participar en futuras actividades del Día del Patrimonio Social que promuevan la solidaridad y los vínculos comunitarios?'),
+  notas[1]?.pregunta);
 di('Las cajas son grandes para el dedo (≥44 px)', notas.every((e) => e.alto >= 44), notas.map((e) => e.alto).join(' / '));
 
 // Que se marquen de verdad, y que se vea.
@@ -159,6 +163,21 @@ restantes = await p.$eval('.evaluacion-contador span', (s) => s.textContent.trim
 di('Al llegar al tope dice cero y no un negativo', restantes === '0', restantes);
 
 t('La autorización de la fotografía');
+
+// ── Punto 11: el aviso de uso, y que se VEA antes de elegir archivo ──
+const avisoUso = await p.$eval('.evaluacion-foto-uso', (n) => ({
+  texto: n.textContent.trim(),
+  alto: n.getBoundingClientRect().height,
+  // Arriba del selector: su borde inferior queda por encima del botón.
+  encimaDelSelector: n.getBoundingClientRect().bottom
+    <= document.querySelector('.evaluacion-foto-boton').getBoundingClientRect().bottom,
+})).catch(() => null);
+di('El aviso de uso de la fotografía está y dice lo pedido',
+  avisoUso?.texto === 'La fotografía podrá ser utilizada para la difusión y comunicación del Día del Patrimonio Social.',
+  avisoUso?.texto);
+di('Y se ve, antes de elegir el archivo', (avisoUso?.alto ?? 0) > 8 && avisoUso?.encimaDelSelector,
+  `alto ${avisoUso?.alto} · encima ${avisoUso?.encimaDelSelector}`);
+
 di('Está oculta mientras no hay foto',
   await p.$eval('.evaluacion-autorizacion', (n) => n.getBoundingClientRect().height === 0));
 
@@ -183,6 +202,38 @@ di('Al quitar la foto la autorización se esconde otra vez',
   await p.$eval('.evaluacion-autorizacion', (n) => n.getBoundingClientRect().height === 0));
 di('Y la casilla se desmarca sola',
   await p.$eval('input[name="foto_autorizada"]', (n) => !n.checked));
+
+// ── Punto 12: el texto de la autorización y su enlace ──
+await (await p.$('#ev-foto')).uploadFile(FOTO);
+await esperar(900);
+const autorizacion = await p.$eval('.evaluacion-autorizacion', (n) => ({
+  texto: n.textContent.replace(/\s+/g, ' ').trim(),
+  enlace: n.querySelector('a')?.getAttribute('href') ?? null,
+  rotuloEnlace: n.querySelector('a')?.textContent.trim() ?? null,
+}));
+di('El texto de la autorización es el nuevo',
+  autorizacion.texto.startsWith('Autorizo el uso de mi imagen para estos fines, conforme a la Política de Privacidad'),
+  autorizacion.texto);
+di('«Política de Privacidad» va enlazada a /privacidad',
+  autorizacion.rotuloEnlace === 'Política de Privacidad' && /\/privacidad$/.test(autorizacion.enlace ?? ''),
+  `${autorizacion.rotuloEnlace} → ${autorizacion.enlace}`);
+
+// La trampa de este punto: un `<a>` dentro del `<label>` habría marcado la
+// casilla al pulsar el enlace. Se comprueba pulsándolo de verdad.
+await p.$eval('.evaluacion-autorizacion a', (a) => a.removeAttribute('href'));
+await p.click('.evaluacion-autorizacion a');
+await esperar(150);
+di('Pulsar el enlace NO marca la casilla',
+  await p.$eval('input[name="foto_autorizada"]', (n) => !n.checked));
+di('Pero pulsar el texto sí la marca',
+  await (async () => {
+    await p.click('.evaluacion-autorizacion-texto label');
+    await esperar(150);
+    return p.$eval('input[name="foto_autorizada"]', (n) => n.checked);
+  })());
+
+await p.click('.evaluacion-foto-quitar');
+await esperar(250);
 
 t('La guía de errores — que el aviso SE VEA');
 soltarElFreno();

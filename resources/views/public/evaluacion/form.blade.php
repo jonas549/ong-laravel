@@ -19,7 +19,7 @@
         'correo' => ['Correo electrónico', null],
         'experiencia' => ['Tu experiencia en la actividad', null],
         'significado' => ['Qué significa para ti el Patrimonio Social', null],
-        'motivacion' => ['Tu motivación para volver a participar', null],
+        'motivacion' => ['Tu disposición a participar en el futuro', null],
         'como_se_entero' => ['Cómo te enteraste', null],
         'foto' => ['Fotografía', null],
     ];
@@ -112,7 +112,7 @@
             @foreach (['experiencia', 'motivacion'] as $escala)
                 <fieldset class="evaluacion-campo evaluacion-escala"
                           data-campo="{{ $escala }}" data-obligatorio
-                          data-etiqueta="{{ $escala === 'experiencia' ? 'Tu experiencia en la actividad' : 'Tu motivación para volver a participar' }}">
+                          data-etiqueta="{{ $escala === 'experiencia' ? 'Tu experiencia en la actividad' : 'Tu disposición a participar en el futuro' }}">
                     <legend class="evaluacion-lbl">{{ $escalas[$escala]['pregunta'] }} *</legend>
 
                     <div class="evaluacion-notas">
@@ -183,6 +183,13 @@
             <div class="evaluacion-campo" data-campo="foto" data-etiqueta="Fotografía">
                 <label class="evaluacion-lbl" for="ev-foto">Subir una fotografía</label>
 
+                {{--
+                    Punto 11 de la tanda del 11/09. Va ANTES del selector y no
+                    junto a la casilla: quien sube una foto tiene que saber para
+                    qué se va a usar antes de elegirla, no después.
+                --}}
+                <p class="helper evaluacion-foto-uso">La fotografía podrá ser utilizada para la difusión y comunicación del Día del Patrimonio Social.</p>
+
                 <div class="evaluacion-foto">
                     <div class="evaluacion-foto-previa">
                         {{-- La miniatura, cuando ya hay foto elegida. --}}
@@ -233,10 +240,21 @@
                     tarda en arrancar.
                 --}}
                 <div class="evaluacion-autorizacion" x-show="tieneFoto" x-cloak>
-                    <label class="evaluacion-autorizacion-lbl">
-                        <input type="checkbox" name="foto_autorizada" value="1" @checked(old('foto_autorizada'))>
-                        <span>Autorizo el uso de esta fotografía para fines de difusión del Día del Patrimonio Social</span>
-                    </label>
+                    {{--
+                        El enlace va FUERA del `<label>`, a propósito. Un `<a>`
+                        dentro de una etiqueta hereda su clic: pulsar «Política
+                        de Privacidad» marcaría además la casilla, que es
+                        exactamente lo que no puede pasar en una autorización.
+                        Se separa con `for=`, que da el mismo clic en el texto
+                        sin envolver el enlace.
+                    --}}
+                    <div class="evaluacion-autorizacion-fila">
+                        <input type="checkbox" id="ev-foto-autorizada" name="foto_autorizada" value="1" @checked(old('foto_autorizada'))>
+                        <p class="evaluacion-autorizacion-texto">
+                            <label for="ev-foto-autorizada">Autorizo el uso de mi imagen para estos fines, conforme a la</label>
+                            <a class="textlink" href="{{ url('/privacidad') }}">Política de Privacidad</a>.
+                        </p>
+                    </div>
                 </div>
             </div>
 

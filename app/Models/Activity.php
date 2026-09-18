@@ -275,4 +275,46 @@ class Activity extends Model
             && $this->inscripcion_habilitada
             && ($this->cupos_disponibles === null || $this->cupos_disponibles > 0);
     }
+
+    /**
+     * Por qué esta actividad no admite inscripciones, para poder decirlo bien.
+     *
+     * Hasta el 11/09 los tres motivos daban el mismo aviso —«Esta actividad no
+     * está recibiendo inscripciones»—, y el que más se ve es justo el que peor
+     * se leía: el organizador que marca «sin inscripción previa» está diciendo
+     * «ven sin más», y al asistente le llegaba algo que suena a puerta cerrada.
+     *
+     * El orden importa. `inscripcion_habilitada` manda sobre los cupos: si no
+     * se pide inscripción, no hay cupos que agotar, y un `cupos_disponibles` a
+     * cero de una actividad sin inscripción es un dato muerto, no un motivo.
+     *
+     * Devuelve `null` cuando sí admite inscripciones.
+     */
+    public function motivoSinInscripciones(): ?string
+    {
+        if ($this->puedeRecibirInscripciones()) {
+            return null;
+        }
+
+        if (! $this->inscripcion_habilitada) {
+            return 'sin_inscripcion_previa';
+        }
+
+        if ($this->cupos_disponibles !== null && $this->cupos_disponibles <= 0) {
+            return 'cupos_agotados';
+        }
+
+        return 'no_publicada';
+    }
+
+    /** El aviso que va en la ficha pública, ya redactado. */
+    public function avisoSinInscripciones(): ?string
+    {
+        return match ($this->motivoSinInscripciones()) {
+            'sin_inscripcion_previa' => 'No es necesario inscripción previa. ¡Te esperamos en la actividad!',
+            // Reservado para los cupos, por decisión del cliente del 11/09.
+            'cupos_agotados', 'no_publicada' => 'Esta actividad no está recibiendo inscripciones.',
+            default => null,
+        };
+    }
 }

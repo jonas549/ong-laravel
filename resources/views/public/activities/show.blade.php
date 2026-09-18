@@ -144,7 +144,14 @@
                     <hr style="border:0;border-top:1px solid var(--linea);margin:22px 0;">
                     @include('public.partials.registration-form', ['activity' => $activity])
                 @else
-                    <div class="alert alert-info" style="margin-top:20px;">Esta actividad no está recibiendo inscripciones.</div>
+                    {{--
+                        El aviso lo redacta el modelo, que es quien sabe por qué
+                        no se admiten inscripciones. «Sin inscripción previa» no
+                        es una puerta cerrada y no puede leerse como tal; el
+                        aviso de antes queda para los cupos agotados.
+                    --}}
+                    <div class="alert @if ($activity->motivoSinInscripciones() === 'sin_inscripcion_previa') alert-ok @else alert-info @endif"
+                         style="margin-top:20px;">{{ $activity->avisoSinInscripciones() }}</div>
                 @endif
             </div>
         </aside>

@@ -40,9 +40,9 @@ class ActivityEvaluation extends Model
             'max' => 'Excelente',
         ],
         'motivacion' => [
-            'pregunta' => '¿Qué tan motivado(a) te sientes para volver a participar en actividades como esta?',
-            'min' => 'Poco motivado',
-            'max' => 'Muy motivado',
+            'pregunta' => '¿Qué tan dispuesto(a) estarías a participar en futuras actividades del Día del Patrimonio Social que promuevan la solidaridad y los vínculos comunitarios?',
+            'min' => 'Nada dispuesto(a)',
+            'max' => 'Muy dispuesto(a)',
         ],
     ];
 

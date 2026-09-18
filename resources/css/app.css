@@ -2914,22 +2914,40 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
     border-left: 2px solid var(--linea);
 }
 
-.evaluacion-autorizacion-lbl {
+/*
+ * El enlace a la política va FUERA del `<label>` —pulsarlo no puede marcar la
+ * casilla—, así que quien reparte es la fila y no la etiqueta. El texto y el
+ * enlace van dentro de un `<p>` para que fluyan como una sola frase y el
+ * enlace no caiga a su propio renglón.
+ */
+.evaluacion-autorizacion-fila {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--gris-700);
-    cursor: pointer;
 }
 
-.evaluacion-autorizacion-lbl input {
+.evaluacion-autorizacion-fila > input {
     flex: none;
     width: 18px;
     height: 18px;
     margin-top: 1px;
     accent-color: var(--naranjo);
+}
+
+.evaluacion-autorizacion-texto {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--gris-700);
+}
+
+.evaluacion-autorizacion-texto label {
+    cursor: pointer;
+}
+
+/* El aviso de uso, encima del selector de archivo. */
+.evaluacion-foto-uso {
+    margin: 0 0 10px;
 }
 
 /* ── El campo trampa del anti-spam ───────────────────────── */
