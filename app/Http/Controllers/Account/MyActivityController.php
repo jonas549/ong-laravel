@@ -214,11 +214,32 @@ class MyActivityController extends Controller
     {
         $this->authorize('cancel', $activity);
 
+        /*
+         * Punto 24 de la tanda del 11/09: el organizador cancelaba y no sabía
+         * si a la gente inscrita se le había avisado, así que escribía a la ONG
+         * a preguntarlo. El correo ya salía; lo que faltaba era decirlo.
+         *
+         * Se cuenta ANTES de cancelar y con el MISMO filtro que usa
+         * `avisarInscritos` —las canceladas no reciben aviso—, para que el
+         * número de la pantalla sea el de los correos que de verdad se
+         * encolaron y no una cuenta parecida. Y se distingue el caso de cero:
+         * decir «avisamos a las personas inscritas» cuando no había ninguna es
+         * una confirmación falsa, del mismo tipo que las que ya han costado
+         * caro en este proyecto.
+         */
+        $avisados = $activity->registrations()->where('estado', '!=', 'cancelado')->count();
+
         $moderacion->cambiar($activity, 'cancelada', $request->user(), 'Cancelada por el organizador.');
+
+        $aviso = $avisados === 0
+            ? 'La actividad fue cancelada. No había personas inscritas a las que avisar.'
+            : ($avisados === 1
+                ? 'La actividad fue cancelada. Avisamos por correo a la persona inscrita.'
+                : 'La actividad fue cancelada. Avisamos por correo a las '.$avisados.' personas inscritas.');
 
         return redirect()
             ->route('account.activities.index')
-            ->with('ok', 'La actividad fue cancelada.');
+            ->with('ok', $aviso);
     }
 
     public function submitForReview(

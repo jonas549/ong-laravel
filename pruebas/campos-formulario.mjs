@@ -176,6 +176,38 @@ const medidas = await p.$eval(clave, (n) => {
 di('El botón no ensancha el campo fuera de su caja',
   Math.abs(medidas.campo - medidas.caja) < 1.5, `${medidas.campo} vs ${medidas.caja}`);
 
+/* ═════════════════════ 5 — online no pide dirección física ══════════ */
+
+t('Punto 5 — una actividad ONLINE no tiene dirección que escribir');
+
+const faltan = () => p.evaluate(
+  () => Alpine.$data(document.querySelector('[x-data^="wizard"]')).camposQueFaltan().map((e) => e.campo));
+
+await abrir('/publicar-actividad');
+await paso(4);
+
+// Presencial es el formato por defecto: ahí la dirección SÍ se pide.
+await p.evaluate(() => { Alpine.$data(document.querySelector('[x-data^="wizard"]')).formato = 'Presencial'; });
+await esperar(250);
+di('Presencial sigue pidiendo la dirección', (await faltan()).includes('direccion'),
+  (await faltan()).join(', '));
+
+await p.evaluate(() => { Alpine.$data(document.querySelector('[x-data^="wizard"]')).formato = 'Online'; });
+await esperar(250);
+di('Online ya NO la pide', ! (await faltan()).includes('direccion'), (await faltan()).join(', '));
+
+// Híbrido tiene parte presencial: se sigue pidiendo, y esto lo fija.
+await p.evaluate(() => { Alpine.$data(document.querySelector('[x-data^="wizard"]')).formato = 'Híbrido'; });
+await esperar(250);
+di('Híbrido la vuelve a pedir, que tiene parte presencial',
+  (await faltan()).includes('direccion'), (await faltan()).join(', '));
+
+// Y el otro relevo, el que ya existía, sigue funcionando.
+await p.evaluate(() => { Alpine.$data(document.querySelector('[x-data^="wizard"]')).sinFecha = true; });
+await esperar(250);
+di('«Disponible de forma permanente» la sigue relevando igual',
+  ! (await faltan()).includes('direccion'), (await faltan()).join(', '));
+
 t('Sin errores de JavaScript');
 di('La consola quedó limpia', errores.length === 0, errores.slice(0, 3).join(' · '));
 

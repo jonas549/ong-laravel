@@ -94,6 +94,8 @@
                     <div style="flex:1;min-width:260px;">
                         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
                             <span style="font-family:var(--font-title);font-size:21px;font-weight:800;color:var(--ink);">{{ $a->titulo }}</span>
+                            {{-- Punto 36: la ID, para poder nombrarla sin equívocos al escribir a la ONG. --}}
+                            <span class="helper" style="font-variant-numeric:tabular-nums;" title="Identificador de esta actividad">#{{ $a->id }}</span>
                             @if ($a->estado === 'ajustes')
                                 <span style="font-size:12px;font-weight:700;padding:4px 11px;border-radius:999px;background:#fdeaf0;color:var(--rosa);">Requiere acción → revisa los comentarios</span>
                             @endif

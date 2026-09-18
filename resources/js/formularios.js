@@ -107,6 +107,11 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
      * un control deshabilitado no cuenta.
      */
     loReleva(caja) {
+        return this.loRelevaOtroCampo(caja) || this.loRelevaUnValor(caja);
+    },
+
+    /** «Deja de hacer falta si ESE campo tiene algo» (`sin_fecha_definida`). */
+    loRelevaOtroCampo(caja) {
         const nombre = caja.dataset.obligatorioSalvo;
 
         if (! nombre) return false;
@@ -118,6 +123,32 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
         return otro.type === 'checkbox' || otro.type === 'radio'
             ? otro.checked
             : String(otro.value ?? '').trim() !== '';
+    },
+
+    /**
+     * «Deja de hacer falta si ESE campo vale ESTO», con
+     * `data-obligatorio-salvo-valor="formato:Online"`.
+     *
+     * Hizo falta con el punto 5 de la tanda del 11/09: una actividad online no
+     * tiene dirección física. La regla del servidor lo dice con un
+     * `requiredIf`, y esto es su gemelo — si los dos no dicen lo mismo, el
+     * formulario frena un envío que el servidor habría aceptado.
+     *
+     * Admite varios valores separados por coma: «formato:Online,Híbrido».
+     */
+    loRelevaUnValor(caja) {
+        const regla = caja.dataset.obligatorioSalvoValor;
+
+        if (! regla) return false;
+
+        const [nombre, lista = ''] = regla.split(':');
+        const otro = this.ambito.querySelector('[name="' + CSS.escape(nombre) + '"]');
+
+        if (! otro) return false;
+
+        const valor = String(otro.value ?? '').trim();
+
+        return lista.split(',').map((v) => v.trim()).filter(Boolean).includes(valor);
     },
 
     /**

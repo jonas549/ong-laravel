@@ -72,7 +72,15 @@ class PublishActivityRequest extends FormRequest
             'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
             'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
-            'direccion' => ['nullable', 'required_without:sin_fecha_definida', 'string', 'max:255'],
+            'direccion' => ['nullable', Rule::requiredIf(
+                // Punto 5 de la tanda del 11/09: una actividad ONLINE no tiene
+                // dirección física que escribir. Va como `requiredIf` y no como
+                // dos reglas `required_*` sueltas porque Laravel las evalúa por
+                // separado: cada una que dispare hace obligatorio el campo, así
+                // que sumarlas daría un O y lo que hace falta es un Y —sólo se
+                // pide si NO es permanente y ADEMÁS no es online—.
+                fn () => ! $this->boolean('sin_fecha_definida') && $this->input('formato') !== 'Online'
+            ), 'string', 'max:255'],
 
             'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -117,7 +125,7 @@ class PublishActivityRequest extends FormRequest
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:00.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
             'region_id.required_without' => 'Elige la región donde ocurre la actividad.',
-            'direccion.required_without' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
+            'direccion.required' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
             'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
             'email.unique' => 'Ya existe una cuenta con ese correo. Inicia sesión para publicar otra actividad.',
             'password.confirmed' => 'Las contraseñas no coinciden.',

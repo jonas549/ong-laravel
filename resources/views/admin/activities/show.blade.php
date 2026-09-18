@@ -18,8 +18,22 @@
         <p style="font-size:15px;line-height:1.7;color:var(--gris-700);white-space:pre-line;margin:0 0 22px;">{{ $activity->descripcion }}</p>
 
         <dl style="display:grid;grid-template-columns:150px 1fr;gap:9px 16px;font-size:14px;margin:0;">
+            {{--
+                Punto 36 de la tanda del 11/09. Las dos ID a la vista: son lo
+                único que identifica sin ambigüedad una actividad o una
+                organización cuando dos se llaman parecido, que es justo lo que
+                pasa en producción. Van en `tabular-nums` y seleccionables,
+                porque su razón de ser es poder copiarlas y pegarlas.
+            --}}
+            <dt class="helper" style="font-weight:700;">ID de la actividad</dt>
+            <dd style="margin:0;font-variant-numeric:tabular-nums;font-weight:700;">#{{ $activity->id }}</dd>
+
             <dt class="helper" style="font-weight:700;">Organización</dt>
-            <dd style="margin:0;">{{ $activity->organization?->nombre }}</dd>
+            <dd style="margin:0;">{{ $activity->organization?->nombre }}
+                @if ($activity->organization)
+                    <span class="helper" style="font-variant-numeric:tabular-nums;">· ID #{{ $activity->organization->id }}</span>
+                @endif
+            </dd>
 
             <dt class="helper" style="font-weight:700;">Tipo</dt>
             <dd style="margin:0;">{{ $activity->organization?->tipo_label }}</dd>

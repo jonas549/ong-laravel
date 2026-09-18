@@ -115,10 +115,13 @@ class SettingsSeeder extends Seeder
             ],
             [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica', 'tipo' => 'bool', 'valor' => '1',
-                'label' => 'Publicar sin revisar a partir de la segunda actividad',
-                'descripcion' => 'La primera actividad de cada organización se revisa siempre a mano. '
-                    .'Apagar esto devuelve todas las actividades a revisión, y es lo que hay que hacer si llega spam. '
-                    .'Para una organización concreta hay un interruptor propio en su ficha.',
+                'label' => 'Publicar sin revisar automáticamente',
+                'descripcion' => 'Apagar esto devuelve TODAS las actividades a revisión; es lo que hay que hacer si llega spam. Encendido, se revisan las primeras de cada organización según el número de abajo. Cada organización tiene además su propio interruptor.',
+            ],
+            [
+                'grupo' => 'general', 'clave' => 'aprobacion_automatica_desde', 'tipo' => 'int', 'valor' => '1',
+                'label' => 'Actividades que se revisan antes de publicar sin revisión',
+                'descripcion' => 'Cuántas actividades de cada organización se revisan a mano antes de que las siguientes se publiquen solas. 1 revisa sólo la primera (lo de antes), 2 las dos primeras, 0 ninguna. Cuentan las que llegaron a publicarse, aunque se cancelaran.',
             ],
             [
                 'grupo' => 'general', 'clave' => 'alerta_revision_dias', 'tipo' => 'int', 'valor' => '3',

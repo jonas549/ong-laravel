@@ -295,6 +295,7 @@
                      una actividad permanente puede no tener sitio fijo. --}}
                 <label class="lbl" data-campo="direccion" data-obligatorio
                        data-obligatorio-salvo="sin_fecha_definida"
+                       data-obligatorio-salvo-valor="formato:Online"
                        data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección *
                     <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
                            value="@viejo('direccion', $activity->direccion)">
