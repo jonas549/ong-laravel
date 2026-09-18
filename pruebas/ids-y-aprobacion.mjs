@@ -82,6 +82,28 @@ di('El organizador ve actividades', tarjetas.length > 0, `${tarjetas.length}`);
 di('Cada tarjeta lleva su ID', tarjetas.length > 0 && tarjetas.every((x) => /#\d+/.test(x)),
   (tarjetas[0]?.match(/#\d+/) ?? ['(no está)'])[0]);
 
+/* ═══════════════════════ 25 — el kit de difusión, fijo ══════════════ */
+
+t('Punto 25 — el botón del kit de difusión es fijo en el panel');
+
+const kit = await p.$$eval('a.btn', (as) => as
+  .filter((a) => /kit de difusi/i.test(a.textContent))
+  .map((a) => ({ href: a.getAttribute('href'), destino: a.getAttribute('target'), rel: a.getAttribute('rel') })));
+
+// Se comprueban los dos casos segun como este el ajuste, porque son los dos
+// correctos: con enlace sale el boton, y sin enlace NO sale ninguno —un boton
+// que no lleva a ninguna parte gasta mas confianza que la que ahorra—. Hoy en
+// produccion esta vacio, a la espera del enlace del cliente.
+if (kit.length) {
+  di('Está en el panel del organizador, sin tener que publicar nada', kit.length === 1, `${kit.length} botón(es)`);
+  di('Y lleva al enlace configurado', (kit[0]?.href ?? '').startsWith('http'), kit[0]?.href);
+  di('Abre fuera y con noopener', kit[0]?.destino === '_blank' && /noopener/.test(kit[0]?.rel ?? ''));
+} else {
+  di('Sin enlace configurado no se pinta ningún botón', kit.length === 0, 'kit_difusion_url vacío');
+  di('Y no queda un botón muerto en su sitio',
+    ! (await p.evaluate(() => /kit de difusi/i.test(document.body.innerText))));
+}
+
 t('Sin errores de JavaScript');
 di('La consola quedó limpia', errores.length === 0, errores.slice(0, 3).join(' · '));
 

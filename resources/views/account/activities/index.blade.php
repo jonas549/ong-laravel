@@ -56,7 +56,22 @@
             <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 10px;color:var(--ink);">Mis actividades</h1>
             <p style="font-size:16.5px;line-height:1.6;color:var(--gris);margin:0;max-width:56ch;text-wrap:pretty;">Aquí puedes revisar el estado de tus actividades, editarlas y registrar nuevas iniciativas.</p>
         </div>
-        <a href="{{ route('publish.create') }}" class="btn btn-primary">+ Sumar nueva actividad</a>
+        {{--
+            Punto 25 de la tanda del 11/09. El kit de difusión sólo salía al
+            terminar de publicar, que es el único momento en que nadie lo
+            necesita: se busca después, cuando toca difundir. Ahora es fijo.
+
+            Si el enlace no está puesto NO se pinta el botón, y es deliberado:
+            un botón que no lleva a ninguna parte gasta más confianza que la
+            que ahorra. Se configura en Configuración → General.
+        --}}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            @if ($kitDifusion = \App\Models\Setting::get('kit_difusion_url'))
+                <a href="{{ $kitDifusion }}" target="_blank" rel="noopener"
+                   class="btn btn-outline">Descargar kit de difusión</a>
+            @endif
+            <a href="{{ route('publish.create') }}" class="btn btn-primary">+ Sumar nueva actividad</a>
+        </div>
     </div>
 
     @if ($necesitanAjustes > 0)
