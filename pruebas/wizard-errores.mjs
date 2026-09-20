@@ -270,15 +270,26 @@ di('pegado con dos puntos, se respeta', await pegarHora('13:45') === '13:45');
 di('pegado sin separador, se ordena solo', await pegarHora('1345') === '13:45');
 di('pegado con segundos, se recorta', await pegarHora('13:45:00') === '13:45');
 
-// Y el reloj escribe en el campo de texto, no lo sustituye.
+/*
+ * Y el desplegable escribe en el campo de texto, no lo sustituye.
+ *
+ * Antes esto era un `input[type=time]` nativo debajo del botón; desde P13 es
+ * una lista propia de horas en punto, así que se elige una de la lista. Lo
+ * que se comprueba es lo mismo: que el atajo escribe en el campo de texto y
+ * que el campo sigue siendo el que manda.
+ */
 await p.evaluate(() => {
-    const r = document.querySelector('[data-campo="hora_termino"] .campo-selector-nativo');
-    r.value = '18:15';
-    r.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector('[data-campo="hora_termino"] .campo-selector-boton').click();
+});
+await new Promise((r) => setTimeout(r, 250));
+await p.evaluate(() => {
+    const lista = document.querySelector('[data-campo="hora_termino"] .hora-lista');
+    [...lista.querySelectorAll('.hora-opcion')].find((o) => o.innerText.includes('18:00')).click();
 });
 await new Promise((r) => setTimeout(r, 150));
-di('el reloj escribe en el campo de texto',
-    await p.$eval('input[name="hora_termino"]', (e) => e.value) === '18:15');
+di('el desplegable escribe en el campo de texto',
+    await p.$eval('input[name="hora_termino"]', (e) => e.value) === '18:00',
+    await p.$eval('input[name="hora_termino"]', (e) => e.value));
 
 await p.evaluate(() => {
     document.querySelector('input[name="hora_inicio"]').value = '';
