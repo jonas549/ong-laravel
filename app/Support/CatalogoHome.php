@@ -234,16 +234,46 @@ class CatalogoHome
         return array_keys(static::secciones());
     }
 
+    /*
+     * ── Las copias (P18) ──────────────────────────────────────────
+     *
+     * Una sección duplicada es una fila más en `home_sections` con una clave
+     * derivada de la original: `cifras--2`, `cifras--3`. El catálogo sigue
+     * teniendo trece entradas y ni una más.
+     *
+     * **La clave derivada es lo que hace que esto sea un cambio pequeño.**
+     * Una sección no es sólo unos textos: es un parcial de Blade que los
+     * pinta, y ese parcial se elige por la clave. Con `cifras--2` la copia
+     * resuelve al mismo `sections/cifras.blade.php`, con los mismos campos y
+     * las mismas reglas, sin inventar ninguna plantilla ni convertir el
+     * catálogo en una tabla.
+     *
+     * El separador es `--` y no `-` porque hay claves con guion —`somos-parte`
+     * — y partir por el primero dejaría la copia apuntando a `somos`.
+     */
+
+    /** La clave de catálogo de la que cuelga una sección, sea copia o no. */
+    public static function base(string $clave): string
+    {
+        return explode('--', $clave, 2)[0];
+    }
+
+    /** Si esta clave es una copia de otra sección. */
+    public static function esCopia(string $clave): bool
+    {
+        return str_contains($clave, '--');
+    }
+
     /** @return array<string, mixed>|null */
     public static function seccion(string $clave): ?array
     {
-        return static::secciones()[$clave] ?? null;
+        return static::secciones()[static::base($clave)] ?? null;
     }
 
     /** @return array<string, mixed> */
     public static function campos(string $clave): array
     {
-        return static::secciones()[$clave]['campos'] ?? [];
+        return static::secciones()[static::base($clave)]['campos'] ?? [];
     }
 
     /**
@@ -258,11 +288,38 @@ class CatalogoHome
 
     public static function existe(string $clave): bool
     {
-        return isset(static::secciones()[$clave]);
+        return isset(static::secciones()[static::base($clave)]);
     }
 
+    /**
+     * Si la sección va anclada y no se puede mover ni apagar.
+     *
+     * **Una copia nunca es fija**, aunque lo sea su original. Lo que ancla al
+     * hero y a «¿Cómo participar?» es que la segunda se monta 96 px sobre la
+     * primera: eso vale para ese par concreto y para nadie más.
+     *
+     * Duplicarlas, de todas formas, no se ofrece: dos heros encima del mismo
+     * sitio no es una portada con dos secciones, es una portada rota. Lo
+     * decide `sePuedeDuplicar()`.
+     */
     public static function esFija(string $clave): bool
     {
+        if (static::esCopia($clave)) {
+            return false;
+        }
+
         return (bool) (static::secciones()[$clave]['fija'] ?? false);
+    }
+
+    /**
+     * Si de esta sección se pueden sacar copias.
+     *
+     * Las ancladas no: el hero y «¿Cómo participar?» están cosidos entre sí
+     * por un margen negativo, y una segunda pareja se montaría sobre la
+     * primera. El encargo de P18 pedía justamente respetar eso.
+     */
+    public static function sePuedeDuplicar(string $clave): bool
+    {
+        return static::existe($clave) && ! static::esFija(static::base($clave));
     }
 }

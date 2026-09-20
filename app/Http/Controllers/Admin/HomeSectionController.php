@@ -151,13 +151,117 @@ class HomeSectionController extends Controller
             : "«{$fila->tituloAdmin()}» ya no se ve en el home.");
     }
 
+    /* ------------------------------------------------------------ duplicar */
+
+    /**
+     * Duplica una sección del home (P18).
+     *
+     * La copia es **exacta y a la vez independiente**, que es lo que pidió el
+     * cliente: nace con todo el contenido de la original ya escrito en su
+     * propia fila, y a partir de ahí las dos se editan por separado.
+     *
+     * Eso de «ya escrito» no es un detalle. Una sección sin fila se pinta con
+     * los textos del catálogo, que viven en el código; si la copia naciera
+     * vacía saldría igual que la original por casualidad, y en cuanto alguien
+     * cambiara un texto por defecto cambiarían las dos. Se materializan los
+     * valores en el momento de copiar: lo que se ve es lo que se guarda.
+     *
+     * La copia se coloca **justo detrás** de la original y no al final: quien
+     * duplica está mirando esa sección, y encontrarse la copia al fondo de una
+     * lista de quince es tener que buscarla.
+     *
+     * No se copia el borrador ni el historial. El borrador es trabajo a medias
+     * de la original, y un historial heredado diría que a la copia le pasaron
+     * cosas que nunca le pasaron.
+     */
+    public function duplicar(string $seccion)
+    {
+        abort_unless(CatalogoHome::existe($seccion), 404);
+
+        // Las ancladas no se duplican: el hero y «¿Cómo participar?» están
+        // cosidos por un margen negativo y una segunda pareja se montaría
+        // sobre la primera. El encargo pedía respetar justamente eso.
+        abort_unless(
+            CatalogoHome::sePuedeDuplicar($seccion),
+            403,
+            'Esa sección va anclada al diseño de la portada y no se puede duplicar.',
+        );
+
+        HomeSection::sembrarLasQueFalten();
+
+        $original = HomeSection::query()->where('clave', $seccion)->firstOrFail();
+
+        $copia = DB::transaction(function () use ($original) {
+            // Hueco detrás de la original, corriendo todo lo que venga después.
+            HomeSection::query()
+                ->where('orden', '>', $original->orden)
+                ->increment('orden');
+
+            return HomeSection::create([
+                'clave' => $original->claveParaLaCopia(),
+                'orden' => $original->orden + 1,
+                'activo' => $original->activo,
+                // Lo que se ve, ya materializado: defectos del catálogo con lo
+                // que la ONG haya cambiado encima.
+                'contenido' => array_merge(
+                    CatalogoHome::defectos($original->clave),
+                    $original->contenido ?? [],
+                ),
+            ]);
+        });
+
+        HomeSection::olvidarCache();
+
+        return redirect()
+            ->route('admin.home.editar', $copia->clave)
+            ->with('ok', "Copia creada. Edítala a tu gusto: no comparte nada con «{$original->tituloAdmin()}».");
+    }
+
+    /**
+     * Borra una copia.
+     *
+     * Sólo copias: las trece del catálogo no se borran, se apagan. Sin esto,
+     * duplicar sería una puerta de una sola dirección —el cliente se quedaría
+     * con una sección de más que sólo podría esconder— y eso convierte una
+     * comodidad en una trampa.
+     */
+    public function eliminarCopia(string $seccion)
+    {
+        abort_unless(CatalogoHome::esCopia($seccion), 404);
+
+        $fila = HomeSection::query()->where('clave', $seccion)->firstOrFail();
+        $titulo = $fila->tituloAdmin();
+
+        DB::transaction(function () use ($fila) {
+            $fila->versions()->delete();
+            $fila->delete();
+        });
+
+        HomeSection::olvidarCache();
+
+        return redirect()
+            ->route('admin.home.index')
+            ->with('ok', "«{$titulo}» se eliminó del home.");
+    }
+
     /* ----------------------------------------------------------- reordenar */
 
     public function reordenar(Request $request)
     {
+        /*
+         * La lista blanca son las claves del catálogo **más las copias que
+         * existan** (P18). Con `Rule::in(CatalogoHome::orden())` a secas,
+         * arrastrar una copia devolvía un 422 y el orden no se guardaba: la
+         * copia se puede mover, y el encargo lo pedía así.
+         */
+        $admitidas = array_values(array_unique(array_merge(
+            CatalogoHome::orden(),
+            HomeSection::query()->pluck('clave')->all(),
+        )));
+
         $datos = $request->validate([
             'orden' => ['required', 'array', 'min:1'],
-            'orden.*' => ['required', 'string', Rule::in(CatalogoHome::orden())],
+            'orden.*' => ['required', 'string', Rule::in($admitidas)],
         ]);
 
         $claves = array_values(array_unique($datos['orden']));
@@ -171,9 +275,9 @@ class HomeSectionController extends Controller
         $fijas = array_values(array_filter(CatalogoHome::orden(), fn ($c) => CatalogoHome::esFija($c)));
         $orden = array_merge($fijas, array_values(array_diff($claves, $fijas)));
 
-        // Y las que no vinieran en la petición se van al final, en el orden del
-        // catálogo, para que ninguna se quede sin número.
-        foreach (CatalogoHome::orden() as $clave) {
+        // Y las que no vinieran en la petición se van al final, para que
+        // ninguna se quede sin número. Las copias incluidas.
+        foreach ($admitidas as $clave) {
             if (! in_array($clave, $orden, true)) {
                 $orden[] = $clave;
             }

@@ -365,6 +365,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/paginas/home/{seccion}', [Admin\HomeSectionController::class, 'edit'])->name('home.editar');
         Route::put('/paginas/home/{seccion}', [Admin\HomeSectionController::class, 'update'])->name('home.actualizar');
         Route::post('/paginas/home/{seccion}/estado', [Admin\HomeSectionController::class, 'alternar'])->name('home.alternar');
+
+        /*
+         * Duplicar una sección y borrar una copia (P18). Van antes de las de
+         * borrador y versiones por claridad, no por precedencia: las claves
+         * derivadas —`cifras--2`— no chocan con ningún otro segmento.
+         */
+        Route::post('/paginas/home/{seccion}/duplicar', [Admin\HomeSectionController::class, 'duplicar'])->name('home.duplicar');
+        Route::delete('/paginas/home/{seccion}/copia', [Admin\HomeSectionController::class, 'eliminarCopia'])->name('home.copia.eliminar');
         // El autoguardado dispara cada pocos segundos mientras se escribe, así
         // que lleva su propio freno, más ancho que el de un formulario normal.
         Route::post('/paginas/home/{seccion}/borrador', [Admin\HomeSectionController::class, 'borrador'])

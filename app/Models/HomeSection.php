@@ -66,11 +66,80 @@ class HomeSection extends Model
     {
         $guardadas = static::todas();
 
+        /*
+         * Las del catálogo **más las copias** (P18). Una copia es una fila en
+         * la tabla con una clave derivada —`cifras--2`— que el catálogo no
+         * conoce, así que recorrer sólo `CatalogoHome::orden()` las dejaría
+         * fuera del home sin que nada lo dijera: se verían en el panel y no en
+         * el sitio.
+         */
+        $copias = $guardadas->keys()->reject(fn (string $c) => CatalogoHome::esCopia($c) === false);
+
         return collect(CatalogoHome::orden())
+            ->merge($copias)
+            ->unique()
             ->map(fn (string $clave) => $guardadas->get($clave) ?? static::sinGuardar($clave))
             ->filter(fn (self $s) => $s->activo)
             ->sortBy(fn (self $s) => $s->orden)
             ->values();
+    }
+
+    /* ---------------------------------------------------------- las copias */
+
+    /**
+     * La clave de catálogo de la que cuelga: `cifras--2` pinta `cifras`.
+     *
+     * Es lo que usa el home para elegir el parcial. Sin esto, una copia
+     * buscaría `sections/cifras--2.blade.php`, que no existe.
+     */
+    public function base(): string
+    {
+        return CatalogoHome::base($this->clave);
+    }
+
+    public function esCopia(): bool
+    {
+        return CatalogoHome::esCopia($this->clave);
+    }
+
+    /**
+     * El `id` del `<section>`, único aunque la sección esté duplicada.
+     *
+     * Los parciales llevan un `id` fijo —`ediciones`, `noticias`— porque el
+     * menú y los botones del home saltan a ellos. Duplicar una sección
+     * duplicaba también ese `id`, y dos elementos con el mismo identificador
+     * es HTML inválido: el ancla sigue funcionando de casualidad, porque el
+     * navegador se queda con el primero, pero cualquier `getElementById` del
+     * sitio empieza a encontrar el equivocado.
+     *
+     * La original conserva el suyo intacto —los enlaces de fuera que apunten a
+     * `#ediciones` tienen que seguir llegando— y la copia lleva su sufijo.
+     */
+    public function ancla(string $porDefecto): string
+    {
+        return $this->esCopia()
+            ? $porDefecto.'-'.str_replace('--', '', strstr($this->clave, '--'))
+            : $porDefecto;
+    }
+
+    /**
+     * La siguiente clave libre para copiar esta sección.
+     *
+     * Se numera desde la BASE, no desde la clave: copiar `cifras--2` da
+     * `cifras--3` y no `cifras--2--2`, que además rompería el `explode`.
+     */
+    public function claveParaLaCopia(): string
+    {
+        $base = $this->base();
+        $usadas = static::query()->where('clave', 'like', $base.'--%')->pluck('clave')->all();
+
+        $n = 2;
+
+        while (in_array($base.'--'.$n, $usadas, true)) {
+            $n++;
+        }
+
+        return $base.'--'.$n;
     }
 
     /**
@@ -256,7 +325,13 @@ class HomeSection extends Model
 
     public function tituloAdmin(): string
     {
-        return CatalogoHome::seccion($this->clave)['titulo'] ?? $this->clave;
+        $titulo = CatalogoHome::seccion($this->clave)['titulo'] ?? $this->clave;
+
+        // Una copia se llama igual con su número detrás: en una lista de
+        // quince, dos «Cifras» idénticas no se distinguen.
+        return $this->esCopia()
+            ? $titulo.' (copia '.(explode('--', $this->clave, 2)[1] ?? '').')'
+            : $titulo;
     }
 
     /** Cuántos campos se han cambiado respecto del HTML fuente. */

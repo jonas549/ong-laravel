@@ -15,7 +15,9 @@
 
 @section('content')
     @foreach ($secciones as $seccion)
-        @include('public.home.sections.'.$seccion->clave, [
+        {{-- `base()` y no `clave`: una sección duplicada (P18) tiene una clave
+             derivada —`cifras--2`— y se pinta con el parcial de su original. --}}
+        @include('public.home.sections.'.$seccion->base(), [
             'seccion' => $seccion,
             'borrador' => $borrador ?? false,
         ])

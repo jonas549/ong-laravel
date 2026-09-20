@@ -89,7 +89,7 @@ contra producción: varios borran filas y cambian contraseñas.
 | `wizard-errores.mjs` | que el usuario **vea** lo que falta, en el wizard, en el editor de actividades de mi-cuenta y en el formulario de inscripción: el resumen de arriba, el salto al campo, la marca «Obligatorio» de los chips, la máscara y el calendario del campo de fecha, y que lo obligatorio aquí sea exactamente lo obligatorio en el servidor (**necesita Chrome**) |
 | `boton-envio.mjs` | que el botón de enviar **no se quede cargando** cuando algo corta el envío. La guía del bloque K aborta con `preventDefault()` y el estado de carga del bloque H marcaba el botón igual: `.esta-cargando` lleva `pointer-events:none`, así que un intento fallido lo dejaba muerto para siempre y el formulario no se podía reenviar ni después de corregir. Cubre el wizard con y sin sesión, el editor de mi-cuenta, la inscripción, la encuesta y el panel al cancelar una acción masiva — y que el camino bueno SÍ siga marcando ocupado. No mira sólo la clase: **cuenta eventos `submit`**, que es lo que dice si se puede volver a pulsar (**necesita Chrome**) |
 | `login-puertas.mjs` | los dos accesos: que quien se equivoca de puerta vea el botón que lleva a la buena con su correo puesto, que la pista NO salga sin la contraseña correcta, que equivocarse no bloquee, y qué pasa al cambiarle el rol a alguien con la sesión abierta (**necesita Chrome**) |
-| `moderacion-ajustes.mjs` | el circuito «pedir ajustes → corregir → reenviar»: que guardar no mueva el estado y que el botón lo devuelva directo a revisión, sin paso intermedio (**necesita Chrome**) |
+| `moderacion-ajustes.mjs` | el circuito «pedir ajustes → corregir → guardar». **Cambió el 2026-09-20 (P2):** guardar SÍ devuelve la actividad a revisión y el botón aparte desapareció; en un borrador sigue estando (**necesita Chrome**) |
 | `calendario-y-aprobacion.mjs` | el `.ics` y el enlace de Google de los correos —incluidas las líneas de 75 octetos y las tildes al plegarlas—, y la aprobación automática con sus dos interruptores, el «ajustes» que la pausa y la marca que deja para poder repasarla (**necesita Chrome**) |
 | `calendario-actividades.mjs` | la vista de calendario de `/actividades`: que las columnas empiecen en lunes, que una actividad de varios días se pinte en **todas** sus casillas y siga en el mes siguiente, que la casilla llena pliegue lo que no cabe sin perderlo, que la franja de las «sin fecha» no dependa del mes, que los filtros sean los mismos que los de la lista, y que en 390 px la rejilla se convierta en lista de días (**necesita Chrome**) |
 | `ficha-actividad.mjs` | la ficha pública: el organizador bajo el título con su logo —o sus iniciales, que no todas tienen logo—, su sitio web y su red social rotulada por el dominio, los tres botones de compartir con el portapapeles de verdad, y que el Open Graph lleve la portada de **esa** actividad y no la genérica del sitio (**necesita Chrome**) |
@@ -99,6 +99,22 @@ contra producción: varios borran filas y cambian contraseñas.
 | `panel-evaluaciones.mjs` | las evaluaciones en el panel: los promedios y su reparto, que se recalculen con el filtro y no sobre el total, el texto largo que no estira la tabla, la exportación a XLSX y CSV, y las fotos con las autorizadas separadas de las que no —incluida la comprobación de que **sin sesión no se pueden ver**, que es lo que justifica el disco privado (**necesita Chrome**) |
 | `datos-evaluacion.php` | **No es una prueba, es el escenario** de las dos anteriores: cuatro actividades —abierta, cerrada por plazo, futura y sin publicar— y cinco respuestas con notas elegidas para que los promedios den 3,00 y 4,00 exactos. Se limpia con `$limpiar = true`. **No puede convivir con el escenario del calendario**, ver abajo. |
 | `correo-publicada.php` | **No es una prueba de navegador**: manda el correo de «actividad publicada» por los dos caminos —la revisión a mano y la aprobación automática— con el transporte en memoria, y mira el MIME de verdad para comprobar que el QR viaja incrustado y que el `<img>` apunta a ese adjunto. Se corre con `php artisan tinker --execute="require base_path('pruebas/correo-publicada.php');"` |
+| `ids-panel.mjs` | que el **identificador sea la primera columna** de las quince tablas del panel, y que la celda traiga el número de verdad y no una cabecera sobre una columna vacía. Recorre el panel entero. El resumen de sospechosos del registro de accesos se queda fuera a propósito: cada fila es un `COUNT(*)` agrupado, no un registro (**necesita Chrome**) |
+| `ids-exportaciones.mjs` | lo mismo en las exportaciones: descarga cada una en CSV y mira la primera cabecera. Se pide CSV y no XLSX porque el XLSX es un zip y habría que descomprimirlo para leer una línea; las dos salen del mismo `Exportador` (**necesita Chrome**) |
+| `hilo-moderacion.mjs` | el circuito de moderación como hilo de ida y vuelta: la ONG pide ajustes, la organización corrige y responde, y la ONG se entera. **Escribe y manda correos**, así que en producción se corre `hilo-moderacion-lectura.mjs` (**necesita Chrome**) |
+| `hilo-moderacion-lectura.mjs` | la parte del hilo que se puede mirar sin mover nada. Existe para producción: devolver una actividad a revisión avisa por correo a **todos** los administradores activos, y ahí son tres, dos de ellos personas (**necesita Chrome**) |
+| `datos-hilo.php` / `limpia-hilo.php` | el escenario de `hilo-moderacion.mjs` y su limpieza. **Hay que limpiarlo al terminar**, ver abajo. |
+| `evaluaciones-fotos.mjs` | varias fotos por evaluación con el tope de Configuración, que el organizador vea las de SUS actividades y **no las de otra organización ni pidiendo el archivo por su URL**, los enlaces a las fotos en el Excel, y que la descarga en zip respete los filtros de la pantalla (**necesita Chrome**) |
+| `evaluaciones-fotos-lectura.mjs` | la parte de lo anterior que no escribe nada, para producción (**necesita Chrome**) |
+| `organizaciones-wizard.mjs` | el buscador de organizaciones del paso 3: que sugiera las que ya están distinguiendo las libres de las que tienen cuenta, que reclamar una del listado no cree un duplicado, que un correo repetido lo diga con las dos salidas, y que **un id cambiado a mano no se lleve una organización ajena**. Monta y deshace su propio escenario en cada pasada (**necesita Chrome**) |
+| `marquesina.mjs` | que la marquesina del home salga de la tabla de organizaciones y que **ningún nombre se repita dentro de una pasada**. La segunda pasada del carril sí existe y tiene que existir: la animación desplaza -50% y sin ella el bucle da un salto (**necesita Chrome**) |
+| `hora-y-campos.mjs` | el desplegable de horas en punto con AM/PM —sin minutos sueltos y sin proponer la hora actual—, la pregunta de los voluntarios en el paso de la actividad, y la tabla de inscritos sin la columna «Estado». Fabrica y deshace una baja para no dejar ese ramal sin comprobar (**necesita Chrome**) |
+| `peso-imagenes.mjs` | que la portada y el logo **se reduzcan en el navegador** antes de subirse, con imágenes de 5 MB fabricadas con GD, y que si aun reducidas no caben se avise y **se corte el envío**. Las imágenes no se versionan: son megas de ruido, y el ruido es justo lo que hace falta —una imagen plana se comprime a nada y no probaría el límite— (**necesita Chrome**) |
+| `invitacion-evaluacion.mjs` | el correo que invita a evaluar cuando la actividad ya pasó: que el momento lo decida la ONG, que el enlace lleve a la encuesta, que **una segunda pasada no vuelva a escribir**, y que con el ajuste en «no enviar» no salga nada. Necesita Mailpit en el 8025 (**necesita Chrome**) |
+| `acceso-wizard.mjs` | iniciar sesión a mitad del wizard **sin perder lo escrito**: rellena medio formulario, entra, comprueba campo por campo que nada se ha perdido y publica la actividad de verdad. Eso último es donde salía el 419 del token CSRF regenerado (**necesita Chrome**) |
+| `direcciones-photon.mjs` | las sugerencias de dirección contra el Photon real: que las coordenadas no vengan cambiadas de orden, que caigan dentro de Chile, que **el campo siga admitiendo una dirección que no es una calle**, y que el enlace del mapa use el punto y no la cadena. Deja la actividad que toca como estaba (**necesita Chrome**) |
+| `duplicar-seccion.mjs` | duplicar una sección del home: que la copia nazca con el contenido de la original y **que editarla no toque a la original**, que se pinte en el home con el parcial de su base y con un ancla distinta, que se arrastre y se esconda como cualquier otra, que se pueda borrar, y que las ancladas no se dupliquen ni pidiéndolo a mano (**necesita Chrome**) |
+| `tanda-produccion.mjs` | el repaso de toda la tanda **contra producción**, sólo con lo que no escribe nada. Es el que se corre tras desplegar (**necesita Chrome**) |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
 ---
@@ -248,6 +264,21 @@ Lo que conviene comprobar ahí, y no aquí:
   falso positivo en cualquier enlace con relleno.
 
 ## Escenarios que hay que limpiar
+
+### Lo que NO se corre contra producción
+
+Tres suites escriben de verdad y por eso tienen su gemela de sólo lectura:
+
+| No correr en producción | Correr en su lugar |
+|---|---|
+| `hilo-moderacion.mjs` | `hilo-moderacion-lectura.mjs` |
+| `evaluaciones-fotos.mjs` | `evaluaciones-fotos-lectura.mjs` |
+| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs` | `tanda-produccion.mjs` |
+
+El motivo no es la prudencia genérica: devolver una actividad a revisión avisa
+**por correo a todos los administradores activos**, y en producción son tres,
+dos de ellos personas de verdad. Publicar, subir fotos o reclamar una
+organización dejan además datos que luego hay que ir a buscar para borrarlos.
 
 ### `datos-hilo.php` — el hilo de moderación
 

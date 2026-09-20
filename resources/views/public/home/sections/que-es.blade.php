@@ -1,6 +1,6 @@
 @php $b = $borrador ?? false; @endphp
 
-<section id="que-es" style="scroll-margin-top:90px;background:linear-gradient(160deg,rgba(92,184,178,.14) 0%,rgba(92,184,178,.07) 100%);">
+<section id="{{ $seccion->ancla('que-es') }}" style="scroll-margin-top:90px;background:linear-gradient(160deg,rgba(92,184,178,.14) 0%,rgba(92,184,178,.07) 100%);">
     <div style="max-width:1180px;margin:0 auto;padding:92px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:60px;align-items:center;">
         <div class="reveal">
             <h2 class="dato-editable" style="font-weight:800;font-size:38px;margin:0 0 22px;letter-spacing:-.01em;">{{ $seccion->texto('titulo_antes', $b) }} <span style="color:var(--naranjo);">{{ $seccion->texto('titulo_destacado', $b) }}</span>{{ $seccion->texto('titulo_despues', $b) }}</h2>

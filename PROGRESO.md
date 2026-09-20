@@ -1,186 +1,161 @@
-# Progreso — tanda del 11/09
+# Progreso — tercera tanda
 
-**Fecha:** 18/09/2026
-**Producción:** `7aa3e8e` · https://ong.sandboxdelta.com
-**Avance:** 20 de 36 puntos cerrados.
+**Fecha:** 20/09/2026
+**Producción:** https://ong.sandboxdelta.com
+**Avance:** los 20 puntos de función cerrados (P1–P20). P21 es seguridad: se
+hizo lo que estaba en el código y queda pendiente una decisión de Jonas antes
+de tocar ninguna cuenta de producción.
 
 ---
 
-## HECHO HOY
+## LO QUE SE HIZO
 
-Todo verificado en navegador real. «(prod)» = comprobado contra el servidor.
+Todo verificado en Chrome de verdad. «(prod)» = comprobado además contra el
+servidor, después de desplegar.
 
 | # | Qué | Verificación |
 |---|---|---|
-| 1 | Ficha en `/activity/{id}/{slug}`, la vieja redirige 301 | (prod) 301 correcto, slug erróneo y `/activity/2` también; **QR real decodificado con jsQR**: sigue en `/evaluar/{slug}` |
-| 2 | «No es necesario inscripción previa…» | local, los dos ramales (sin inscripción / cupos agotados) |
-| 3 | Botón «Editar mi actividad» del correo, a esa actividad | local, mailable renderizado |
-| 4 | El archivo subido sobrevive al rebote del formulario | (prod) aviso con nombre de archivo; local, ciclo completo: la organización nace con su logo |
-| 5 | Formato online → dirección no obligatoria | (prod) navegador y servidor |
-| 10 | Pregunta 2 de la encuesta, escala «Nada/Muy dispuesto(a)» | (prod) |
-| 11 | Aviso de uso de la fotografía, antes de elegir archivo | (prod) |
-| 12 | Autorización nueva con «Política de Privacidad» enlazada | (prod) pulsar el enlace no marca la casilla |
-| 19 | Nombre de organización repetido, rechazado | (prod) contra `deltadigital.cl` real |
-| 21 | «Ver registrados»: revisado, ya cumplía. No se rehízo | — |
-| 23 | «Pendiente» fuera; «Cancelada» se mantiene; KPI del panel corregido | (prod) panel del organizador |
-| 24 | Al cancelar, se dice a cuántas personas se avisó | local, los 4 casos incluido cero |
-| 25 | Botón fijo del kit de difusión; vacío no pinta botón | (prod) |
-| 26 | Umbral numérico de aprobación automática | (prod) Configuración → General |
-| 28 | «Usar el mismo correo» rellena el campo | (prod) |
-| 29 | Visor de contraseña | (prod) |
-| 30 | «Selecciona hasta 5 opciones que correspondan» | (prod) |
-| 31 | «https://» automático en web y red social | (prod) |
-| 34 | Instrucción de colaboración | (prod) |
-| 36 | ID de actividad y de organización a la vista | (prod) |
+| P1 | El ID, primera columna de las 15 tablas del panel y de las 9 exportaciones | `ids-panel.mjs` (51), `ids-exportaciones.mjs` (7) · **(prod)** 53 + 7 |
+| P2 | Guardar una actividad en «ajustes» la devuelve a revisión, sin botón aparte | `hilo-moderacion.mjs` (22), `moderacion-ajustes.mjs` (12) |
+| P3 | El organizador acompaña la corrección con un mensaje; los dos lados ven el mismo hilo | idem · **(prod)** el hilo se pinta y el CSS llegó |
+| P4 | La ONG recibe correo al volver una actividad, más alerta, pestaña e insignia | idem, con SMTP real |
+| P5 | El organizador ve evaluaciones y fotos de SUS actividades | `evaluaciones-fotos.mjs` (28) · **(prod)** |
+| P6 | Varias fotos por evaluación, máximo configurable, 3 por defecto | idem · **(prod)** |
+| P7 | Enlaces a las fotografías en el Excel de evaluaciones | idem · **(prod)** |
+| P8 | Descarga en zip **respetando los filtros** de la pantalla | idem · **(prod)** zip real de 628 KB |
+| P9 | Buscador de organizaciones en el paso 3, distinguiendo libres de tomadas | `organizaciones-wizard.mjs` (27) · **(prod)** |
+| P10 | Reclamar una del listado: sólo contraseña, sin duplicar la organización | idem |
+| P11 | Correo ya registrado: lo dice con las dos salidas junto al campo | idem |
+| P12 | La marquesina sale de la tabla de organizaciones y no repite | `marquesina.mjs` (8) · **(prod)** 5 organizaciones, ninguna repetida |
+| P13 | Selector de hora: sólo horas en punto con AM/PM, sin proponer la actual | `hora-y-campos.mjs` (24) · **(prod)** |
+| P14 | Entrar a mitad del wizard **sin perder lo escrito** | `acceso-wizard.mjs` (28) · **(prod)** |
+| P15 | La pregunta de los voluntarios, al paso de la actividad | `hora-y-campos.mjs` · **(prod)** |
+| P16 | Direcciones con Photon, punto guardado y mapa apuntando a él | `direcciones-photon.mjs` (22) · **(prod)** |
+| P17 | Fuera la columna «Estado» de los inscritos del organizador | `hora-y-campos.mjs` · **(prod)** |
+| P19 | Las imágenes se reducen en el navegador; si no caben, se avisa y se corta | `peso-imagenes.mjs` (18) |
+| P18 | Duplicar una sección del home: copia exacta, editable y movible aparte | `duplicar-seccion.mjs` (21) |
+| P20 | Correo con la encuesta tras la actividad, momento configurable | `invitacion-evaluacion.mjs` (12) · **(prod)** ajuste y plantilla |
 
-**Hallazgos fuera del encargo, ya corregidos:** `aprobacion_automatica` y `kit_difusion_url` se leían en el código pero no existían como fila (la ONG no podía tocarlos); el KPI «inscripciones confirmadas» era siempre cero en producción; `clave-admin.mjs` dejaba cambiada la contraseña del organizador y hacía fallar en falso a las suites posteriores.
-
-**Pruebas nuevas:** `campos-formulario.mjs` (29), `ids-y-aprobacion.mjs` (13), `archivo-retenido.mjs` (9), `qr-produccion.mjs` (10). `encuesta-evaluacion` 67 → 74.
+Repaso final contra producción: `tanda-produccion.mjs`, 25 de 25.
 
 ---
 
-## PENDIENTE DE LA TANDA — 16 puntos
+## P18 — CÓMO SE RESOLVIÓ DUPLICAR UNA SECCIÓN
 
-En el orden de prioridad del encargo.
+Las secciones del home **no son filas de un CRUD**. Cada una existe porque
+`App\Support\CatalogoHome` la define, y su clave es la que decide qué parcial
+de Blade la pinta: `hero`, `participar`, `cifras`. La tabla `home_sections`
+sólo guarda lo que se ha cambiado respecto del HTML fuente.
 
-**Panel del organizador y evaluaciones**
-- **16 y 22** — Evaluaciones y fotos para el organizador, sólo de sus actividades (D1).
-- **14** — Enlace a las fotografías en el Excel de evaluaciones.
-- **15** — Botones para descargar fotos: todas y por actividad.
-- **13** — Varias fotos por evaluación, máximo configurable, 3 por defecto (D6). *Necesita tabla aparte: hoy hay una sola columna `foto_path`.*
+Así que una copia no podía ser una fila más con una clave inventada: ningún
+parcial la conocería. Lo que se hizo es **derivar la clave**: `cifras--2`
+resuelve a `cifras` para todo lo que decide el catálogo —el parcial, los
+campos, las reglas, los textos por defecto— y es una fila propia para todo lo
+que decide el contenido.
 
-**Formulario y wizard**
-- **7** — Selector de hora: hora en punto por defecto, saltos de 15 min (D3).
-- **8** — Mover «¿Cuántos trabajadores participan como voluntarios?» al paso 3.
-- **9** — Cerrar sesión mientras se crea una actividad.
-- **32** — 🔴 **BLOQUEADO** por decisión abierta (ver abajo): choca con el ítem 6 de la Tanda B.
-- **33** — 🟠 **PARCIAL** — falta decidir el comportamiento, no sólo el botón (ver decisiones abiertas).
-- **17** — 🟠 **PARCIAL** — la estructura y el autocompletado contra las organizaciones actuales sí se pueden hacer (D7); la importación espera el archivo del cliente.
-- **18** — Validación única de organización (D2). Se puede hacer.
-- **20** — 🔴 **BLOQUEADO** — no se puede comprobar como está escrito: hoy la marquesina **no tiene logos**, son 11 pastillas de texto. Aparecerá al cargar el Excel.
+De ahí salen las cuatro decisiones concretas:
 
-**Home y correos**
-- **27** — Duplicar secciones del home, copia exacta e independiente (D4).
-- **35** — Correo con la encuesta el día posterior, configurable (D10).
+- **La copia nace con el contenido ya materializado**, no vacía. Si naciera
+  vacía se pintaría igual que la original por casualidad —las dos caerían al
+  texto del catálogo— y el día que alguien cambiara un valor por defecto
+  cambiarían las dos. Lo que se ve es lo que se guarda.
+- **El separador es `--` y no `-`**, porque hay claves con guion
+  (`somos-parte`) y partir por el primero dejaría la copia apuntando a
+  `somos`.
+- **Las ancladas no se duplican.** El hero y «¿Cómo participar?» están cosidos
+  por un margen negativo —la segunda se monta 96 px sobre la primera— así que
+  una copia de cualquiera se pondría encima de la otra. El botón no se pinta y
+  el servidor responde 403 si se pide a mano.
+- **Una copia se puede borrar; las trece del catálogo no.** Ésas se esconden.
+  Sin el borrado, duplicar sería una puerta de una sola dirección y el cliente
+  se quedaría con una sección de más que sólo podría ocultar.
 
-**Al final**
-- **6** — Photon + latitud/longitud, enlace de mapa con el punto exacto (D9).
-
----
-
-## DECISIONES YA TOMADAS (no re-litigar)
-
-- **D1** — El organizador ve evaluaciones y fotos de sus actividades; acotado estrictamente, fotos en disco privado. Sustituye a la decisión del 07/09.
-- **D2** — No se borran ni fusionan duplicados existentes. Sólo se impiden los nuevos. Sin índice único en base de datos.
-- **D3** — Hora por defecto: la siguiente hora en punto. Saltos de 15 minutos.
-- **D4** — Duplicar sección = copia exacta, editable y reordenable de forma independiente.
-- **D5** — No se construye el doble opt-in. Fuera «Pendiente», se mantiene «Cancelada», KPI corregido, columna intacta en base de datos.
-- **D6** — Máximo de fotos configurable, 3 por defecto.
-- **D7** — Estructura del listado histórico lista; se importa cuando llegue el archivo.
-- **D8** — Botón del kit fijo, URL configurable, vacía no pinta botón.
-- **D9** — Photon, con lat/lng guardadas. El campo sigue aceptando texto libre.
-- **D10** — Encuesta el día posterior a la actividad, momento configurable.
-- **D11** — Conservar el archivo subido cuando el formulario rebota.
-- **D12** — ✅ Confirmado: la ONG ya puede apagar la aprobación automática desde el panel.
-- **D13** — ✅ `clave-admin.mjs` restaura el estado al terminar.
+Un efecto que había que atajar: los parciales llevan un `id` fijo —`ediciones`,
+`noticias`— para que el menú salte a ellos, y duplicar la sección duplicaba el
+identificador. Dos elementos con el mismo `id` es HTML inválido y rompe
+cualquier `getElementById` del sitio. La original conserva el suyo intacto
+—los enlaces de fuera tienen que seguir llegando— y la copia lleva sufijo:
+`ediciones-2`.
 
 ---
 
-## DECISIONES ABIERTAS
+## P21 — SEGURIDAD: HECHO LO QUE NO NECESITABA PERMISO
 
-**1. Punto 32 contra el ítem 6 de la Tanda B. 🔴 Urgente — bloquea el 32.**
-El punto 32 pide **bloquear el envío** si la imagen pesa más de 2 MB. El ítem 6 del Word (14 septiembre) pide lo contrario: **reducirla automáticamente** en vez de rechazarla.
-Son estrategias opuestas ante la misma imagen. Hacer las dos es construir y tirar. *Recomendación: reducir automáticamente (ítem 6) y dejar el bloqueo sólo como último recurso si aun reducida no entra.*
+En el código, dos cosas, y la segunda era la grave:
 
-**2. Credenciales de producción.** `admin@ong-laravel.test` / `admin1234` funcionan en el sitio en vivo y están en texto plano en `database/seeders/UserSeeder.php`. Hay que cambiarlas y decidir si esas dos cuentas siguen existiendo en producción.
+- `UserSeeder` deja de traer contraseñas en texto plano: salen del `.env`
+  (`DPS_CLAVE_ADMIN`, `DPS_CLAVE_ORGANIZADOR`) o se generan al azar y se
+  imprimen una sola vez, al crear la cuenta.
+- **Deja de pisar la contraseña de una cuenta que ya existe.** Un
+  `php artisan db:seed --force` en el servidor —que está en la lista de
+  comandos de despliegue manual de la documentación— devolvía la contraseña
+  del administrador de producción a la del repositorio, en silencio y por
+  mucho que alguien la hubiera cambiado antes. Ahora la contraseña sólo se
+  escribe al CREAR la cuenta.
 
-**3. Punto 33.** Si alguien inicia sesión en el paso 2, ¿se conserva lo ya escrito o se empieza de nuevo con su organización rellena? Y el ingreso con código al correo es un mecanismo nuevo que hoy no existe: ¿se construye?
-
-**4. Punto 13.** La autorización de uso de imagen es una sola casilla por evaluación. ¿Vale para todas las fotos de esa persona, o hace falta una por foto?
-
-**5. Punto 5.** La dirección ya no se pide en online. ¿Región y comuna tampoco, o se mantienen para poder filtrar por territorio en `/actividades`?
-
-**6. Tanda B.** ¿Entra entera, o sólo algunos grupos?
-
----
-
-## BLOQUEADOS POR MATERIAL DEL CLIENTE
-
-**1. Listado histórico de organizaciones (punto 17).**
-Un CSV o Excel de una hoja, con cabecera, UTF-8:
-
-| Columna | Obligatoria | Para qué |
-|---|---|---|
-| `nombre` | **Sí** | El nombre exacto, tal como debe verse |
-| `alias` | No | Alternativas separadas por `;` — lo que hace que el autocompletado encuentre la ficha aunque se escriba distinto |
-| `tipo` | No | Uno de los que ya usa el sitio |
-| `logo_archivo` | No | El **nombre del archivo**, no una ruta |
-| `sitio_web` | No | Con o sin `https://` |
-| `categoria` | No | Auspician / Participan / Colaboran / Alianzas estratégicas / Somos parte de |
-
-Más una carpeta con los logos: **SVG preferible**, si no PNG con fondo transparente, con el nombre exacto de `logo_archivo`. No hacen falta ni IDs ni orden.
-
-**2. URL del kit de difusión (punto 25).** El botón ya está; el ajuste está vacío en Configuración → General. En cuanto se pegue el enlace, aparece.
-
-**3. Material de diseño del grupo C.** Cabecera, pie y logos por separado para la plantilla de difusión. Además depende del tramo de procesamiento de imágenes del bloque J, que sigue sin hacerse.
-
-**4. Número máximo de fotos (punto 13).** Se deja en 3; el cliente confirma después.
+**Ninguna cuenta de producción se ha tocado.** Las credenciales propuestas van
+por otro canal, nunca en el repositorio.
 
 ---
 
-## TANDA B — 20 ítems, ~45-65 h (sin el grupo C)
+## LO QUE QUEDA ABIERTO
 
-**Grupo A — «Comentarios web 14 septiembre» (6) · ~10-14 h**
-1. Mensaje predeterminado al compartir en WhatsApp/redes
-2. Mensaje para quien se inscribe
-3. Contador de días en el home *(el cliente lo sugiere para la etapa 2)*
-4. Corregir el enlace «quiero ser voluntario» → Voluntariados Chile
-5. Logo no obligatorio para el tipo de organizador «otros»
-6. Reducir el peso de la imagen automáticamente al subirla
-
-> **Choques:** el **6 choca de frente con el punto 32** (decisión abierta nº 1). El **5 choca con 17/18**. El 1 y el 2 tocan `compartir.blade.php`, ya modificado hoy por el punto 1 — sin conflicto, pero conviene hacerlos juntos.
-
-**Grupo B — «Mobile» (9) · ~12-16 h**
-7. Agrandar el recuadro naranja de «¿Cómo quieres participar hoy?»
-8. Vista de calendario para elegir la fecha en móvil
-9. Agrandar los títulos de los campos del formulario
-10. Logo no obligatorio en móvil
-11. Opción en el admin para subir el logo después
-12. El logo del corazón del pie se ve achatado
-13. Enlace de YouTube en el pie
-14. Enlace en el logo COS
-15. Crédito con enlace a Gabriel Ebensperger
-
-> **Choques:** el **8 choca con el punto 7** y con la decisión del bloque K de que fecha y hora son `type="text"` a propósito (los nativos no dejan pegar). El **10 y el 11 son la misma decisión que el 5 del grupo A**, dicha tres veces. El **12 es fidelidad al HTML fuente**: mirar el original antes de tocarlo.
-
-**Grupo C — «PENDIENTES COS», plantilla de difusión (3) · no estimable, bloqueado**
-16. Generar la imagen de difusión por actividad
-17. Enlace al kit *(ya resuelto: punto 25, falta la URL)*
-18. Imagen «soy parte del Día del Patrimonio Social»
-
-> **Bloqueado dos veces:** falta material de diseño y depende del procesamiento de imágenes del bloque J. Pregunta del cliente sin responder: ¿podrán los organizadores editar el texto del HTML que genera la imagen?
-
-**Grupo D — sueltas (3) · ~3-5 h**
-19. ¿Una actividad cancelada desde el admin queda en borradores? *(hoy queda «cancelada»; es pregunta, no tarea)*
-20. Destacar más el botón «Ver actividad» en `/actividades` *(falta saber cuánto)*
-21. Que al pulsar la imagen de una actividad se abra su ficha
+- **Los logos del Excel del cliente.** El importador está listo
+  (`dps:importar-organizaciones`: lee .xlsx y .csv, detecta el separador,
+  idempotente, con `--simular` y `--ejemplo`) y el circuito entero probado con
+  datos de prueba. Falta el archivo.
+- **Las tres plantillas de moderación** —recibida, necesita ajustes,
+  cancelada— siguen siendo vistas Blade fijas y no editables. Es la «opción C»
+  de la tanda anterior, ~6 h.
+- **`activity_evaluations.foto_path`** quedó sin uso pero no se borró: quitarla
+  es una migración destructiva sobre datos de producción y el único motivo
+  sería la limpieza.
+- Lo que ya venía de antes: el bloque I (Configuración), el procesamiento de
+  imágenes del bloque J, y los pendientes 6 a 12 de la lista vieja.
 
 ---
 
-## RIESGOS Y DEUDA
+## DECISIONES DE ESTA TANDA (no re-litigar)
 
-1. **Credenciales de prueba activas en producción.** `admin1234` y `organizador1234`, en texto plano en `database/seeders/UserSeeder.php`, funcionan hoy en el panel del sitio en vivo. Es el riesgo más alto abierto.
-2. **Índice único de organizaciones, no aplicable.** Mientras existan las dos filas `deltadigital.cl` (**#2** j.gonzalez@deltadigital.cl, 0 actividades · **#4** jonasgym82@gmail.com, 1 actividad), una migración que lo añada se caería. La validación del formulario ya impide duplicados nuevos.
-3. **Parecido sin resolver:** **#3 «jonas»** y **#7 «Fundación jonas»**. No son duplicado exacto, así que la validación no los detecta; probablemente son la misma entidad. Decidir con el cliente.
-4. **`APP_DEBUG` debe estar en `false`** en producción.
-5. Sin tests de PHPUnit. Las pruebas de sistema están en `pruebas/`.
+- **P19:** se reduce automáticamente en el navegador; el aviso con bloqueo
+  queda para cuando eso no baste. Era lo que pedía el ticket frente a lo que
+  pedía el Word, y se eligió reducir: rechazar una foto de teléfono por pesar
+  cuatro megas es mandar a alguien a buscar un editor de imágenes.
+- **P9 y P10:** `organizations.user_id` admite nulos. Nulo significa «está en
+  el listado, sin reclamar». Es lo que permite importar las ~180 sin
+  inventarle a cada una un usuario con un correo falso.
+- **P12:** la segunda pasada de la marquesina no se quita: la animación
+  desplaza -50% y sin ella el bucle da un salto. Lo que se quitó fueron los
+  nombres duplicados de verdad, que eran los dos «deltadigital.cl».
+- **P20:** hay una tercera opción, «no enviar», además de mismo día y día
+  siguiente. El QR del cartel sigue funcionando, así que apagar el correo no
+  apaga la evaluación.
+- **P6:** una sola autorización por envío, no una por foto. El consentimiento
+  se firma una vez y sobre lo que se manda.
+- **P18:** la copia se numera desde la base (`cifras--2`, `cifras--3`) y nunca
+  desde otra copia. Y las ancladas no se duplican.
 
 ---
 
-## CÓMO RETOMAR — por dónde empezar mañana
+## LOS TRES FALLOS QUE APARECIERON TRABAJANDO
 
-1. **Responder la decisión nº 1** (punto 32 contra ítem 6 de la Tanda B). Bloquea el 32 y condiciona el grupo A.
-2. **Puntos 16 y 22** — evaluaciones y fotos para el organizador (D1). Es el bloque más grande de lo que queda y no depende de nadie. Arrastra el 14 y el 15, que son la misma pantalla.
-3. **Punto 13** — varias fotos por evaluación (D6). Necesita tabla aparte y migración; conviene hacerlo junto con 16/22, que tocan lo mismo.
+Ninguno de los tres se veía leyendo el código; los tres los encontró una
+prueba en Chrome.
 
-**Nota de entorno:** `dps:instalar` **sí** corre en el cron de despliegue (comprobado el 18/09). Un ajuste nuevo va en `SettingsSeeder`, **no** en una migración.
+1. **El 419 mudo de P14.** Entrar a mitad del wizard regenera la sesión y con
+   ella el token CSRF. El formulario que la persona tenía delante se pintó con
+   el viejo, así que al enviarlo perdía todo lo escrito — exactamente lo que
+   el punto venía a evitar. Lo encontró `acceso-wizard.mjs` al publicar de
+   verdad después de entrar.
+2. **`$el` otra vez.** En el selector de fotos, «Quitar» no vaciaba el campo
+   porque leía el input desde `$el` dentro del manejador de un botón. La
+   miniatura desaparecía, el usuario creía haberla quitado, y el archivo se
+   enviaba igual. Es la quinta vez que esta trampa muerde en este proyecto.
+3. **El aviso que se borraba solo.** Al rechazar un archivo que no era imagen,
+   `quitar()` limpiaba el aviso que se acababa de poner: el campo se vaciaba
+   sin decir por qué.
+
+Y uno que estaba desde el 18/09 sin que nadie lo notara:
+`wizard-errores.mjs` no probaba el formulario de inscripción, porque buscaba
+la ficha en `/actividades/{slug}` y ésa pasó a ser una redirección. Se saltaba
+el bloque entero en silencio.

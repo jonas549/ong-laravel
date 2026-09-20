@@ -1,6 +1,6 @@
 @php $b = $borrador ?? false; @endphp
 
-<section id="noticias" style="scroll-margin-top:90px;max-width:1180px;margin:0 auto;padding:88px 40px;">
+<section id="{{ $seccion->ancla('noticias') }}" style="scroll-margin-top:90px;max-width:1180px;margin:0 auto;padding:88px 40px;">
     <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:36px;flex-wrap:wrap;">
         <div>
             <div class="dato-editable" style="font-size:13px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--naranjo);margin-bottom:12px;">{{ $seccion->texto('antetitulo', $b) }}</div>

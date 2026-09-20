@@ -62,7 +62,14 @@
 
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
-                        <a class="textlink" style="font-weight:700;font-size:15px;" href="{{ route('admin.home.editar', $s->clave) }}">{{ $meta['titulo'] }}</a>
+                        <a class="textlink" style="font-weight:700;font-size:15px;" href="{{ route('admin.home.editar', $s->clave) }}">{{ $s->tituloAdmin() }}</a>
+
+                        @if ($s->esCopia())
+                            {{-- Una copia se marca: en una lista de quince, dos
+                                 «Cifras» sin distintivo se confunden, y editar
+                                 la equivocada no da ningún aviso. --}}
+                            <span style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo-600);">Copia</span>
+                        @endif
 
                         @if (! $s->activo)
                             <span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--gris-100);color:var(--gris);">No se ve</span>
@@ -89,6 +96,32 @@
                             <button type="submit" class="btn btn-ghost btn-sm">{{ $s->activo ? 'Esconder' : 'Mostrar' }}</button>
                         </form>
                     @endif
+
+                    {{--
+                        P18: duplicar. No se ofrece en las ancladas —el hero y
+                        «¿Cómo participar?» están cosidos por un margen
+                        negativo y una segunda pareja se montaría sobre la
+                        primera—, y el servidor lo vuelve a comprobar.
+                    --}}
+                    @if (\App\Support\CatalogoHome::sePuedeDuplicar($s->clave))
+                        <form method="POST" action="{{ route('admin.home.duplicar', $s->clave) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-ghost btn-sm" data-cargando="Duplicando…"
+                                    title="Crea una copia editable de esta sección, justo debajo">Duplicar</button>
+                        </form>
+                    @endif
+
+                    {{-- Y una copia se puede borrar. Las trece del catálogo no:
+                         ésas se esconden. Sin esto, duplicar sería una puerta
+                         de una sola dirección. --}}
+                    @if ($s->esCopia())
+                        <x-panel.confirmar
+                            :accion="route('admin.home.copia.eliminar', $s->clave)"
+                            titulo="¿Eliminar esta copia?"
+                            :texto="'Se borra «'.$s->tituloAdmin().'» y lo que se haya escrito en ella. La sección original no se toca.'"
+                            confirmar="Sí, eliminar" />
+                    @endif
+
                     <a class="btn btn-outline btn-sm" href="{{ route('admin.home.editar', $s->clave) }}">Editar</a>
                 </div>
             </li>
