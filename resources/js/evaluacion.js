@@ -1,4 +1,5 @@
 import { guiaDeErrores } from './formularios';
+import { reducirImagen } from './imagenes';
 
 /*
  * La encuesta de evaluación que se responde tras escanear el QR.
@@ -176,99 +177,13 @@ export const encuestaEvaluacion = (errores = [], maximoTexto = 300, maximoFotos 
     /**
      * Reduce la foto en el navegador antes de subirla.
      *
-     * **Esto no es una optimización, es lo que evita un fallo mudo.** Cuando lo
-     * que se envía pasa de `post_max_size`, PHP entrega un `$_POST` VACÍO: sin
-     * token CSRF, así que Laravel responde 419 y la persona pierde el
-     * formulario entero sin un solo mensaje que explique nada. Una foto de
-     * teléfono son cuatro u ocho megas; a 1600 px de lado largo se queda en
-     * unos cuatrocientos kilobytes, sube mucho más rápido con datos móviles y
-     * el límite del servidor deja de estar en juego.
-     *
-     * **Se conserva el tipo del archivo.** Pasar un PNG a JPEG lo comprime
-     * mucho más, pero un PNG con transparencia sale con el fondo negro, que es
-     * peor que subir un archivo grande. El JPEG se recomprime como JPEG y el
-     * PNG sigue siendo PNG.
-     *
-     * Si el navegador no puede —falta `createImageBitmap`, falta `toBlob`, la
-     * imagen no se deja decodificar— devuelve null y se sube el original.
+     * El cómo vive en `imagenes.js`, compartido con la portada de la actividad
+     * y el logo de la organización (P19). Estaba escrito aquí y se sacó al
+     * necesitarlo los tres: tres copias del mismo redimensionado son tres
+     * sitios donde arreglar el mismo fallo.
      */
-    async reducir(archivo) {
-        if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') {
-            return null;
-        }
-
-        let bitmap;
-
-        try {
-            /*
-             * `from-image` aplica la orientación EXIF al decodificar. Sin esto,
-             * una foto tomada en vertical con el teléfono se sube tumbada: el
-             * navegador la enseña bien —respeta el EXIF al pintarla— pero el
-             * lienzo dibuja los píxeles crudos, y la orientación se pierde al
-             * volver a codificar.
-             */
-            bitmap = await createImageBitmap(archivo, { imageOrientation: 'from-image' });
-        } catch {
-            return null;
-        }
-
-        const escala = Math.min(1, LADO_MAXIMO / Math.max(bitmap.width, bitmap.height));
-
-        // Ya cabe de sobra: recomprimirla sólo le quitaría calidad.
-        if (escala === 1 && archivo.size <= PESO_MAXIMO) {
-            bitmap.close?.();
-            return null;
-        }
-
-        const lienzo = document.createElement('canvas');
-        lienzo.width = Math.round(bitmap.width * escala);
-        lienzo.height = Math.round(bitmap.height * escala);
-
-        const pincel = lienzo.getContext('2d');
-
-        if (!pincel) {
-            bitmap.close?.();
-            return null;
-        }
-
-        pincel.drawImage(bitmap, 0, 0, lienzo.width, lienzo.height);
-        bitmap.close?.();
-
-        const blob = await new Promise((listo) => {
-            try {
-                lienzo.toBlob(listo, archivo.type, CALIDAD);
-            } catch {
-                listo(null);
-            }
-        });
-
-        if (!blob) return null;
-
-        /*
-         * ── Cuándo NO nos quedamos con la reducida ──
-         *
-         * Sólo cuando no había nada que reducir de tamaño (`escala === 1`) y la
-         * recompresión ha salido más pesada. Ahí el original es mejor en las
-         * dos cosas y no hay nada que ganar.
-         *
-         * **Cuando sí se ha reducido el tamaño, la reducida se queda aunque
-         * pese más.** Suena raro y no lo es: el tope de 1600 px es un
-         * requisito, no una optimización. Una imagen muy comprimible —un
-         * degradado, una captura de pantalla plana— puede ocupar más al
-         * reencodearla, porque el lienzo le mete el suavizado del redimensionado
-         * y eso es ruido que el PNG ya no comprime igual. Preferir el original
-         * por unos kilobytes deja guardada una imagen de 3000 px que va a
-         * ralentizar cada miniatura del panel.
-         *
-         * Esto lo pilló `pruebas/encuesta-evaluacion.mjs`: la primera versión
-         * comparaba los pesos siempre, y una foto de 3000x2000 se guardaba
-         * intacta porque su versión de 1600 px pesaba 42 KB frente a 27 KB.
-         */
-        if (escala === 1 && blob.size >= archivo.size) {
-            return null;
-        }
-
-        return new File([blob], archivo.name, { type: archivo.type, lastModified: Date.now() });
+    reducir(archivo) {
+        return reducirImagen(archivo, LADO_MAXIMO, PESO_MAXIMO);
     },
 
     /**

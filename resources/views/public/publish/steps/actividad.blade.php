@@ -392,22 +392,33 @@
     </div>
 
     {{-- ── Imagen de portada ── --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);" x-data="{ portada: '' }">
+    {{--
+        P19: la portada se reduce en el navegador antes de subirla, y el aviso
+        de peso llega al elegir el archivo y no después de enviar. Si aun
+        reducida no entra, se corta el envío. Ver resources/js/imagenes.js.
+    --}}
+    <div style="padding:30px;border-bottom:1px solid var(--linea);"
+         data-campo="imagen" data-etiqueta="Imagen de portada"
+         x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de portada' })">
         <div class="seclabel" style="margin-bottom:18px;">Imagen de portada</div>
 
         <div style="display:flex;align-items:center;gap:18px;">
             <span style="display:grid;place-items:center;width:150px;height:78px;border-radius:16px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
-                <img x-ref="vista" x-show="portada" x-cloak alt="" style="width:100%;height:100%;object-fit:cover;">
-                <svg x-show="!portada" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:cover;">
+                <svg x-show="!previa" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
             </span>
             <div>
                 <label class="btn btn-outline btn-sm" style="cursor:pointer;">
-                    Subir imagen de portada
+                    <span x-text="tiene ? 'Cambiar imagen de portada' : 'Subir imagen de portada'">Subir imagen de portada</span>
                     <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp" style="display:none;"
-                           x-on:change="portada = $event.target.files[0]?.name || '';
-                                        if ($event.target.files[0]) $refs.vista.src = URL.createObjectURL($event.target.files[0])">
+                           x-on:change="elegir($event)">
                 </label>
                 <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 2 MB · 1200×600 px recomendado.</div>
+                <div class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
+                <div class="helper" x-show="tiene && ! error" x-cloak>
+                    <span x-text="nombre"></span> · <span x-text="peso"></span>
+                </div>
+                <span class="field-error" x-show="error" x-cloak x-text="error"></span>
                 <x-archivo-retenido campo="imagen" />
                 @error('imagen') <span class="field-error">{{ $message }}</span> @enderror
             </div>

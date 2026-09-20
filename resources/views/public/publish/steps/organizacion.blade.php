@@ -128,21 +128,32 @@
             Ya lo tiene la ONG, y volver a pedírselo a quien sólo venía a
             ponerse una contraseña es el trabajo que el punto quita.
         --}}
-        <div x-data="{ logo: '' }" x-show="! reclamando">
+        {{--
+            P19: el logo se reduce en el navegador antes de subirlo, y el aviso
+            de peso llega al elegir el archivo y no después de enviar. Ver
+            resources/js/imagenes.js.
+        --}}
+        <div data-campo="org_logo" data-etiqueta="Logo de la organización"
+             x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
+             x-show="! reclamando">
             <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:8px;">Logo de la organización</div>
             <div style="display:flex;align-items:center;gap:16px;">
                 <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
-                    <img x-ref="vista" x-show="logo" x-cloak alt="" style="width:100%;height:100%;object-fit:cover;">
-                    <svg x-show="!logo" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                    <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:cover;">
+                    <svg x-show="!previa" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
                 </span>
                 <div>
                     <label class="btn btn-outline btn-sm" style="cursor:pointer;">
-                        Subir imagen
+                        <span x-text="tiene ? 'Cambiar imagen' : 'Subir imagen'">Subir imagen</span>
                         <input type="file" name="org_logo" accept="image/jpeg,image/png,image/webp" style="display:none;"
-                               x-on:change="logo = $event.target.files[0]?.name || '';
-                                            if ($event.target.files[0]) $refs.vista.src = URL.createObjectURL($event.target.files[0])">
+                               x-on:change="elegir($event)">
                     </label>
                     <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 500 KB · 400×400 px recomendado. Si no subes logo, se mostrará un ícono genérico.</div>
+                    <div class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
+                    <div class="helper" x-show="tiene && ! error" x-cloak>
+                        <span x-text="nombre"></span> · <span x-text="peso"></span>
+                    </div>
+                    <span class="field-error" x-show="error" x-cloak x-text="error"></span>
                     <x-archivo-retenido campo="org_logo" />
                     @error('org_logo') <span class="field-error">{{ $message }}</span> @enderror
                 </div>

@@ -44,6 +44,19 @@ class EmailTemplate extends Model
             'variables' => ['nombre', 'organizacion', 'actividad', 'fecha', 'lugar', 'enlace_actividad', 'enlace_qr', 'bloque_qr', 'sitio'],
         ],
 
+        /*
+         * P20. Va a quien asistió, el día de la actividad o el siguiente —lo
+         * decide la ONG en Configuración → General—, con el enlace a la
+         * encuesta. Hasta aquí la encuesta sólo se llegaba por el QR del
+         * cartel: quien no lo escaneó ese día no tenía forma de volver.
+         */
+        'invitacion_evaluacion' => [
+            'nombre' => 'Invitación a evaluar la actividad',
+            'descripcion' => 'Se envía a las personas inscritas cuando la actividad ya pasó, con el enlace a la encuesta. '
+                .'Cuándo sale —el mismo día o el siguiente— se elige en Configuración → General.',
+            'variables' => ['nombre', 'actividad', 'fecha', 'lugar', 'organizacion', 'enlace_encuesta', 'enlace_actividad', 'sitio'],
+        ],
+
         'inscripcion_cancelada' => [
             'nombre' => 'Aviso de actividad cancelada',
             'descripcion' => 'Se envía a las personas inscritas cuando la actividad se cancela.',

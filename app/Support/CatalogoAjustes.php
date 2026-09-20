@@ -27,9 +27,25 @@ final class CatalogoAjustes
         'actividad' => 'Desde el día de la actividad',
     ];
 
+    /**
+     * Cuándo sale el correo que invita a evaluar (P20).
+     *
+     * «No enviar» está de primera y es una opción de verdad, no un hueco: la
+     * encuesta se puede seguir respondiendo por el QR del cartel, así que
+     * apagar el correo no apaga la evaluación. Y una ONG que prefiera no
+     * escribir a sus inscritos tiene que poder decirlo sin que haya que tocar
+     * código.
+     */
+    public const EVALUACION_INVITACION = [
+        'no' => 'No enviar (sólo el QR del cartel)',
+        'mismo_dia' => 'El mismo día de la actividad',
+        'dia_siguiente' => 'Al día siguiente de la actividad',
+    ];
+
     /** @var array<string, array<string, string>> ajuste => opciones */
     public const OPCIONES = [
         'evaluacion_apertura' => self::EVALUACION_APERTURA,
+        'evaluacion_invitacion_cuando' => self::EVALUACION_INVITACION,
     ];
 
     /** @return array<string, string> */

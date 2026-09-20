@@ -148,6 +148,12 @@ class SettingsSeeder extends Seeder
                     .'Un 0 la deja abierta para siempre.',
             ],
             [
+                'grupo' => 'general', 'clave' => 'evaluacion_invitacion_cuando', 'tipo' => 'opciones', 'valor' => 'dia_siguiente',
+                'label' => 'Cuándo se invita a evaluar por correo',
+                'descripcion' => 'A quien se inscribió se le manda el enlace de la encuesta cuando la actividad ya pasó. '
+                    .'Aquí se decide si sale el mismo día o al día siguiente. «No enviar» deja sólo el QR del cartel.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'evaluacion_max_fotos', 'tipo' => 'int', 'valor' => '3',
                 'label' => 'Fotografías que puede subir cada persona',
                 'descripcion' => 'Cuántas fotos admite la encuesta de evaluación en una misma respuesta. '

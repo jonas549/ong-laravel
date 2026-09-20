@@ -85,6 +85,33 @@ class CorreoTransaccional
             ], $inscripcion);
     }
 
+    /**
+     * Invitación a evaluar, cuando la actividad ya pasó (P20).
+     *
+     * Va al enlace de la encuesta, el mismo al que lleva el QR del cartel.
+     * Hasta aquí ese QR era el único camino: quien no lo escaneó ese día no
+     * tenía forma de volver, y las respuestas que se perdían eran justo las de
+     * quien se fue con prisa.
+     *
+     * El enlace va por slug, como el del QR, para que los dos lleven al mismo
+     * sitio y una misma persona no tenga dos direcciones distintas de la misma
+     * encuesta.
+     */
+    public function invitacionEvaluacion(Registration $inscripcion): bool
+    {
+        $actividad = $inscripcion->activity;
+
+        if (! $actividad) {
+            return false;
+        }
+
+        return $this->enviar('invitacion_evaluacion', $inscripcion->correo,
+            $this->datosDeActividad($actividad) + [
+                'nombre' => $inscripcion->nombre,
+                'enlace_encuesta' => route('evaluar.show', $actividad->slug),
+            ], $inscripcion);
+    }
+
     /** Aviso a la persona inscrita de que se canceló la actividad. */
     public function inscripcionCancelada(Registration $inscripcion): bool
     {

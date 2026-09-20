@@ -38,5 +38,20 @@ Schedule::command('dps:recordatorios')
     ->dailyAt('09:00')
     ->withoutOverlapping();
 
+/*
+ * La invitación a evaluar, cuando la actividad ya pasó (P20).
+ *
+ * A media mañana y no de madrugada: con el ajuste en «el mismo día», salir a
+ * las 00:05 sería escribirle a alguien horas antes de su actividad. A las
+ * 10:00 la del mismo día ya empezó —casi todas son de mañana o de tarde— y la
+ * del día anterior lleva ya un día entero.
+ *
+ * El comando decide solo qué día le toca según el ajuste, y se protege de
+ * duplicados por su cuenta.
+ */
+Schedule::command('dps:invitar-evaluacion')
+    ->dailyAt('10:00')
+    ->withoutOverlapping();
+
 /* Los trabajos fallidos se acumulan; un mes de historial es suficiente. */
 Schedule::command('queue:prune-failed --hours=720')->weekly();

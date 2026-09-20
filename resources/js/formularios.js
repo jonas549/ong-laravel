@@ -187,7 +187,10 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
             campo: caja.dataset.campo,
             etiqueta: caja.dataset.etiqueta || caja.dataset.campo,
             paso: this.pasoDe(caja),
-            mensaje: '',
+            // `data-error-propio` lo pone quien sepa algo que la guía no puede
+            // averiguar sola: hoy, el campo de imagen cuando el archivo pasa
+            // del límite y el navegador no ha podido reducirlo (P19).
+            mensaje: caja.dataset.errorPropio || '',
         };
     },
 
@@ -200,10 +203,24 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
      */
     camposQueFaltan(paso = null) {
         return this.cajas()
-            .filter((caja) => caja.hasAttribute('data-obligatorio'))
             .filter((caja) => paso === null || this.pasoDe(caja) === paso)
             .filter((caja) => ! this.loReleva(caja))
-            .filter((caja) => this.seLePide(caja) && ! this.tieneValor(caja))
+            .filter((caja) => this.seLePide(caja))
+            .filter((caja) => {
+                /*
+                 * Dos motivos para salir en el resumen, no uno:
+                 *
+                 *  - el de siempre: es obligatorio y está vacío;
+                 *  - `data-error-propio`: el campo sabe algo que la guía no
+                 *    puede averiguar mirando el DOM. Lo usa el campo de imagen
+                 *    cuando el archivo pasa del límite y no se ha podido
+                 *    reducir (P19): sin esto, el aviso salía junto al campo y
+                 *    el envío seguía adelante hasta que lo cortaba el servidor.
+                 */
+                if (caja.dataset.errorPropio) return true;
+
+                return caja.hasAttribute('data-obligatorio') && ! this.tieneValor(caja);
+            })
             .map((caja) => this.describir(caja));
     },
 

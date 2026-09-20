@@ -16,6 +16,7 @@ class Registration extends Model
     protected $fillable = [
         'activity_id', 'nombre', 'correo', 'telefono',
         'es_mayor_edad', 'estado', 'token', 'confirmed_at', 'recordatorio_encolado_at',
+        'invitacion_evaluacion_encolada_at',
     ];
 
     protected function casts(): array
@@ -24,6 +25,7 @@ class Registration extends Model
             'es_mayor_edad' => 'boolean',
             'confirmed_at' => 'datetime',
             'recordatorio_encolado_at' => 'datetime',
+            'invitacion_evaluacion_encolada_at' => 'datetime',
         ];
     }
 

@@ -3,6 +3,7 @@ import { iniciarAnclas } from './anclas';
 import { editorActividad } from './editor-actividad';
 import { compartir } from './compartir';
 import { encuestaEvaluacion } from './evaluacion';
+import { campoImagen } from './imagenes';
 import { campoFecha, campoHora, formularioGuiado } from './formularios';
 // Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
 import './campos';
@@ -123,6 +124,8 @@ Alpine.data('selectorMedio', selectorMedio);
 // El wizard de publicar y la guia de errores que comparte con los formularios
 // publicos sueltos (inscripcion). Ver resources/js/formularios.js.
 Alpine.data('wizard', wizard);
+// El campo de imagen que reduce antes de subir (P19).
+Alpine.data('campoImagen', campoImagen);
 Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);

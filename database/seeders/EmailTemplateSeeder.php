@@ -84,6 +84,17 @@ class EmailTemplateSeeder extends Seeder
                 ),
             ],
 
+            'invitacion_evaluacion' => [
+                'asunto' => '¿Cómo te fue en {{ actividad }}?',
+                'cuerpo_html' => $this->cuerpo(
+                    '¿Nos cuentas cómo te fue?',
+                    '<p style="margin:0 0 14px;">Hola {{ nombre }}, gracias por participar en <strong>{{ actividad }}</strong> con {{ organizacion }}.</p>
+                     <p style="margin:0 0 14px;">Nos ayudaría mucho saber cómo lo viviste. Son dos minutos y las respuestas sirven para preparar las próximas ediciones del Día del Patrimonio Social.</p>',
+                    'Responder la encuesta',
+                    '{{ enlace_encuesta }}',
+                ),
+            ],
+
             'actividad_publicada' => [
                 'asunto' => 'Tu actividad ya está publicada',
                 'cuerpo_html' => $this->cuerpo(

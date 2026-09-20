@@ -518,22 +518,31 @@
             </div>
 
             {{-- ── Imagen ── --}}
-            <div style="padding:30px;border-bottom:1px solid var(--linea);" x-data="{ nombre: '' }">
+            {{-- P19: mismo campo que el wizard, que reduce antes de subir. --}}
+            <div style="padding:30px;border-bottom:1px solid var(--linea);"
+                 data-campo="imagen" data-etiqueta="Imagen de la actividad"
+                 x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de la actividad' })">
                 <div class="seclabel" style="margin-bottom:18px;">Imagen</div>
                 <div class="lbl" style="margin-bottom:10px;">Imagen de la actividad</div>
 
                 <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
-                    <img loading="lazy" decoding="async" src="{{ $activity->imagen_url }}" alt="Imagen actual de la actividad" x-ref="vista"
+                    {{-- La actual mientras no se elija otra; la elegida en cuanto la haya. --}}
+                    <img loading="lazy" decoding="async"
+                         x-bind:src="previa || '{{ $activity->imagen_url }}'"
+                         src="{{ $activity->imagen_url }}" alt="Imagen actual de la actividad"
                          style="width:170px;height:96px;object-fit:cover;border-radius:16px;border:1px solid var(--linea);">
                     <div>
                         <label class="btn btn-outline btn-sm" style="cursor:pointer;">
                             Cambiar imagen
                             <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp" style="display:none;"
-                                   x-on:change="nombre = $event.target.files[0]?.name || '';
-                                                if ($event.target.files[0]) $refs.vista.src = URL.createObjectURL($event.target.files[0])">
+                                   x-on:change="elegir($event)">
                         </label>
-                        <div class="helper" style="margin-top:7px;" x-show="!nombre">PNG o JPG · máx. 2 MB · 1200×600 px recomendado.</div>
-                        <div class="helper" style="margin-top:7px;" x-show="nombre" x-cloak x-text="nombre"></div>
+                        <div class="helper" style="margin-top:7px;" x-show="! tiene">PNG o JPG · máx. 2 MB · 1200×600 px recomendado.</div>
+                        <div class="helper" style="margin-top:7px;" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
+                        <div class="helper" style="margin-top:7px;" x-show="tiene && ! error" x-cloak>
+                            <span x-text="nombre"></span> · <span x-text="peso"></span>
+                        </div>
+                        <span class="field-error" x-show="error" x-cloak x-text="error"></span>
                         @error('imagen') <span class="field-error">{{ $message }}</span> @enderror
                     </div>
                 </div>
