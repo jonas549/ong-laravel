@@ -37,7 +37,9 @@ class RegistrationController extends Controller
             ->with('activity');
 
         $inscritos = Listado::ordenar($inscritos, $request, [
-            'id', 'nombre', 'correo', 'estado', 'created_at',
+            // Sin 'estado': la columna se quitó (C3) y ordenar por lo que no
+            // se ve deja la tabla barajada sin que nada lo explique.
+            'id', 'nombre', 'correo', 'created_at',
         ], 'created_at', 'desc')
             ->paginate(Listado::porPagina($request))
             ->withQueryString();
@@ -78,7 +80,13 @@ class RegistrationController extends Controller
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValuesWithStyle(
-                ['ID', 'Nombre', 'Correo', 'Actividad', 'Organización', 'Fecha de inscripción', 'Estado'],
+                /*
+                 * Sin «Estado» (C3). Pintaba «Pendiente» en todas las filas:
+                 * nada en la aplicación pasa nunca una inscripción a
+                 * «confirmado». Lo que sí importa —si se dio de baja— va en su
+                 * propia columna, que se lee sola.
+                 */
+                ['ID', 'Nombre', 'Correo', 'Actividad', 'Organización', 'Fecha de inscripción', 'Baja'],
                 (new Style)->withFontBold(true),
             ));
 
@@ -90,7 +98,7 @@ class RegistrationController extends Controller
                     $i->activity?->titulo ?? '(actividad borrada)',
                     $i->activity?->organization?->nombre ?? '',
                     \App\Support\Fecha::conHora($i->created_at),
-                    $i->estado,
+                    $i->estado === 'cancelado' ? 'Cancelada' : '',
                 ]));
             }
 

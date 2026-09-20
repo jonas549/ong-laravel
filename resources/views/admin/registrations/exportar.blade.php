@@ -23,12 +23,14 @@
             </select>
         </label>
 
-        <label class="lbl">Estado
+        {{-- C3: sin estados. Ofrecía los tres del esquema y dos no separaban
+             nada —«pendiente» devolvía todo y «confirmado» nada—, porque el
+             doble opt-in no se construyó. --}}
+        <label class="lbl">Mostrar
             <select class="fld" name="estado">
-                <option value="">Todos</option>
-                @foreach ($estados as $e)
-                    <option value="{{ $e }}" @selected($filtros['estado'] === $e)>{{ ucfirst($e) }}</option>
-                @endforeach
+                <option value="">Todas las inscripciones</option>
+                <option value="activas" @selected($filtros['estado'] === 'activas')>Sin las canceladas</option>
+                <option value="cancelado" @selected($filtros['estado'] === 'cancelado')>Sólo las canceladas</option>
             </select>
         </label>
 

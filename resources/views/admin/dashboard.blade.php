@@ -172,23 +172,27 @@
     <div class="tabla-wrap" style="border:0;">
         <table class="tabla">
             <thead>
+                {{-- Sin «Estado» (C3), igual que en el listado de
+                     inscripciones: pintaba «Pendiente» en todas las filas. Una
+                     baja se ve por la fila atenuada y la etiqueta. --}}
                 <tr>
                     <th class="col-id">ID</th>
                     <th>Persona</th>
                     <th>Actividad</th>
                     <th>Organización</th>
-                    <th>Estado</th>
                     <th>Cuándo</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($ultimasInscripciones as $i)
-                    @php $t = $i->estado_color; @endphp
-                    <tr>
+                    <tr @class(['plist-baja' => $i->estado === 'cancelado'])>
                         <x-panel.id :valor="$i->id" />
 
                         <td>
                             {{ $i->nombre }}
+                            @if ($i->estado === 'cancelado')
+                                <span class="plist-baja-marca">Cancelada</span>
+                            @endif
                             <span class="helper" style="display:block;">{{ $i->correo }}</span>
                         </td>
                         <td>
@@ -199,15 +203,10 @@
                             @endif
                         </td>
                         <td>{{ $i->activity?->organization?->nombre }}</td>
-                        <td>
-                            <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:{{ $t['bg'] }};color:{{ $t['ink'] }};">
-                                {{ $i->estado_label }}
-                            </span>
-                        </td>
                         <td style="white-space:nowrap;">{{ \App\Support\Fecha::relativa($i->created_at) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" style="color:var(--gris);">Todavía no hay inscripciones.</td></tr>
+                    <tr><td colspan="5" style="color:var(--gris);">Todavía no hay inscripciones.</td></tr>
                 @endforelse
             </tbody>
         </table>
