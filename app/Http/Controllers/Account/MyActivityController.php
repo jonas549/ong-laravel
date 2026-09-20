@@ -109,6 +109,10 @@ class MyActivityController extends Controller
                 'region_id' => $comuna?->region_id,
                 'commune_id' => $comuna?->id,
                 'direccion' => $datos['direccion'] ?? null,
+                // El punto de la sugerencia elegida (P16). Cambiar la dirección
+                // a mano lo borra: el navegador manda los dos campos vacíos.
+                'latitud' => $datos['latitud'] ?? null,
+                'longitud' => $datos['longitud'] ?? null,
                 'participantes_estimados' => $datos['participantes_estimados'] ?? null,
                 'cupos_disponibles' => $datos['cupos_disponibles'] ?? null,
                 'abierta_publico' => $request->boolean('abierta_publico'),

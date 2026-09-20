@@ -54,6 +54,10 @@
              que hubiera elegido, o el formulario le pediría el logo otra vez. --}}
         rutaOrganizaciones: {{ Js::from(route('publish.organizaciones')) }},
         rutaEntrar: {{ Js::from(route('publish.entrar')) }},
+        {{-- P16: el buscador de direcciones y el punto que hubiera al rebotar. --}}
+        rutaDirecciones: {{ Js::from(route('publish.direcciones')) }},
+        latitud: {{ Js::from(old('latitud')) }},
+        longitud: {{ Js::from(old('longitud')) }},
         conSesion: {{ Js::from((bool) auth()->user()) }},
         buscarOrg: {{ Js::from(old('org_nombre', $organizacion?->nombre ?? '')) }},
         orgElegida: {{ Js::from($organizacionElegida) }},

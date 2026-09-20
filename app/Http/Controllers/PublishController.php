@@ -13,6 +13,7 @@ use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
 use App\Services\AprobacionAutomatica;
 use App\Services\ControlDeAcceso;
+use App\Services\Geocodificador;
 use App\Services\CorreoTransaccional;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -170,6 +171,24 @@ class PublishController extends Controller
         ]);
     }
 
+    /**
+     * Sugerencias de dirección, con su punto en el mapa (P16).
+     *
+     * **Ayuda, no obliga.** El campo sigue siendo texto libre y el envío no
+     * depende de esto: si Photon no responde, `Geocodificador` devuelve una
+     * lista vacía y el formulario sigue funcionando igual que antes.
+     *
+     * La consulta sale del servidor y no del navegador: así quien habla con
+     * el geocodificador somos nosotros y no cada visitante escribiendo su
+     * dirección letra a letra contra un tercero.
+     */
+    public function direcciones(Request $request, Geocodificador $geo)
+    {
+        return response()->json([
+            'direcciones' => $geo->sugerencias(Filtro::texto($request, 'q')),
+        ]);
+    }
+
     public function store(PublishActivityRequest $request, ActivityModerationService $moderacion)
     {
         abort_unless(Setting::get('publicacion_abierta', true), 403);
@@ -292,6 +311,10 @@ class PublishController extends Controller
                     'region_id' => $comuna?->region_id ?? ($datos['region_id'] ?? null),
                     'commune_id' => $comuna?->id,
                     'direccion' => $datos['direccion'] ?? null,
+                    // El punto de la sugerencia elegida (P16). Nulo si escribió
+                    // la dirección a mano, que sigue estando permitido.
+                    'latitud' => $datos['latitud'] ?? null,
+                    'longitud' => $datos['longitud'] ?? null,
                     'participantes_estimados' => $datos['participantes_estimados'] ?? null,
                     'cupos_totales' => $datos['cupos_totales'] ?? null,
                     'cupos_disponibles' => $datos['cupos_totales'] ?? null,

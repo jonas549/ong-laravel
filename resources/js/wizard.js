@@ -70,6 +70,7 @@ export const wizard = (inicial) => ({
      */
     rutaOrganizaciones: inicial.rutaOrganizaciones ?? '/organizaciones/buscar',
     rutaEntrar: inicial.rutaEntrar ?? '/publicar-actividad/entrar',
+    rutaDirecciones: inicial.rutaDirecciones ?? '/direcciones/buscar',
     buscarOrg: inicial.buscarOrg ?? '',
     sugerencias: [],
     buscando: false,
@@ -430,5 +431,102 @@ export const wizard = (inicial) => ({
 
         entrada.value = valor;
         entrada.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+
+    /* ─────────────────────────── sugerencias de dirección (P16) ── */
+
+    /*
+     * La dirección sigue siendo texto libre y sigue mandando lo que se
+     * escriba. Lo que añade esto es que, al elegir una sugerencia, se guarda
+     * además el PUNTO: latitud y longitud. Con el punto, el enlace del mapa de
+     * la ficha lleva al sitio exacto en vez de a lo que el buscador adivine de
+     * una cadena como «Metro Salvador, salida norte».
+     *
+     * **No bloquea nada.** Si el servicio no responde, la lista se queda vacía
+     * y el campo funciona como el primer día.
+     */
+    sugerenciasDir: [],
+    dirAbiertas: false,
+    buscandoDir: false,
+    latitud: inicial.latitud ?? '',
+    longitud: inicial.longitud ?? '',
+    temporizadorDir: null,
+
+    escribirDireccion(valor) {
+        /*
+         * Cambiar la dirección a mano invalida el punto: lo que hay escrito ya
+         * no es la sugerencia que se eligió, y dejar las coordenadas viejas
+         * pondría el mapa en un sitio que no corresponde al texto. Es peor que
+         * no tener punto.
+         */
+        this.olvidarPunto();
+
+        clearTimeout(this.temporizadorDir);
+
+        if (valor.trim().length < 3) {
+            this.sugerenciasDir = [];
+            this.dirAbiertas = false;
+
+            return;
+        }
+
+        // Un respiro entre teclas: detrás hay un servicio de fuera.
+        this.temporizadorDir = setTimeout(() => this.pedirDirecciones(valor), 320);
+    },
+
+    async pedirDirecciones(valor) {
+        this.buscandoDir = true;
+
+        try {
+            const r = await fetch(`${this.rutaDirecciones}?q=${encodeURIComponent(valor)}`, {
+                headers: { Accept: 'application/json' },
+            });
+
+            if (!r.ok) throw new Error(r.status);
+
+            const datos = await r.json();
+
+            // Puede haber llegado tarde: si ya se escribió otra cosa, se tira.
+            if (valor !== this.campoDireccion()?.value) return;
+
+            this.sugerenciasDir = datos.direcciones ?? [];
+            this.dirAbiertas = this.sugerenciasDir.length > 0;
+        } catch {
+            this.sugerenciasDir = [];
+            this.dirAbiertas = false;
+        } finally {
+            this.buscandoDir = false;
+        }
+    },
+
+    elegirDireccion(d) {
+        const campo = this.campoDireccion();
+
+        if (campo) {
+            campo.value = d.etiqueta;
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // El punto, después de escribir: el `input` de arriba dispara
+        // `escribirDireccion`, que lo olvidaría.
+        this.latitud = d.latitud;
+        this.longitud = d.longitud;
+
+        this.dirAbiertas = false;
+        this.sugerenciasDir = [];
+        this.revisarCampo('direccion');
+    },
+
+    olvidarPunto() {
+        this.latitud = '';
+        this.longitud = '';
+    },
+
+    get tienePunto() {
+        return this.latitud !== '' && this.longitud !== '';
+    },
+
+    campoDireccion() {
+        return this.raiz?.querySelector('input[name="direccion"]');
     },
 });

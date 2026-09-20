@@ -119,6 +119,18 @@ Route::post('/publicar-actividad/entrar', [PublishController::class, 'entrar'])
     ->middleware('throttle:10,1')
     ->name('publish.entrar');
 
+/*
+ * Sugerencias de dirección (P16).
+ *
+ * El freno es más generoso que el del buscador de organizaciones porque esto
+ * se dispara mientras se escribe, pero sigue habiendo uno: detrás hay un
+ * servicio de fuera que nos deja usarlo gratis, y la caché del geocodificador
+ * sólo ahorra las consultas repetidas.
+ */
+Route::get('/direcciones/buscar', [PublishController::class, 'direcciones'])
+    ->middleware('throttle:90,1')
+    ->name('publish.direcciones');
+
 Route::get('/noticias', [PostController::class, 'index'])->name('posts.index');
 Route::get('/noticias/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 

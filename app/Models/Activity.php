@@ -52,7 +52,7 @@ class Activity extends Model
     protected $fillable = [
         'organization_id', 'titulo', 'slug', 'descripcion', 'formato',
         'fecha_inicio', 'fecha_termino', 'hora_inicio', 'hora_termino', 'sin_fecha_definida',
-        'region_id', 'commune_id', 'direccion',
+        'region_id', 'commune_id', 'direccion', 'latitud', 'longitud',
         'participantes_estimados', 'cupos_totales', 'cupos_disponibles',
         'abierta_publico', 'inscripcion_habilitada', 'tiene_accesibilidad',
         'accesibilidad_detalle', 'publico_otro', 'info_previa',
@@ -68,6 +68,8 @@ class Activity extends Model
             'fecha_termino' => 'date',
             'published_at' => 'datetime',
             'publicada_automaticamente' => 'boolean',
+            'latitud' => 'float',
+            'longitud' => 'float',
             'sin_fecha_definida' => 'boolean',
             'abierta_publico' => 'boolean',
             'inscripcion_habilitada' => 'boolean',
@@ -270,6 +272,42 @@ class Activity extends Model
     {
         return collect([$this->commune?->nombre, $this->region?->nombre])
             ->filter()->implode(', ') ?: 'Por definir';
+    }
+
+    /** Si se eligió una sugerencia y quedó guardado el punto exacto. */
+    public function tienePunto(): bool
+    {
+        return $this->latitud !== null && $this->longitud !== null;
+    }
+
+    /**
+     * El enlace al mapa (P16).
+     *
+     * **Con el punto guardado se usa el punto, no el texto.** Ésa es la
+     * diferencia que pedía el encargo: una dirección como «Metro Salvador,
+     * salida norte» es perfectamente útil para una persona y un pésimo término
+     * de búsqueda para un mapa, que acaba llevando a otra ciudad o a nada.
+     *
+     * Sin punto se cae a la búsqueda por texto, que es lo que había: sigue
+     * siendo mejor que no ofrecer nada, y las actividades de antes de esto no
+     * tienen coordenadas.
+     *
+     * Devuelve null cuando no hay ni punto ni dirección: un enlace a un mapa
+     * vacío no lleva a ninguna parte.
+     */
+    public function getMapaUrlAttribute(): ?string
+    {
+        if ($this->tienePunto()) {
+            return 'https://www.google.com/maps/search/?api=1&query='
+                .rawurlencode($this->latitud.','.$this->longitud);
+        }
+
+        $busqueda = trim(collect([$this->direccion, $this->commune?->nombre, $this->region?->nombre])
+            ->filter()->implode(', '));
+
+        return $busqueda === ''
+            ? null
+            : 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($busqueda);
     }
 
     public function getImagenUrlAttribute(): string

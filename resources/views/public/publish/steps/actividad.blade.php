@@ -274,16 +274,59 @@
             </label>
         </div>
 
-        {{-- `data-obligatorio-salvo` es el `required_without` de la regla: una
-             actividad disponible de forma permanente puede no tener sitio fijo. --}}
-        <label class="lbl" style="margin-top:16px;" data-campo="direccion" data-obligatorio
+        {{--
+            ── La dirección, con sugerencias (P16) ──
+
+            Sigue siendo texto libre y sigue mandando lo que se escriba: la
+            sugerencia ayuda a acertar y, sobre todo, guarda el PUNTO. Con
+            latitud y longitud, el enlace del mapa de la ficha lleva al sitio
+            exacto en vez de a lo que el buscador adivine de una cadena como
+            «Metro Salvador, salida norte».
+
+            `data-obligatorio-salvo` es el `required_without` de la regla: una
+            actividad disponible de forma permanente puede no tener sitio fijo.
+        --}}
+        <label class="lbl" style="margin-top:16px;position:relative;" data-campo="direccion" data-obligatorio
                data-obligatorio-salvo="sin_fecha_definida"
                data-obligatorio-salvo-valor="formato:Online"
                data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección *
             <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
-                   value="@viejo('direccion')" placeholder="Calle, número, referencia">
+                   value="@viejo('direccion')" placeholder="Calle, número, referencia"
+                   autocomplete="off" role="combobox" aria-autocomplete="list"
+                   x-bind:aria-expanded="dirAbiertas"
+                   x-on:input="escribirDireccion($event.target.value)"
+                   x-on:focus="if (sugerenciasDir.length) dirAbiertas = true"
+                   x-on:blur="setTimeout(() => dirAbiertas = false, 160)"
+                   x-on:keydown.escape.prevent="dirAbiertas = false">
+
+            {{-- El punto viaja aparte, en dos campos ocultos. --}}
+            <input type="hidden" name="latitud" x-bind:value="latitud">
+            <input type="hidden" name="longitud" x-bind:value="longitud">
+
+            <span class="helper" x-show="buscandoDir" x-cloak>Buscando direcciones…</span>
+
+            <span class="helper" x-show="tienePunto" x-cloak style="color:var(--naranjo-600);">
+                Ubicación exacta guardada: el enlace del mapa llevará justo aquí.
+            </span>
+
+            <ul class="org-sugerencias" x-show="dirAbiertas" x-cloak role="listbox">
+                <template x-for="d in sugerenciasDir" x-bind:key="d.etiqueta">
+                    <li>
+                        <button type="button" class="org-sugerencia" x-on:click="elegirDireccion(d)">
+                            <span class="org-sugerencia-nombre" x-text="d.direccion"></span>
+                            <span class="org-sugerencia-estado" x-text="d.ciudad"></span>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+
+            <span class="helper">
+                Escribe y elige una sugerencia para fijar el punto en el mapa. Si tu dirección no sale, escríbela igual.
+            </span>
+
             @error('direccion') <span class="field-error">{{ $message }}</span> @enderror
         </label>
+
     </div>
 
     {{-- ── Temas y público ── --}}

@@ -125,6 +125,21 @@
                         @if ($activity->direccion)
                             <div style="color:var(--gris);font-size:14px;">{{ $activity->direccion }}</div>
                         @endif
+
+                        {{--
+                            P16: el enlace al mapa. Con el punto guardado lleva
+                            a las coordenadas exactas; sin él, a una búsqueda
+                            por texto, que es lo que había.
+
+                            `noopener` y `nofollow`: es un salto a un sitio de
+                            fuera desde una página que rellena cualquiera.
+                        --}}
+                        @if ($activity->formato !== 'Online' && $activity->mapa_url)
+                            <a class="textlink" style="font-size:14px;" target="_blank" rel="noopener nofollow"
+                               href="{{ $activity->mapa_url }}">
+                                Ver en el mapa{{ $activity->tienePunto() ? '' : ' (búsqueda aproximada)' }}
+                            </a>
+                        @endif
                     </div>
 
                     <div>

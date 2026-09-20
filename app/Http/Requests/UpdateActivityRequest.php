@@ -85,6 +85,15 @@ class UpdateActivityRequest extends FormRequest
                 fn () => ! $this->boolean('sin_fecha_definida') && $this->input('formato') !== 'Online'
             ), 'string', 'max:255'],
 
+            /*
+             * El punto de la dirección (P16). Nulos si nadie eligió una
+             * sugerencia, que es lo normal: el campo es texto libre y esto
+             * ayuda, no obliga. Los rangos son los del planeta; lo que llega
+             * aquí lo escribe el navegador.
+             */
+            'latitud' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitud' => ['nullable', 'numeric', 'between:-180,180'],
+
             'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_disponibles' => ['nullable', 'integer', 'min:0', 'max:100000'],
