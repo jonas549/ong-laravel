@@ -1,9 +1,13 @@
-# Progreso — cuarta tanda (cierre)
+# Progreso — cuarta y quinta tanda
 
 **Fecha:** 20/09/2026
 **Producción:** https://ong.sandboxdelta.com
-**Avance:** los seis puntos cerrados (C1–C6). Con esto queda cerrada también
-la tercera tanda, cuyo único cabo suelto era P21.
+**Avance:** la cuarta cerrada entera (C1–C6) y la quinta con Q1, Q2 y Q3
+cerrados; Q4 está hecho pero falta comprobarlo en el servidor. Con la cuarta
+queda cerrada también la tercera, cuyo único cabo suelto era P21.
+
+El día entero, con el porqué de cada decisión, está en
+`BITACORA-2026-09-20.md`.
 
 ---
 
@@ -20,9 +24,13 @@ servidor, después de desplegar.
 | C4 | El paso 3 se salta si la ficha está completa, y si no, pide sólo lo que falta; la barra renumera sin dejar hueco | `paso3-salto.mjs` (28) · **(prod)** |
 | C5 | Cómo se verificó P12, la marquesina | `marquesina.mjs` (8) · **(prod)** 5 organizaciones, ninguna repetida |
 | C6 | Las credenciales de producción, fuera del repositorio | `c6-credenciales.mjs`: 12 en el ensayo local, 12 en producción |
+| Q1 | Qué pasa al cancelar una actividad, y qué haría falta para republicarla | Respuesta, sin tocar nada. Ver la bitácora |
+| Q2 | El logo de la organización se lee en la ficha: alto fijo y ancho según su forma | `ficha-actividad.mjs` (45) · **(prod)** 11 de 12 fichas |
+| Q3 | Un enlace sin `https://` no rebota, en los cinco sitios donde se escribe uno | `quinta-tanda.mjs` (33) · **(prod)** |
+| Q4 | El kit de difusión, en la barra de las seis pantallas de mi-cuenta | `quinta-tanda.mjs` (33) · **falta en prod**: no hay cuenta de organizador |
 
-Repaso de los cuatro primeros contra el servidor: `cierre-produccion.mjs`,
-27 de 27.
+Repaso contra el servidor: `cierre-produccion.mjs` 27 de 27 y
+`quinta-produccion.mjs` para Q2 y Q3.
 
 ---
 
@@ -68,6 +76,21 @@ el atributo. Las dos reglas escriben en `display` y se peleaban.
 llevaría por delante su organización y sus actividades. Quedan en el panel,
 inactivas, y con contraseña nueva por si alguien las reactivara.
 
+**Q2 — el logo no faltaba: no se leía.** Cuatro de las cinco organizaciones de
+producción tienen logo, el `<img>` se pintaba y la imagen cargaba. Son logos
+de palabras —uno de 668×100 px— y en un cuadrado de 54 salían a 54×8. Ahora
+el alto manda y el ancho sale de la proporción, hasta 170 px.
+
+**Q3 — lo decide el servidor, no el navegador.** El completado del `https://`
+existía desde el punto 31, pero sólo en dos campos y sólo al salir del campo:
+enviando con Enter el `blur` no siempre llega. `App\Support\Enlace` completa
+antes de validar y lo usan los cinco sitios. De paso, `url` a secas aceptaba
+`javascript:`, que acababa en un `href` público: la regla es `url:http,https`.
+
+**Q4 — la barra se saca a un componente.** Estaba escrita dentro de «Mis
+actividades» y sólo se veía allí. Usa el ajuste `kit_difusion_url` que ya
+existía (punto 25) y no uno nuevo; vacío no pinta el botón.
+
 ---
 
 ## LO QUE HAY QUE SABER PARA SEGUIR
@@ -97,18 +120,26 @@ no devuelve la clave a la del repositorio. Era lo grave de P21.
 
 ## LO QUE SIGUE PENDIENTE
 
-Sin cambios respecto a la tercera tanda, menos P21, que se cierra aquí:
-
-1. El Excel de organizaciones del cliente. `dps:importar-organizaciones` está
+1. **Q4 sin comprobar en el servidor.** La barra vive detrás de
+   `role:organizer` y desde C6 no queda ninguna cuenta con ese rol activa en
+   producción. Hace falta reactivar la sembrada un rato o crear una de
+   pruebas; lo decide Jonas.
+2. **Los tres agujeros de cancelar y republicar** que sacó Q1:
+   `inscripcion_habilitada` no se vuelve a encender, se reenvía el correo de
+   publicación con QR, y a los inscritos nadie les avisa de la vuelta. En
+   torno a un día, más la decisión de si republicar reabre inscripciones.
+3. El Excel de organizaciones del cliente. `dps:importar-organizaciones` está
    listo y probado; falta el archivo.
-2. Las tres plantillas de moderación —recibida, necesita ajustes, cancelada—
+4. Las tres plantillas de moderación —recibida, necesita ajustes, cancelada—
    siguen siendo vistas Blade fijas y no editables.
-3. `activity_evaluations.foto_path` quedó sin uso; quitarlo es una migración
+5. `activity_evaluations.foto_path` quedó sin uso; quitarlo es una migración
    destructiva sobre datos de producción y el único motivo sería la limpieza.
-4. Duplicar «Cifras» o «Voces» copia los textos y no la lista: las dos copias
+6. Duplicar «Cifras» o «Voces» copia los textos y no la lista: las dos copias
    enseñan los mismos elementos.
-5. El ingreso con código al correo no se construyó; se hizo «recuperar
+7. El ingreso con código al correo no se construyó; se hizo «recuperar
    contraseña», que era la otra mitad del encargo.
+8. **El filtro de inscripciones de C3**, por si se quería fuera del todo y no
+   sustituido por el de las bajas.
 
 El detalle de la tercera tanda está en el historial de git: los commits de
 P1–P20 llevan escrito el porqué de cada decisión.
