@@ -9,6 +9,19 @@
     // Un @include compila a su propio archivo, así que el `use` del wizard no
     // llega hasta aquí y hay que repetirlo.
     use App\Support\CamposDeActividad;
+
+    /*
+     * C4: qué se le pregunta y qué no.
+     *
+     * Con sesión abierta sólo se pide lo que falte en su ficha; lo demás viaja
+     * en un campo oculto con el valor que ya tiene. Hay que mandarlo —las
+     * reglas del servidor lo exigen— pero no hay por qué pedírselo otra vez.
+     *
+     * Sin sesión, `$faltan` llega vacío y se pide todo, que es lo de siempre.
+     */
+    $faltan = $faltanDeLaOrganizacion ?? [];
+    $conFicha = $organizacion !== null;
+    $pedir = fn (string $campo) => ! $conFicha || in_array($campo, $faltan, true);
 @endphp
 
 <h1 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:0 0 24px;color:var(--ink);">Sobre tu organización</h1>
@@ -26,80 +39,43 @@
     <div style="padding:30px;display:flex;flex-direction:column;gap:18px;border-bottom:1px solid var(--linea);">
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             {{--
-                ── El buscador de organizaciones (P9) ──
+                El buscador de organizaciones (P9, P10 y P11).
 
-                Escribir dos letras ofrece las que ya están en el listado. No es
-                un desplegable cerrado: el campo sigue admitiendo cualquier
-                nombre, porque una organización que no esté en el listado tiene
-                que poder publicar igual. La sugerencia ayuda, no obliga.
+                La marcación vive en `<x-buscador-organizacion>` y la comparten
+                este paso y la pantalla de crear cuenta de organizador. Estaba
+                sólo aquí, y por eso aquella se quedó con un campo de texto
+                normal durante una tanda entera (C1).
 
-                La lista se cierra con Escape y al salir del campo, con un
-                respiro para que el clic en una sugerencia llegue antes que el
-                `blur` —si no, se cierra justo antes de registrar el clic y no
-                se puede elegir nada con el ratón—.
+                Sin `required`: la guía de errores del wizard cubre los cinco
+                pasos, y un control inválido dentro de un paso oculto hace que
+                Chrome corte el envío sin decir nada.
             --}}
-            <label class="lbl" data-campo="org_nombre" data-obligatorio
-                   data-etiqueta="{{ CamposDeActividad::etiqueta('org_nombre') }}"
-                   style="position:relative;">Nombre de la organización *
-                {{-- `x-model` además del manejador: elegir una sugerencia
-                     escribe el nombre en el campo, y sin la atadura el valor
-                     sólo cambiaba en el componente. Arranca con lo que
-                     devuelva el servidor tras un rebote. --}}
-                <input class="fld @error('org_nombre') is-invalid @enderror" name="org_nombre"
-                       x-model="buscarOrg"
-                       placeholder="Ej. Fundación Junto al Barrio"
-                       autocomplete="off" role="combobox" aria-autocomplete="list"
-                       x-bind:aria-expanded="sugerenciasAbiertas"
-                       x-on:input="escribirOrg($event.target.value)"
-                       x-on:focus="if (sugerencias.length) sugerenciasAbiertas = true"
-                       x-on:blur="setTimeout(() => sugerenciasAbiertas = false, 160)"
-                       x-on:keydown.escape.prevent="sugerenciasAbiertas = false">
+            @if ($pedir('org_nombre'))
+                <x-buscador-organizacion
+                    :valor="\App\Support\Formulario::viejo('org_nombre', $organizacion?->nombre)" />
 
-                <span class="helper" x-show="buscando" x-cloak>Buscando…</span>
-
-                <ul class="org-sugerencias" x-show="sugerenciasAbiertas" x-cloak role="listbox">
-                    <template x-for="o in sugerencias" x-bind:key="o.id">
-                        <li>
-                            <button type="button" class="org-sugerencia" x-on:click="elegirOrg(o)">
-                                <span class="org-sugerencia-nombre" x-text="o.nombre"></span>
-                                <span class="org-sugerencia-estado"
-                                      x-text="o.libre ? 'En el listado' : 'Ya tiene cuenta'"
-                                      x-bind:class="o.libre ? '' : 'org-sugerencia-estado-tomada'"></span>
-                            </button>
-                        </li>
-                    </template>
-                </ul>
-
-                {{-- Reclamada: se dice cuál y se ofrece deshacerlo. --}}
-                <span class="helper" x-show="reclamando" x-cloak style="color:var(--naranjo-600);">
-                    Encontramos tu organización en nuestro listado. No hace falta que vuelvas a cargar sus datos.
-                    <button type="button" class="textlink" style="background:none;border:0;padding:0;cursor:pointer;font:inherit;"
-                            x-on:click="soltarOrg()">No es ésta</button>
-                </span>
-
-                {{-- P11, en su otra cara: la organización ya tiene cuenta. --}}
-                <span class="field-error" x-show="orgTomada" x-cloak>
-                    <span x-text="orgTomada?.nombre"></span> ya tiene una cuenta.
-                    <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
-                    o <a class="textlink" href="{{ route('password.request') }}">recupera la contraseña</a>
-                    para publicar con ella.
-                </span>
-
-                {{-- El id viaja aparte del nombre: el servidor no se fía del
-                     nombre para decidir a qué organización se suma. --}}
-                <input type="hidden" name="org_id" x-bind:value="orgElegida?.id ?? ''">
-
-                @error('org_nombre') <span class="field-error">{{ $message }}</span> @enderror
-                @error('org_id') <span class="field-error">{{ $message }}</span> @enderror
-            </label>
-
-            <label class="lbl">Tipo de organización
-                <input class="fld" x-bind:value="tipo" readonly style="background:#f8f9fa;color:var(--gris);">
-                <span class="helper" x-text="reclamando ? 'Viene de nuestro listado.' : 'Prellenado del paso anterior.'">Prellenado del paso anterior.</span>
-            </label>
+                <label class="lbl">Tipo de organización
+                    <input class="fld" x-bind:value="tipo" readonly style="background:#f8f9fa;color:var(--gris);">
+                    <span class="helper" x-text="reclamando ? 'Viene de nuestro listado.' : 'Prellenado del paso anterior.'">Prellenado del paso anterior.</span>
+                </label>
+            @else
+                {{-- Ya lo tiene: viaja, pero no se pregunta (C4). --}}
+                <input type="hidden" name="org_nombre" value="{{ $organizacion->nombre }}">
+            @endif
         </div>
 
-        <label class="lbl" x-show="esOtra()" x-cloak data-campo="org_tipo_otro" data-obligatorio
+        {{--
+            Los dos campos que dependen del tipo van SIEMPRE en el HTML, incluso
+            si la ficha ya los tiene: el tipo se elige en el paso 2 y se puede
+            cambiar sin recargar, así que el servidor no sabe cuál de los dos va
+            a hacer falta. Un campo obligatorio que no está en pantalla es el
+            peor error de todos (bloque K).
+
+            Lo que sí sale de la ficha es si se enseñan: con el tipo sin tocar y
+            el dato ya guardado, no hay nada que preguntar (C4).
+        --}}
+        <label class="lbl" x-show="esOtra() && (tipoCambiado() || {{ Js::from($pedir('org_tipo_otro')) }})"
+               x-cloak data-campo="org_tipo_otro" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('org_tipo_otro') }}">Describe tu organización *
             <input class="fld @error('org_tipo_otro') is-invalid @enderror" name="org_tipo_otro"
                    value="@viejo('org_tipo_otro', $organizacion?->tipo_otro)" placeholder="Otra (especificar)">
@@ -116,7 +92,8 @@
             Se sigue guardando en la organización, que es donde vive el campo.
         --}}
 
-        <label class="lbl" x-show="esEducativa()" x-cloak data-campo="org_unidad_educativa" data-obligatorio
+        <label class="lbl" x-show="esEducativa() && (tipoCambiado() || {{ Js::from($pedir('org_unidad_educativa')) }})"
+               x-cloak data-campo="org_unidad_educativa" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('org_unidad_educativa') }}">¿Qué unidad, grupo o comunidad educativa organiza la actividad? *
             <input class="fld @error('org_unidad_educativa') is-invalid @enderror" name="org_unidad_educativa"
                    value="@viejo('org_unidad_educativa', $organizacion?->unidad_educativa)" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B">
@@ -133,6 +110,7 @@
             de peso llega al elegir el archivo y no después de enviar. Ver
             resources/js/imagenes.js.
         --}}
+        @if ($pedir('org_logo'))
         <div data-campo="org_logo" data-etiqueta="Logo de la organización"
              x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
              x-show="! reclamando">
@@ -159,6 +137,7 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 
     {{--

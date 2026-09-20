@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RegistroOrganizadorRequest;
 use App\Models\AccessLog;
 use App\Models\Organization;
 use App\Models\User;
 use App\Rules\CorreoEnviable;
 use App\Services\ControlDeAcceso;
 use App\Services\CorreoTransaccional;
+use App\Support\ReglasDeCampo;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -36,10 +38,43 @@ class RegistroController extends Controller
 
         return view('account.auth.registro', [
             'tiposOrg' => Organization::TIPOS,
+            'organizacionElegida' => $this->organizacionReclamada(),
         ]);
     }
 
-    public function store(Request $request, CorreoTransaccional $correos, ControlDeAcceso $acceso)
+    /**
+     * La organización libre que se estuviera reclamando, si la hay.
+     *
+     * Se vuelve a leer de la base y no de lo que llega en el POST: el id viene
+     * del navegador, así que decidir con lo que él diga permitiría reclamar
+     * una organización que ya tiene dueño sólo con cambiar el número.
+     *
+     * Hace falta al volver de un rebote: sin esto, un error de validación le
+     * devuelve la pantalla pidiéndole otra vez el tipo de organización, que es
+     * justo lo que se le había dejado de pedir.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function organizacionReclamada(): ?array
+    {
+        $id = (int) old('org_id');
+
+        if ($id <= 0) {
+            return null;
+        }
+
+        $organizacion = Organization::sinReclamar()->where('activo', true)->find($id);
+
+        return $organizacion ? [
+            'id' => $organizacion->id,
+            'nombre' => $organizacion->nombre,
+            'tipo' => $organizacion->tipo,
+            'tipo_otro' => $organizacion->tipo_otro,
+            'libre' => true,
+        ] : null;
+    }
+
+    public function store(RegistroOrganizadorRequest $request, CorreoTransaccional $correos, ControlDeAcceso $acceso)
     {
         // Con sesión abierta no se crea otra cuenta: sería dejar la anterior
         // huérfana sin querer.
@@ -47,31 +82,17 @@ class RegistroController extends Controller
             return redirect()->route(Auth::user()->esAdmin() ? 'admin.dashboard' : 'account.activities.index');
         }
 
-        $datos = $request->validate([
-            'org_nombre' => ['required', 'string', 'max:255'],
-            'org_tipo' => ['required', Rule::in(Organization::TIPOS)],
-            'org_tipo_otro' => ['nullable', 'required_if:org_tipo,Otra', 'string', 'max:255'],
-            'org_unidad_educativa' => ['nullable', 'required_if:org_tipo,Institución educativa', 'string', 'max:255'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', new CorreoEnviable, Rule::unique('users', 'email')],
-            // El tope de 72 no es capricho: bcrypt ignora lo que pase de ahí.
-            // Sin ese límite alguien podía elegir una contraseña de 100
-            // caracteres y entrar después con los primeros 72, sin enterarse.
-            'password' => ['required', 'string', 'min:8', 'max:72', 'confirmed'],
-        ], [
-            'email.unique' => 'Ya existe una cuenta con ese correo. Entra con ella.',
-            'password.confirmed' => 'Las contraseñas no coinciden.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'password.max' => 'La contraseña no puede pasar de 72 caracteres.',
-            'org_tipo_otro.required_if' => 'Especifica qué tipo de organización es.',
-            'org_unidad_educativa.required_if' => 'Indica el nombre de la unidad educativa.',
-        ], [
-            'org_nombre' => 'el nombre de la organización',
-            'org_tipo' => 'el tipo de organización',
-            'name' => 'el nombre',
-            'email' => 'el correo',
-            'password' => 'la contraseña',
-        ]);
+        // Las reglas viven en RegistroOrganizadorRequest, que comparte con el
+        // wizard el trait de reclamar organizaciones.
+        $datos = $request->validated();
+
+        $reclamada = $request->reclamada();
+
+        // Reclamando una del listado, el tipo lo trae ella: el formulario ni
+        // lo pinta, así que lo que llegue en el POST no manda.
+        if ($reclamada) {
+            $datos['org_tipo'] = $reclamada->tipo;
+        }
 
         // Los campos condicionales sólo valen para su tipo: si no, quedaba
         // guardado lo que se hubiera escrito antes de cambiar de opción.
@@ -81,7 +102,7 @@ class RegistroController extends Controller
             : null;
 
         try {
-            $usuario = DB::transaction(function () use ($datos) {
+            $usuario = DB::transaction(function () use ($datos, $request) {
                 $usuario = User::create([
                     'name' => $datos['name'],
                     'email' => $datos['email'],
@@ -90,14 +111,26 @@ class RegistroController extends Controller
                     'is_active' => true,
                 ]);
 
-                Organization::create([
-                    'user_id' => $usuario->id,
-                    'nombre' => $datos['org_nombre'],
-                    'tipo' => $datos['org_tipo'],
-                    'tipo_otro' => $datos['org_tipo_otro'],
-                    'unidad_educativa' => $datos['org_unidad_educativa'],
-                    'correo_contacto' => $datos['email'],
-                ]);
+                /*
+                 * C1: si eligió una organización del listado histórico, se le
+                 * pone dueño en vez de crear otra igual. Es lo mismo que hace
+                 * el wizard (P10), y por eso lo decide el mismo trait.
+                 *
+                 * De lo que llega en el formulario sólo se le aplica el correo
+                 * de contacto: el nombre y el tipo son los de la ONG y no se
+                 * pisan con lo que venga.
+                 */
+                $request->reclamarOCrear(
+                    $usuario,
+                    campos: [
+                        'nombre' => $datos['org_nombre'],
+                        'tipo' => $datos['org_tipo'],
+                        'tipo_otro' => $datos['org_tipo_otro'],
+                        'unidad_educativa' => $datos['org_unidad_educativa'],
+                        'correo_contacto' => $datos['email'],
+                    ],
+                    alReclamar: ['correo_contacto' => $datos['email']],
+                );
 
                 return $usuario;
             });
@@ -106,7 +139,7 @@ class RegistroController extends Controller
             // de que ninguno de los dos INSERT llegara. Se contesta lo mismo que
             // habría contestado la validación, no un 500.
             throw ValidationException::withMessages([
-                'email' => 'Ya existe una cuenta con ese correo. Entra con ella.',
+                'email' => ReglasDeCampo::CORREO_YA_EXISTE,
             ]);
         }
 

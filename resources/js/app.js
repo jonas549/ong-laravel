@@ -4,6 +4,7 @@ import { editorActividad } from './editor-actividad';
 import { compartir } from './compartir';
 import { encuestaEvaluacion } from './evaluacion';
 import { campoImagen } from './imagenes';
+import { registroOrganizador } from './organizaciones';
 import { campoFecha, campoHora, formularioGuiado } from './formularios';
 // Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
 import './campos';
@@ -34,7 +35,17 @@ import { wizard } from './wizard';
  * justo lo que dejaba los círculos convertidos en números sueltos.
  */
 
-window.estiloPaso = (paso, n, navegable = true) => {
+window.estiloPaso = (paso, n, navegable = true, oculto = false) => {
+    /*
+     * C4: el paso 3 se esconde desde aquí y no con `x-show`, porque esta
+     * función devuelve el style entero y Alpine, con un :style de texto,
+     * reemplaza el atributo. Las dos reglas escriben en `display` y la última
+     * en evaluarse ganaría: se peleaban.
+     */
+    if (oculto) {
+        return 'display:none;';
+    }
+
     const color = paso === n
         ? 'var(--naranjo-600)'
         : (paso > n ? 'var(--gris-700)' : '#b7babe');
@@ -126,6 +137,9 @@ Alpine.data('selectorMedio', selectorMedio);
 Alpine.data('wizard', wizard);
 // El campo de imagen que reduce antes de subir (P19).
 Alpine.data('campoImagen', campoImagen);
+// La pantalla de crear cuenta de organizador (C1): el mismo buscador de
+// organizaciones que el paso 3 del wizard. Ver resources/js/organizaciones.js.
+Alpine.data('registroOrganizador', registroOrganizador);
 Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);

@@ -109,6 +109,54 @@ class Organization extends Model
             ]);
     }
 
+    /**
+     * Qué le falta a esta organización para no tener que volver a preguntarle
+     * nada en el paso 3 del wizard (C4).
+     *
+     * **Incluye el logo**, y es una decisión del cliente, no un descuido: una
+     * organización sin logo sale en el sitio con sus iniciales, y el paso 3
+     * es el único sitio donde se le puede pedir sin interrumpirla después.
+     *
+     * Los dos condicionales son los mismos que exige el formulario: «Otra»
+     * pide describirse, e «Institución educativa» pide la unidad. Si algún día
+     * se añade otro campo obligatorio al paso 3, va aquí — si no, el wizard lo
+     * saltaría dando por completo lo que no lo está.
+     *
+     * @return array<int, string> las claves de los campos que faltan
+     */
+    public function datosQueFaltan(): array
+    {
+        $faltan = [];
+
+        if (blank($this->nombre)) {
+            $faltan[] = 'org_nombre';
+        }
+
+        if (blank($this->tipo)) {
+            $faltan[] = 'org_tipo';
+        }
+
+        if ($this->tipo === 'Otra' && blank($this->tipo_otro)) {
+            $faltan[] = 'org_tipo_otro';
+        }
+
+        if ($this->tipo === 'Institución educativa' && blank($this->unidad_educativa)) {
+            $faltan[] = 'org_unidad_educativa';
+        }
+
+        if (blank($this->logo_path)) {
+            $faltan[] = 'org_logo';
+        }
+
+        return $faltan;
+    }
+
+    /** Si no hay nada que preguntarle: el wizard puede saltarse el paso 3. */
+    public function fichaCompleta(): bool
+    {
+        return $this->datosQueFaltan() === [];
+    }
+
     public static function slugUnico(string $nombre): string
     {
         $base = Str::slug($nombre) ?: 'organizacion';

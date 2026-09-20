@@ -99,8 +99,25 @@ export const editorActividad = (inicial) => ({
     latitud: inicial.latitud ?? '',
     longitud: inicial.longitud ?? '',
     temporizadorDir: null,
+    /* Mientras se aplica una sugerencia, el campo no se busca a sí mismo. */
+    aplicandoDireccion: false,
 
     escribirDireccion(valor) {
+        /*
+         * Si lo que acaba de escribir en el campo fuimos nosotros al aplicar
+         * una sugerencia, aquí no hay nada que hacer.
+         *
+         * `elegirDireccion` tiene que lanzar un `input` —lo necesita la guía de
+         * errores para quitar la marca de campo pendiente— y el manejador de
+         * ese evento es este mismo método, que da por hecho que quien escribe
+         * es una persona. Sin la bandera, elegir una sugerencia olvidaba el
+         * punto recién guardado y programaba OTRA búsqueda, ahora con la
+         * etiqueta entera: cuando esa segunda consulta devolvía algo, la lista
+         * se volvía a abrir sola. De ahí que pareciera intermitente —depende de
+         * si el geocodificador encuentra la etiqueta completa— y de ahí el C2.
+         */
+        if (this.aplicandoDireccion) return;
+
         /*
          * Cambiar la dirección a mano invalida el punto: lo que hay escrito ya
          * no es la sugerencia que se eligió, y dejar las coordenadas viejas
@@ -150,19 +167,32 @@ export const editorActividad = (inicial) => ({
     elegirDireccion(d) {
         const campo = this.campoDireccion();
 
-        if (campo) {
-            campo.value = d.etiqueta;
-            campo.dispatchEvent(new Event('input', { bubbles: true }));
+        /*
+         * La bandera cubre todo lo que provoque el `input` de aquí abajo. Se
+         * baja en el `finally` para que un fallo a mitad no deje el buscador
+         * mudo para el resto de la sesión.
+         */
+        this.aplicandoDireccion = true;
+
+        try {
+            // Y se cancela lo que hubiera en vuelo: una búsqueda programada
+            // hace 300 ms llegaría después y reabriría la lista igual.
+            clearTimeout(this.temporizadorDir);
+
+            if (campo) {
+                campo.value = d.etiqueta;
+                campo.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            this.latitud = d.latitud;
+            this.longitud = d.longitud;
+
+            this.dirAbiertas = false;
+            this.sugerenciasDir = [];
+            this.revisarCampo('direccion');
+        } finally {
+            this.aplicandoDireccion = false;
         }
-
-        // El punto, después de escribir: el `input` de arriba dispara
-        // `escribirDireccion`, que lo olvidaría.
-        this.latitud = d.latitud;
-        this.longitud = d.longitud;
-
-        this.dirAbiertas = false;
-        this.sugerenciasDir = [];
-        this.revisarCampo('direccion');
     },
 
     olvidarPunto() {

@@ -474,6 +474,19 @@ class PublishController extends Controller
                  * lo que P10 quita.
                  */
                 'organizacionElegida' => $this->organizacionReclamada(),
+                /*
+                 * C4: qué le falta a su organización, y si por tanto hay que
+                 * pintarle el paso 3.
+                 *
+                 * Con la ficha completa el wizard se lo salta: ese paso sólo
+                 * le pediría datos que ya tiene guardados. Si falta algo —el
+                 * logo, la unidad educativa— se pinta, pero sólo con lo que
+                 * falta.
+                 *
+                 * Sin sesión siempre se pinta entero: no hay ficha que mirar.
+                 */
+                'faltanDeLaOrganizacion' => Auth::user()?->organization?->datosQueFaltan() ?? [],
+                'saltarPaso3' => (bool) Auth::user()?->organization?->fichaCompleta(),
             ];
     }
 }

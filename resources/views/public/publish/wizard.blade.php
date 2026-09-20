@@ -26,6 +26,12 @@
 
 <div x-data="wizard({
         paso: {{ $pasoInicial }},
+        {{-- C4: con la ficha de la organización completa no hay nada que
+             preguntar en el paso 3, así que se salta. --}}
+        saltarPaso3: {{ Js::from($saltarPaso3) }},
+        {{-- Y el tipo que tiene guardado, para saber si lo cambia en el paso 2:
+             de él dependen los campos obligatorios del 3. --}}
+        tipoDeLaFicha: {{ Js::from($organizacion?->tipo) }},
         tipo: {{ Js::from(old('org_tipo', $organizacion?->tipo ?? $tiposOrg[0])) }},
         temas: {{ Js::from(old('temas', [])) }},
         caracteristicas: {{ Js::from(old('caracteristicas', [])) }},
@@ -63,7 +69,7 @@
         orgElegida: {{ Js::from($organizacionElegida) }},
      })">
 
-@include('public.publish.partials.pasos')
+@include('public.publish.partials.pasos', ['saltarPaso3' => $saltarPaso3])
 
 {{--
     ── P14: «¿Ya tienes cuenta?» ──

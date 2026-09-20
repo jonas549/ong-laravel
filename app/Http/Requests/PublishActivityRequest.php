@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Activity;
 use App\Models\Organization;
+use App\Support\ReclamarOrganizacion;
 use App\Support\ReglasDeCampo;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rules\Unique;
 
 class PublishActivityRequest extends FormRequest
 {
+    use ReclamarOrganizacion;
+
     public function authorize(): bool
     {
         return true;
@@ -50,84 +53,17 @@ class PublishActivityRequest extends FormRequest
         ]);
     }
 
-    /**
-     * «Ese nombre de organizacion ya esta tomado».
+    /*
+     * «Ese nombre de organizacion ya esta tomado» (punto 19 del 11/09) y el
+     * reclamar del listado (P9/P10) viven en `ReclamarOrganizacion`, que
+     * comparten este formulario y el de crear cuenta de organizador.
      *
-     * Punto 19 de la tanda del 11/09: en produccion hay dos organizaciones
-     * llamadas «deltadigital.cl» con correos distintos, creadas por el wizard
-     * sin que nada lo impidiera.
-     *
-     * Dos decisiones que hay que conocer:
-     *
-     * 1. **Va en el formulario y NO como indice unico en la base.** Lo decidio
-     *    Jonas el 18/09: mientras existan los duplicados de hoy, una migracion
-     *    que anada el indice se caeria al aplicarse. Queda como deuda, anotada
-     *    en BACKLOG-BACKEND.md.
-     * 2. **Se ignora la organizacion propia.** Quien ya tiene cuenta reusa su
-     *    organizacion al publicar una segunda actividad, y el formulario le
-     *    devuelve su propio nombre: sin el `ignore` no podria volver a
-     *    publicar nunca.
-     *
-     * Las borradas en blando no cuentan: su nombre vuelve a estar libre.
+     * Dos decisiones que hay que conocer y que no estan alli por brevedad:
+     * la unicidad va en el formulario y NO como indice unico en la base —lo
+     * decidio Jonas el 18/09: mientras existan los duplicados de hoy, una
+     * migracion que anada el indice se caeria al aplicarse, y queda anotado
+     * en BACKLOG-BACKEND.md—; y se ignora la organizacion propia.
      */
-    private function organizacionSinRepetir(): Unique
-    {
-        $regla = Rule::unique('organizations', 'nombre')->whereNull('deleted_at');
-
-        if ($propia = $this->user()?->organization) {
-            $regla->ignore($propia->id);
-        }
-
-        /*
-         * Y se ignora también la que se esté reclamando del listado histórico.
-         *
-         * Sin esto, P9 y el punto 19 se pelean: el buscador ofrece una
-         * organización que ya existe, la persona la elige, y el formulario la
-         * rechaza por repetida. Reclamar no es crear un duplicado —es ponerle
-         * dueño a una fila que no lo tenía—, así que su propio nombre no puede
-         * ser motivo de rechazo.
-         *
-         * Se comprueba contra la base y no contra lo que llegue en el POST:
-         * `reclamada()` sólo devuelve la organización si de verdad está libre.
-         */
-        if ($reclamada = $this->reclamada()) {
-            $regla->ignore($reclamada->id);
-        }
-
-        return $regla;
-    }
-
-    /**
-     * La organización del listado que se está reclamando, si es reclamable.
-     *
-     * **Se relee de la base entera.** El id viaja en un campo oculto, así que
-     * decidir con lo que diga el navegador dejaría reclamar una organización
-     * que ya tiene dueño sólo con cambiar el número: el resultado sería una
-     * cuenta nueva colgada de una organización ajena, con sus actividades
-     * dentro. Aquí se exige que siga libre y activa.
-     *
-     * Se memoriza porque la piden la regla del nombre, la del id y el
-     * controlador, y son tres consultas para lo mismo dentro de una petición.
-     */
-    public function reclamada(): ?Organization
-    {
-        if ($this->user()) {
-            return null;
-        }
-
-        if ($this->organizacionReclamada !== false) {
-            return $this->organizacionReclamada;
-        }
-
-        $id = (int) $this->input('org_id');
-
-        return $this->organizacionReclamada = $id > 0
-            ? Organization::sinReclamar()->where('activo', true)->find($id)
-            : null;
-    }
-
-    /** `false` significa «todavía no se ha mirado»; `null`, «no hay». */
-    private Organization|null|false $organizacionReclamada = false;
 
     /**
      * Antes de rechazar, conserva los archivos que SI venian bien.
@@ -156,11 +92,7 @@ class PublishActivityRequest extends FormRequest
              * Existe, está activa y NO tiene cuenta: las tres cosas, porque
              * este campo lo escribe el navegador.
              */
-            'org_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('organizations', 'id')->whereNull('deleted_at')->whereNull('user_id')->where('activo', true),
-            ],
+            'org_id' => $this->reglaDelIdDeOrganizacion(),
             'org_tipo' => ['required', Rule::in(Organization::TIPOS)],
             'org_tipo_otro' => ['nullable', 'required_if:org_tipo,Otra', 'string', 'max:255'],
             'org_descripcion' => ['nullable', 'string', 'max:2000'],

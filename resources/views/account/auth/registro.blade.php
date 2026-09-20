@@ -18,24 +18,42 @@
     </div>
 
     <div class="card" style="padding:34px 32px;">
-        <form method="POST" action="{{ route('account.registro.store') }}" style="display:flex;flex-direction:column;gap:18px;">
+        {{--
+            C1: esta pantalla usa el MISMO buscador de organizaciones que el
+            paso 3 del wizard. El comportamiento está en
+            `resources/js/organizaciones.js` y la marcación en
+            `<x-buscador-organizacion>`; aquí no hay una segunda copia.
+
+            Lo único propio de esta pantalla es el tipo de organización, que
+            aquí se elige a mano —en el wizard viene del paso 2— y que deja de
+            preguntarse al reclamar una del listado, porque ya lo trae.
+
+            El valor inicial va con Js::from y no interpolado entre comillas:
+            Blade escapa la comilla simple, pero el parser de HTML la devuelve
+            al leer el atributo y Alpine acababa evaluando lo que mandara quien
+            enviara el formulario.
+        --}}
+        <form method="POST" action="{{ route('account.registro.store') }}" style="display:flex;flex-direction:column;gap:18px;"
+              x-data="registroOrganizador({
+                  rutaOrganizaciones: {{ \Illuminate\Support\Js::from(route('publish.organizaciones')) }},
+                  buscarOrg: {{ \Illuminate\Support\Js::from(\App\Support\Formulario::viejo('org_nombre')) }},
+                  orgElegida: {{ \Illuminate\Support\Js::from($organizacionElegida) }},
+                  tipo: {{ \Illuminate\Support\Js::from(\App\Support\Formulario::viejo('org_tipo', $tiposOrg[0])) }},
+              })">
             @csrf
 
-            <label class="lbl">Nombre de la organización *
-                <input class="fld @error('org_nombre') is-invalid @enderror" name="org_nombre"
-                       value="@viejo('org_nombre')" placeholder="Ej. Fundación Junto al Barrio" required>
-                @error('org_nombre') <span class="field-error">{{ $message }}</span> @enderror
-            </label>
+            <x-buscador-organizacion
+                :valor="\App\Support\Formulario::viejo('org_nombre')"
+                :requerido="true"
+                ayuda="Escribe y elige de la lista si tu organización ya participó. Si no sale, escríbela igual." />
 
-            {{-- Los dos campos condicionales son los mismos del paso 2 del wizard.
-                 El valor va con Js::from y no interpolado entre comillas: Blade
-                 escapa la comilla simple, pero el parser de HTML la devuelve al
-                 leer el atributo y Alpine acababa evaluando lo que mandara quien
-                 enviara el formulario. --}}
-            <div x-data="{ tipo: {{ \Illuminate\Support\Js::from(\App\Support\Formulario::viejo('org_tipo', $tiposOrg[0])) }} }"
-                 style="display:flex;flex-direction:column;gap:18px;">
+            {{-- Reclamando una del listado, su tipo ya está decidido: no se
+                 vuelve a preguntar. Es lo mismo que hace el wizard con el
+                 logo (P10). --}}
+            <div x-show="! reclamando" x-cloak style="display:flex;flex-direction:column;gap:18px;">
                 <label class="lbl">Tipo de organización *
-                    <select class="fld @error('org_tipo') is-invalid @enderror" name="org_tipo" x-model="tipo" required>
+                    <select class="fld @error('org_tipo') is-invalid @enderror" name="org_tipo" x-model="tipo"
+                            x-bind:required="! reclamando">
                         @foreach ($tiposOrg as $t)
                             <option value="{{ $t }}" @selected(\App\Support\Formulario::viejo('org_tipo', $tiposOrg[0]) === $t)>{{ $t }}</option>
                         @endforeach
@@ -63,6 +81,22 @@
                 <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
                        value="@viejo('email')" placeholder="contacto@organizacion.cl" required autocomplete="email">
                 @error('email') <span class="field-error">{{ $message }}</span> @enderror
+
+                {{--
+                    P11, también aquí (C1). Cuando el correo ya tiene cuenta,
+                    decirlo no basta: hay que dar las dos salidas. Van pegadas
+                    al campo, que es donde se descubre el problema.
+
+                    Se reconoce por la constante y no comparando la frase:
+                    cambiar el texto no puede apagar los enlaces en silencio.
+                --}}
+                @if ($errors->get('email') && in_array(\App\Support\ReglasDeCampo::CORREO_YA_EXISTE, $errors->get('email'), true))
+                    <span class="helper" style="display:block;margin-top:2px;">
+                        <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
+                        o <a class="textlink" href="{{ route('password.request') }}">recupera tu contraseña</a>
+                        si no la recuerdas.
+                    </span>
+                @endif
             </label>
 
             <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">

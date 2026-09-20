@@ -1,4 +1,5 @@
 import { guiaDeErrores } from './formularios';
+import { buscadorOrganizaciones } from './organizaciones';
 
 /*
  * El wizard público de «publicar actividad».
@@ -15,9 +16,25 @@ import { guiaDeErrores } from './formularios';
  */
 export const wizard = (inicial) => ({
     ...guiaDeErrores(inicial.errores ?? []),
+    ...buscadorOrganizaciones(inicial),
 
     paso: inicial.paso,
     redirigir: false,
+
+    /*
+     * C4: con la ficha de la organización completa, el paso 3 no se pinta y la
+     * navegación lo esquiva en los dos sentidos. El número del paso NO cambia
+     * —«Tu actividad» sigue siendo el 4— para no tener que repasar las
+     * referencias de la guía de errores, que trabaja con `data-paso`.
+     */
+    fichaCompleta: inicial.saltarPaso3 ?? false,
+
+    /*
+     * El tipo que tiene guardada su organización, para saber si lo ha cambiado
+     * en el paso 2. Es null cuando no hay ficha —sin sesión—, y entonces
+     * `tipoCambiado()` da true siempre, que es el comportamiento de siempre.
+     */
+    tipoDeLaFicha: inicial.tipoDeLaFicha ?? null,
 
     tipo: inicial.tipo,
     formato: inicial.formato,
@@ -56,28 +73,14 @@ export const wizard = (inicial) => ({
     },
 
     /*
-     * ── El buscador de organizaciones (P9, P10 y P11) ──
+     * ── El buscador de organizaciones ──
      *
-     * El cliente va a cargar de golpe el listado histórico de organizaciones
-     * participantes. Escribir «del» tiene que ofrecer las que ya están, para
-     * que nadie vuelva a crear la suya con una variante del nombre —que es
-     * exactamente como aparecieron los duplicados que hay hoy en producción—.
-     *
-     * Tres desenlaces posibles al elegir una:
-     *   libre  → se reclama: sólo hace falta correo y contraseña.
-     *   tomada → ya tiene cuenta; se le manda a iniciar sesión.
-     *   nada   → escribe un nombre nuevo y sigue el camino de siempre.
+     * El comportamiento vive en `organizaciones.js` y lo comparten este paso 3
+     * y la pantalla de crear cuenta de organizador. Aquí sólo quedan las rutas.
      */
     rutaOrganizaciones: inicial.rutaOrganizaciones ?? '/organizaciones/buscar',
     rutaEntrar: inicial.rutaEntrar ?? '/publicar-actividad/entrar',
     rutaDirecciones: inicial.rutaDirecciones ?? '/direcciones/buscar',
-    buscarOrg: inicial.buscarOrg ?? '',
-    sugerencias: [],
-    buscando: false,
-    sugerenciasAbiertas: false,
-    orgElegida: inicial.orgElegida ?? null,
-    orgTomada: null,
-    temporizadorOrg: null,
 
     init() {
         // `$el` sólo es la raíz aquí dentro. La guía busca los campos en los
@@ -106,6 +109,34 @@ export const wizard = (inicial) => ({
 
     /* ──────────────────────────────────────── navegación de pasos ── */
 
+    /**
+     * Si ha cambiado el tipo de organización respecto al que tiene guardado.
+     *
+     * Importa porque el tipo decide qué campos son obligatorios en el paso 3:
+     * «Otra» pide describirse e «Institución educativa» pide la unidad. Son
+     * datos que su ficha puede no tener, así que un cambio de tipo en el paso 2
+     * vuelve a hacer falta el paso 3 aunque la ficha estuviera completa.
+     */
+    tipoCambiado() {
+        return this.tipo !== this.tipoDeLaFicha;
+    },
+
+    /** Si el paso 3 no tiene nada que preguntar y se puede pasar de largo. */
+    saltaPaso3() {
+        return this.fichaCompleta && ! this.tipoCambiado();
+    },
+
+    /**
+     * El número que se ENSEÑA en la barra para un paso.
+     *
+     * Con el 3 fuera, «Tu actividad» se enseña como el 3 aunque dentro siga
+     * siendo el 4: dejar el hueco —1, 2, 4, 5— era decir que hay un paso que
+     * no se está viendo.
+     */
+    numeroEnBarra(n) {
+        return this.saltaPaso3() && n > 3 ? n - 1 : n;
+    },
+
     /** Cambiar de paso a secas. Lo usa la guía para llevar a un campo. */
     irAlPaso(n) {
         this.paso = n;
@@ -113,6 +144,18 @@ export const wizard = (inicial) => ({
 
     /** Y con el salto arriba, que es lo que hace la barra de pasos. */
     irA(n) {
+        /*
+         * Si el 3 está saltado, nadie debe caer en él: ni con el botón de
+         * «Continuar» del 2, ni volviendo desde el 4, ni pulsando la barra.
+         * Se deja pasar de largo en la dirección en la que se iba.
+         *
+         * Sólo se esquiva el 3: si la ficha está completa, ese paso no tendría
+         * ni un campo que enseñar y sería una pantalla vacía con un botón.
+         */
+        if (n === 3 && this.saltaPaso3()) {
+            n = this.paso > 3 ? 2 : 4;
+        }
+
         this.irAlPaso(n);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
@@ -194,95 +237,6 @@ export const wizard = (inicial) => ({
         if (!v) return;
         this.colabs.push(v);
         e.target.value = '';
-    },
-
-    /* ─────────────────────────── el buscador de organizaciones ── */
-
-    /**
-     * Pide sugerencias, con un respiro entre teclas.
-     *
-     * Sin el retardo, escribir «Fundación» son nueve peticiones y las
-     * respuestas pueden llegar desordenadas: la de «Fund» después de la de
-     * «Fundación», dejando en pantalla sugerencias de lo que ya no está
-     * escrito. Se cancela la anterior en cada tecla.
-     */
-    escribirOrg(valor) {
-        this.buscarOrg = valor;
-
-        // Cambiar el nombre a mano deshace la elección: lo que hay escrito ya
-        // no es la organización que se eligió.
-        if (this.orgElegida && this.orgElegida.nombre !== valor) this.soltarOrg();
-        this.orgTomada = null;
-
-        clearTimeout(this.temporizadorOrg);
-
-        if (valor.trim().length < 2) {
-            this.sugerencias = [];
-            this.sugerenciasAbiertas = false;
-            return;
-        }
-
-        this.temporizadorOrg = setTimeout(() => this.pedirSugerencias(valor), 220);
-    },
-
-    async pedirSugerencias(valor) {
-        this.buscando = true;
-
-        try {
-            const r = await fetch(`${this.rutaOrganizaciones}?q=${encodeURIComponent(valor)}`, {
-                headers: { Accept: 'application/json' },
-            });
-
-            if (!r.ok) throw new Error(r.status);
-
-            const datos = await r.json();
-
-            // Puede haber llegado tarde: si ya se escribió otra cosa, se tira.
-            if (valor !== this.buscarOrg) return;
-
-            this.sugerencias = datos.organizaciones ?? [];
-            this.sugerenciasAbiertas = this.sugerencias.length > 0;
-        } catch {
-            /*
-             * Un fallo del buscador no puede bloquear el formulario: es una
-             * ayuda, no un requisito. Se apagan las sugerencias y se sigue
-             * escribiendo el nombre a mano, que es el camino de siempre.
-             */
-            this.sugerencias = [];
-            this.sugerenciasAbiertas = false;
-        } finally {
-            this.buscando = false;
-        }
-    },
-
-    elegirOrg(org) {
-        this.sugerenciasAbiertas = false;
-        this.buscarOrg = org.nombre;
-
-        if (!org.libre) {
-            // Ya tiene cuenta. No se reclama: se le manda a iniciar sesión.
-            this.orgElegida = null;
-            this.orgTomada = org;
-            return;
-        }
-
-        this.orgTomada = null;
-        this.orgElegida = org;
-
-        // El tipo viene con ella, así que el paso 2 deja de mandar sobre esto.
-        if (org.tipo) this.tipo = org.tipo;
-
-        this.revisarCampo('org_nombre');
-    },
-
-    soltarOrg() {
-        this.orgElegida = null;
-        this.orgTomada = null;
-    },
-
-    /** Si se está reclamando una organización que ya existía. */
-    get reclamando() {
-        return this.orgElegida !== null;
     },
 
     /* ─────────────────────────── entrar sin salir del wizard (P14) ── */
@@ -451,8 +405,25 @@ export const wizard = (inicial) => ({
     latitud: inicial.latitud ?? '',
     longitud: inicial.longitud ?? '',
     temporizadorDir: null,
+    /* Mientras se aplica una sugerencia, el campo no se busca a sí mismo. */
+    aplicandoDireccion: false,
 
     escribirDireccion(valor) {
+        /*
+         * Si lo que acaba de escribir en el campo fuimos nosotros al aplicar
+         * una sugerencia, aquí no hay nada que hacer.
+         *
+         * `elegirDireccion` tiene que lanzar un `input` —lo necesita la guía de
+         * errores para quitar la marca de campo pendiente— y el manejador de
+         * ese evento es este mismo método, que da por hecho que quien escribe
+         * es una persona. Sin la bandera, elegir una sugerencia olvidaba el
+         * punto recién guardado y programaba OTRA búsqueda, ahora con la
+         * etiqueta entera: cuando esa segunda consulta devolvía algo, la lista
+         * se volvía a abrir sola. De ahí que pareciera intermitente —depende de
+         * si el geocodificador encuentra la etiqueta completa— y de ahí el C2.
+         */
+        if (this.aplicandoDireccion) return;
+
         /*
          * Cambiar la dirección a mano invalida el punto: lo que hay escrito ya
          * no es la sugerencia que se eligió, y dejar las coordenadas viejas
@@ -502,19 +473,32 @@ export const wizard = (inicial) => ({
     elegirDireccion(d) {
         const campo = this.campoDireccion();
 
-        if (campo) {
-            campo.value = d.etiqueta;
-            campo.dispatchEvent(new Event('input', { bubbles: true }));
+        /*
+         * La bandera cubre todo lo que provoque el `input` de aquí abajo. Se
+         * baja en el `finally` para que un fallo a mitad no deje el buscador
+         * mudo para el resto de la sesión.
+         */
+        this.aplicandoDireccion = true;
+
+        try {
+            // Y se cancela lo que hubiera en vuelo: una búsqueda programada
+            // hace 300 ms llegaría después y reabriría la lista igual.
+            clearTimeout(this.temporizadorDir);
+
+            if (campo) {
+                campo.value = d.etiqueta;
+                campo.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            this.latitud = d.latitud;
+            this.longitud = d.longitud;
+
+            this.dirAbiertas = false;
+            this.sugerenciasDir = [];
+            this.revisarCampo('direccion');
+        } finally {
+            this.aplicandoDireccion = false;
         }
-
-        // El punto, después de escribir: el `input` de arriba dispara
-        // `escribirDireccion`, que lo olvidaría.
-        this.latitud = d.latitud;
-        this.longitud = d.longitud;
-
-        this.dirAbiertas = false;
-        this.sugerenciasDir = [];
-        this.revisarCampo('direccion');
     },
 
     olvidarPunto() {

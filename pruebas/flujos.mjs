@@ -17,7 +17,10 @@ const correo = `prueba-${sello}@ejemplo.cl`;
 
 console.log('1) REGISTRO');
 let r = await post('/mi-cuenta/registro', {
-  org_nombre:'ONG de Prueba', org_tipo:'Organización sin fines de lucro', name:'Jonas de Prueba', email:correo,
+  // El nombre lleva el sello: desde C1, el registro comprueba que no se
+  // repita —igual que el wizard— así que un nombre fijo sólo valía la primera
+  // vez y después fallaba en falso.
+  org_nombre:`ONG de Prueba ${sello}`, org_tipo:'Organización sin fines de lucro', name:'Jonas de Prueba', email:correo,
   password:'clave-larga-1234', password_confirmation:'clave-larga-1234',
 }, '/mi-cuenta/registro');
 console.log(`   POST /mi-cuenta/registro -> ${r.status} ${r.headers.get('location') ?? ''}`);
