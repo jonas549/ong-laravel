@@ -53,11 +53,71 @@
              rebote hay que devolverle lo que había escrito y la organización
              que hubiera elegido, o el formulario le pediría el logo otra vez. --}}
         rutaOrganizaciones: {{ Js::from(route('publish.organizaciones')) }},
+        rutaEntrar: {{ Js::from(route('publish.entrar')) }},
+        conSesion: {{ Js::from((bool) auth()->user()) }},
         buscarOrg: {{ Js::from(old('org_nombre', $organizacion?->nombre ?? '')) }},
         orgElegida: {{ Js::from($organizacionElegida) }},
      })">
 
 @include('public.publish.partials.pasos')
+
+{{--
+    ── P14: «¿Ya tienes cuenta?» ──
+
+    Va arriba del todo y sólo sin sesión. El ticket venía mal transcrito —decía
+    «cerrar sesión» y es al revés— y lo que pide es que quien ya tiene cuenta
+    no acabe creando una segunda, que es de donde salieron los duplicados de
+    organización que hay hoy en producción.
+
+    La sesión se abre desde aquí mismo, sin recargar: lo que ya esté escrito en
+    el formulario se queda donde está. Ése es el punto, no el botón.
+--}}
+<div class="acceso-aviso" x-show="! conSesion" x-cloak>
+    <span>¿Ya tienes cuenta?</span>
+    <button type="button" class="btn btn-outline btn-sm" x-on:click="abrirAcceso()">
+        Inicia sesión para crear tu actividad
+    </button>
+</div>
+
+{{-- El diálogo de acceso. --}}
+<div class="acceso-fondo" x-show="accesoAbierto" x-cloak
+     x-on:click.self="cerrarAcceso()" x-on:keydown.escape.window="cerrarAcceso()">
+    <div class="acceso-caja" role="dialog" aria-modal="true" aria-labelledby="acceso-titulo">
+        <h2 id="acceso-titulo" class="acceso-titulo">Inicia sesión</h2>
+        <p class="helper" style="margin:0 0 18px;">
+            Entras sin salir de aquí: lo que ya hayas escrito no se pierde.
+        </p>
+
+        <label class="lbl">Correo electrónico
+            <input class="fld" type="email" autocomplete="email" data-acceso-correo
+                   x-model="accesoCorreo" x-on:keydown.enter.prevent="entrar()">
+        </label>
+
+        <label class="lbl" style="margin-top:14px;">Contraseña
+            <input class="fld" type="password" autocomplete="current-password"
+                   x-model="accesoClave" x-on:keydown.enter.prevent="entrar()">
+        </label>
+
+        <p class="field-error" x-show="accesoError" x-cloak x-text="accesoError" style="margin-top:10px;"></p>
+
+        <div class="acceso-botones">
+            <button type="button" class="btn btn-primary" x-on:click="entrar()" x-bind:disabled="entrando">
+                <span x-text="entrando ? 'Entrando…' : 'Entrar'">Entrar</span>
+            </button>
+            <button type="button" class="btn btn-outline" x-on:click="cerrarAcceso()">Cancelar</button>
+        </div>
+
+        {{--
+            Las dos salidas de quien no puede entrar. Van dentro del diálogo,
+            que es donde se descubre que no se puede: mandarle a buscarlas al
+            pie de la página es perder a quien ya estaba a medio formulario.
+        --}}
+        <p class="helper acceso-salidas">
+            <a class="textlink" href="{{ route('password.request') }}" target="_blank" rel="noopener">¿Olvidaste tu contraseña?</a>
+            · <a class="textlink" href="{{ route('account.login') }}" target="_blank" rel="noopener">Entrar desde la página de acceso</a>
+        </p>
+    </div>
+</div>
 
 <main style="flex:1;">
 

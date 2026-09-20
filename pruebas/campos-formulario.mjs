@@ -146,24 +146,31 @@ t('Punto 29 — ver lo que se escribió en la contraseña');
 
 await paso(3);
 const clave = 'input[name="password"]';
+/*
+ * El visor DE ESTE campo, no el primero de la página: desde P14 el diálogo de
+ * «inicia sesión» tiene su propia contraseña, va antes en el HTML y está
+ * oculto mientras el diálogo no se abre. Buscar `.campo-visor` a secas daba
+ * con aquél y el clic no llegaba a ninguna parte.
+ */
+const visor = 'label:has(input[name="password"]) .campo-visor';
 di('El campo nace oculto', (await p.$eval(clave, (n) => n.type)) === 'password');
-di('Y tiene su botón al lado', (await p.$('.campo-visor')) !== null);
+di('Y tiene su botón al lado', (await p.$(visor)) !== null);
 
 di('El botón NO es de envío, o pulsarlo mandaría el formulario',
-  await p.$eval('.campo-visor', (n) => n.type === 'button'));
+  await p.$eval(visor, (n) => n.type === 'button'));
 
 await p.click(clave);
 await p.type(clave, 'Secreta123');
-await p.click('.campo-visor');
+await p.click(visor);
 await esperar(150);
 di('Al pulsarlo se ve la contraseña', (await p.$eval(clave, (n) => n.type)) === 'text');
 di('Sin perder lo escrito', (await valor(clave)) === 'Secreta123');
 di('Y lo anuncia para el lector de pantalla',
-  await p.$eval('.campo-visor', (n) => n.getAttribute('aria-pressed') === 'true'));
+  await p.$eval(visor, (n) => n.getAttribute('aria-pressed') === 'true'));
 di('El foco vuelve al campo, no se queda en el botón',
   await p.evaluate((s) => document.activeElement === document.querySelector(s), clave));
 
-await p.click('.campo-visor');
+await p.click(visor);
 await esperar(150);
 di('Y al pulsarlo otra vez se vuelve a ocultar', (await p.$eval(clave, (n) => n.type)) === 'password');
 

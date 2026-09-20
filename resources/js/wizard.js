@@ -69,6 +69,7 @@ export const wizard = (inicial) => ({
      *   nada   → escribe un nombre nuevo y sigue el camino de siempre.
      */
     rutaOrganizaciones: inicial.rutaOrganizaciones ?? '/organizaciones/buscar',
+    rutaEntrar: inicial.rutaEntrar ?? '/publicar-actividad/entrar',
     buscarOrg: inicial.buscarOrg ?? '',
     sugerencias: [],
     buscando: false,
@@ -281,5 +282,153 @@ export const wizard = (inicial) => ({
     /** Si se está reclamando una organización que ya existía. */
     get reclamando() {
         return this.orgElegida !== null;
+    },
+
+    /* ─────────────────────────── entrar sin salir del wizard (P14) ── */
+
+    /*
+     * Quien ya tiene cuenta puede identificarse a mitad de rellenar su
+     * actividad. Lo importante no es el botón: es que **no pierda lo escrito**.
+     *
+     * Por eso la sesión se abre por `fetch` y la pantalla no se recarga. Lo
+     * único que cambia es el bloque de «crea tu acceso», que pasa a decir a
+     * qué cuenta se va a sumar la actividad, y los campos de la organización,
+     * que se rellenan con los suyos.
+     *
+     * `conSesion` nace de lo que diga el servidor y a partir de ahí lo lleva
+     * el componente: es lo que decide qué bloque se ve y si los campos de
+     * correo y contraseña viajan o no.
+     */
+    conSesion: inicial.conSesion ?? false,
+    accesoAbierto: false,
+    accesoCorreo: '',
+    accesoClave: '',
+    accesoError: '',
+    entrando: false,
+
+    abrirAcceso() {
+        this.accesoAbierto = true;
+        this.accesoError = '';
+
+        // El correo que ya hubiera escrito en el paso 3, de partida: casi
+        // siempre es el mismo con el que se registró.
+        if (! this.accesoCorreo && this.correoCuenta) this.accesoCorreo = this.correoCuenta;
+
+        this.$nextTick(() => this.raiz?.querySelector('[data-acceso-correo]')?.focus());
+    },
+
+    cerrarAcceso() {
+        this.accesoAbierto = false;
+        this.accesoError = '';
+        this.accesoClave = '';
+    },
+
+    async entrar() {
+        if (this.entrando) return;
+
+        this.entrando = true;
+        this.accesoError = '';
+
+        try {
+            const respuesta = await fetch(this.rutaEntrar, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ email: this.accesoCorreo, password: this.accesoClave }),
+            });
+
+            const datos = await respuesta.json().catch(() => ({}));
+
+            if (! respuesta.ok) {
+                /*
+                 * 422 trae los mensajes de validación; cualquier otra cosa es
+                 * un fallo que no sabemos explicar, y decir «no se pudo» es
+                 * más honesto que inventar un motivo.
+                 */
+                this.accesoError = datos?.errors?.email?.[0]
+                    ?? datos?.message
+                    ?? 'No se pudo iniciar sesión. Inténtalo de nuevo.';
+
+                return;
+            }
+
+            this.aplicarSesion(datos);
+        } catch {
+            this.accesoError = 'No se pudo conectar. Revisa tu conexión e inténtalo otra vez.';
+        } finally {
+            this.entrando = false;
+        }
+    },
+
+    /**
+     * Deja el formulario como si se hubiera entrado desde el principio.
+     *
+     * Lo escrito en el paso 4 —el título, la descripción, las fechas, los
+     * chips— no se toca: esto sólo rellena lo que es de la organización, que
+     * es justo lo que el wizard habría traído relleno.
+     */
+    aplicarSesion(datos) {
+        this.conSesion = true;
+        this.accesoAbierto = false;
+        this.accesoClave = '';
+        this.correoCuenta = datos.correo ?? '';
+
+        /*
+         * El token CSRF nuevo, antes que nada.
+         *
+         * Entrar regenera la sesión, y con ella el token. El formulario que la
+         * persona tiene delante se pintó con el viejo, así que sin esto el
+         * envío devuelve un 419 y pierde todo lo escrito: justo lo que este
+         * punto venía a evitar. Lo encontró `pruebas/acceso-wizard.mjs` al
+         * intentar publicar después de entrar a mitad.
+         */
+        if (datos.token) this.renovarToken(datos.token);
+
+        const org = datos.organizacion;
+
+        if (org) {
+            this.buscarOrg = org.nombre ?? '';
+            // Ya tiene organización: no hay nada que reclamar del listado.
+            this.soltarOrg();
+
+            if (org.tipo) this.tipo = org.tipo;
+
+            this.rellenar('org_nombre', org.nombre);
+            this.rellenar('org_tipo_otro', org.tipo_otro);
+            this.rellenar('org_num_voluntarios', org.num_voluntarios);
+            this.rellenar('org_unidad_educativa', org.unidad_educativa);
+            this.rellenar('enlace_web', org.enlace_web);
+            this.rellenar('enlace_red_social', org.enlace_red_social);
+        }
+
+        // Lo que estuviera marcado en rojo de un intento anterior ya no aplica.
+        this.errores = [];
+        this.limpiarMarcas();
+    },
+
+    /** Pone el token nuevo en el formulario y en la etiqueta de la cabecera. */
+    renovarToken(token) {
+        for (const campo of document.querySelectorAll('input[name="_token"]')) {
+            campo.value = token;
+        }
+
+        const meta = document.querySelector('meta[name="csrf-token"]');
+
+        // También el meta: de ahí lo leen las peticiones que van por fetch,
+        // como el propio acceso o el autoguardado del panel.
+        if (meta) meta.setAttribute('content', token);
+    },
+
+    rellenar(campo, valor) {
+        const entrada = this.raiz?.querySelector(`[name="${campo}"]`);
+
+        if (! entrada || valor === null || valor === undefined || valor === '') return;
+
+        entrada.value = valor;
+        entrada.dispatchEvent(new Event('input', { bubbles: true }));
     },
 });

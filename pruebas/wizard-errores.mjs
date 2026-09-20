@@ -464,8 +464,20 @@ await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('
 
 await abrirWizard();
 
-di('no se pinta el campo de correo', await p.$('input[name="email"]') === null);
-di('ni el de contraseña', await p.$('input[name="password"]') === null);
+/*
+ * Desde P14 los dos bloques —«crea tu acceso» y «tu cuenta»— están SIEMPRE en
+ * el HTML y se turnan con Alpine, porque se puede iniciar sesión a mitad del
+ * wizard sin recargar. Así que el campo existe; lo que no puede es verse ni
+ * viajar.
+ */
+di('el campo de correo no se ve',
+    await p.$eval('input[name="email"]', (n) => n.getBoundingClientRect().height === 0));
+di('ni el de contraseña',
+    await p.$eval('input[name="password"]', (n) => n.getBoundingClientRect().height === 0));
+di('y ninguno de los dos se envía',
+    await p.evaluate(() => ['email', 'password', 'password_confirmation']
+        .map((n) => document.querySelector(`[name="${n}"]`))
+        .every((c) => c && c.disabled)));
 
 await irAPaso(3);
 const faltanConSesion = await p.evaluate(

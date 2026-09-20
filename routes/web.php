@@ -107,6 +107,18 @@ Route::get('/organizaciones/buscar', [PublishController::class, 'organizaciones'
     ->middleware('throttle:60,1')
     ->name('publish.organizaciones');
 
+/*
+ * Entrar sin salir del wizard (P14).
+ *
+ * El freno es el mismo que el de la puerta de siempre. Sin él, esta ruta sería
+ * la forma cómoda de probar contraseñas saltándose el límite de
+ * `/mi-cuenta/login`; el bloqueo por intentos lo comprueba además el propio
+ * controlador, que usa el mismo `ControlDeAcceso`.
+ */
+Route::post('/publicar-actividad/entrar', [PublishController::class, 'entrar'])
+    ->middleware('throttle:10,1')
+    ->name('publish.entrar');
+
 Route::get('/noticias', [PostController::class, 'index'])->name('posts.index');
 Route::get('/noticias/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 

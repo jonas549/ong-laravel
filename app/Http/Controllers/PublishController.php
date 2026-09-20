@@ -74,6 +74,102 @@ class PublishController extends Controller
         ]);
     }
 
+    /**
+     * Entrar desde el propio wizard, sin salir de él (P14).
+     *
+     * El encargo venía mal transcrito —decía «cerrar sesión» y era al revés— y
+     * lo que pide es que quien ya tiene cuenta pueda identificarse a mitad de
+     * rellenar su actividad **sin perder lo escrito**. Por eso esto devuelve
+     * JSON y no una redirección: la pantalla no se recarga, el formulario se
+     * queda como estaba y sólo cambia el bloque de «crea tu acceso» por el de
+     * «esta actividad se sumará a tu cuenta».
+     *
+     * **Las reglas de acceso son las mismas que las de la puerta de siempre**,
+     * y a propósito: mismo `ControlDeAcceso`, mismo bloqueo por intentos,
+     * mismo registro. Una segunda puerta con sus propias reglas sería una
+     * forma cómoda de saltarse el bloqueo probando contraseñas desde aquí.
+     *
+     * Sólo entran organizadores. Un administrador no publica como
+     * organización —no tiene ninguna detrás— así que se le dice, igual que en
+     * `/mi-cuenta/login`.
+     */
+    public function entrar(Request $request, ControlDeAcceso $acceso)
+    {
+        $datos = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ], [], ['email' => 'el correo', 'password' => 'la contraseña']);
+
+        /*
+         * El bloqueo lanza su propia excepción de validación, que aquí saldría
+         * como un 422 con el mensaje dentro. Se deja pasar tal cual: el
+         * mensaje ya explica cuánto falta para poder reintentar.
+         */
+        $acceso->comprobarBloqueo($request, AccessLog::PANEL_ORGANIZADOR);
+
+        $credenciales = $datos + ['role' => User::ROL_ORGANIZER, 'is_active' => true];
+
+        if (! Auth::attempt($credenciales, $request->boolean('remember'))) {
+            $duenno = User::porCredenciales($datos['email'], $datos['password']);
+
+            $motivo = match (true) {
+                $duenno === null => 'credenciales',
+                $duenno->role !== User::ROL_ORGANIZER => 'rol',
+                ! $duenno->is_active => 'inactiva',
+                default => 'credenciales',
+            };
+
+            $acceso->fallo($request, AccessLog::PANEL_ORGANIZADOR, $motivo, $duenno);
+
+            throw ValidationException::withMessages([
+                'email' => match ($motivo) {
+                    'rol' => 'Esa es una cuenta de administración, no de organización. Las actividades se publican desde una cuenta de organización.',
+                    'inactiva' => 'Esa cuenta está desactivada. Escríbenos si crees que es un error.',
+                    default => 'No encontramos una cuenta con ese correo y contraseña.',
+                },
+            ]);
+        }
+
+        $request->session()->regenerate();
+
+        $usuario = Auth::user();
+        $usuario->forceFill(['last_login_at' => now()])->save();
+
+        $acceso->exito($request, AccessLog::PANEL_ORGANIZADOR, $usuario);
+
+        $organizacion = $usuario->organization;
+
+        /*
+         * Lo que el formulario necesita para rellenarse solo. No va ningún
+         * dato que no estuviera ya a la vista de quien acaba de identificarse:
+         * es su propia organización.
+         */
+        return response()->json([
+            /*
+             * **El token nuevo, y esto no es un extra.**
+             *
+             * `session()->regenerate()` rota la sesión, y con ella el token
+             * CSRF. El formulario que la persona tiene delante se pintó con el
+             * token viejo, así que al enviarlo recibía un 419 y perdía todo lo
+             * escrito: exactamente lo que este punto venía a evitar. Se
+             * devuelve el nuevo para que el formulario se actualice sin
+             * recargarse.
+             */
+            'token' => csrf_token(),
+            'correo' => $usuario->email,
+            'organizacion' => $organizacion ? [
+                'id' => $organizacion->id,
+                'nombre' => $organizacion->nombre,
+                'tipo' => $organizacion->tipo,
+                'tipo_otro' => $organizacion->tipo_otro,
+                'num_voluntarios' => $organizacion->num_voluntarios,
+                'unidad_educativa' => $organizacion->unidad_educativa,
+                'enlace_web' => $organizacion->enlace_web,
+                'enlace_red_social' => $organizacion->enlace_red_social,
+            ] : null,
+        ]);
+    }
+
     public function store(PublishActivityRequest $request, ActivityModerationService $moderacion)
     {
         abort_unless(Setting::get('publicacion_abierta', true), 403);

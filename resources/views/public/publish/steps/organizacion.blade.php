@@ -161,23 +161,32 @@
         </div>
     </div>
 
-    @if ($organizacion)
-        {{--
-            Con la sesión abierta no hay acceso que crear: la actividad va a la
-            cuenta que ya existe. Se conserva el bloque —mismo fondo, mismo
-            `seclabel`, misma caja— para no dejar un hueco donde el fuente pone
-            una sección, pero en vez de los campos va el aviso de a qué cuenta
-            se suma.
-        --}}
-        <div style="padding:30px;background:#fdfcfb;">
-            <div class="seclabel" style="margin-bottom:6px;">Tu cuenta</div>
-            <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0;max-width:60ch;">
-                Esta actividad se sumará a tu cuenta, <strong style="color:var(--ink);">{{ auth()->user()->email }}</strong>.
-                La verás en «Mis actividades» junto a las demás.
-            </p>
-        </div>
-    @else
-    <div style="padding:30px;background:#fdfcfb;">
+    {{--
+        Los dos bloques van SIEMPRE en el HTML y se turnan con Alpine, no con
+        un `@if` del servidor.
+
+        El motivo es P14: desde el 2026-09-20 se puede iniciar sesión a mitad
+        del wizard sin recargar la página, así que el bloque tiene que poder
+        cambiar sin que el servidor vuelva a pintar nada. `conSesion` nace de
+        lo que diga el servidor y a partir de ahí lo lleva el componente.
+    --}}
+
+    {{--
+        Con la sesión abierta no hay acceso que crear: la actividad va a la
+        cuenta que ya existe. Se conserva el bloque —mismo fondo, mismo
+        `seclabel`, misma caja— para no dejar un hueco donde el fuente pone
+        una sección, pero en vez de los campos va el aviso de a qué cuenta
+        se suma.
+    --}}
+    <div style="padding:30px;background:#fdfcfb;" x-show="conSesion" x-cloak>
+        <div class="seclabel" style="margin-bottom:6px;">Tu cuenta</div>
+        <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0;max-width:60ch;">
+            Esta actividad se sumará a tu cuenta, <strong style="color:var(--ink);" x-text="correoCuenta">{{ auth()->user()?->email }}</strong>.
+            La verás en «Mis actividades» junto a las demás.
+        </p>
+    </div>
+
+    <div style="padding:30px;background:#fdfcfb;" x-show="! conSesion" x-cloak>
         <div class="seclabel" style="margin-bottom:6px;">Crea tu acceso</div>
         <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0 0 18px;max-width:60ch;">Con este acceso podrás ingresar a tu cuenta para editar tus actividades y hacer seguimiento a tu publicación.</p>
 
@@ -189,7 +198,8 @@
         <label class="lbl" style="margin-bottom:16px;" data-campo="email" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('email') }}">Correo electrónico *
             <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
-                   x-model="correoCuenta" placeholder="contacto@organizacion.cl" autocomplete="email">
+                   x-model="correoCuenta" placeholder="contacto@organizacion.cl" autocomplete="email"
+                   x-bind:disabled="conSesion">
             <span class="helper">Con este correo entrarás a tu cuenta.</span>
             @error('email') <span class="field-error">{{ $message }}</span> @enderror
 
@@ -217,19 +227,19 @@
             <label class="lbl" data-campo="password" data-obligatorio
                    data-etiqueta="{{ CamposDeActividad::etiqueta('password') }}">Contraseña *
                 <input class="fld @error('password') is-invalid @enderror" type="password" name="password"
-                       placeholder="••••••••" autocomplete="new-password">
+                       placeholder="••••••••" autocomplete="new-password"
+                       x-bind:disabled="conSesion">
                 <span class="helper">Mínimo 8 caracteres.</span>
                 @error('password') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Confirmar contraseña *
                 <input class="fld" type="password" name="password_confirmation"
-                       placeholder="••••••••" autocomplete="new-password">
+                       placeholder="••••••••" autocomplete="new-password"
+                       x-bind:disabled="conSesion">
             </label>
         </div>
     </div>
-
-    @endif
 
     <div style="padding:20px 30px;border-top:1px solid var(--linea);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <span class="helper">* campos obligatorios</span>
