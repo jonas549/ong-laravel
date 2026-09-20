@@ -9,6 +9,7 @@
 //
 //   DPS_URL=https://ong.sandboxdelta.com node pruebas/tanda-produccion.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -187,7 +188,7 @@ di('Y son organizaciones, no las once pastillas de antes', pasada.length > 0 && 
 
 t('P6, P17 y P20 — el panel');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 await p.goto(`${B}/admin/configuracion`, { waitUntil: 'networkidle2' });
 
 di('P20: el ajuste de cuándo invitar a evaluar',
@@ -198,7 +199,7 @@ await p.goto(`${B}/admin/plantillas`, { waitUntil: 'networkidle2' });
 di('P20: la plantilla del correo está en el catálogo',
   (await texto()).includes('Invitación a evaluar la actividad'));
 
-await entrar('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrar('/mi-cuenta/login', ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/actividades`, { waitUntil: 'networkidle2' });
 
 const idActividad = await p.evaluate(() => {

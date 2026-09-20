@@ -7,6 +7,7 @@
 //
 //   node pruebas/ids-panel.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -20,8 +21,8 @@ const p = await nav.newPage();
 await p.setViewport({ width: 1600, height: 1000 });
 
 await p.goto(`${B}/admin/login`, { waitUntil: 'networkidle2' });
-await p.type('input[name="email"]', 'admin@ong-laravel.test');
-await p.type('input[name="password"]', 'admin1234');
+await p.type('input[name="email"]', ADMIN);
+await p.type('input[name="password"]', CLAVE_ADMIN);
 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type="submit"]')]);
 
 /*

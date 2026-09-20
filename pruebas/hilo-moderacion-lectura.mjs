@@ -9,6 +9,7 @@
 //
 //   DPS_URL=https://ong.sandboxdelta.com node pruebas/hilo-moderacion-lectura.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -32,7 +33,7 @@ const texto = () => p.evaluate(() => document.body.innerText.replace(/\s+/g, ' '
 
 t('Lo que ve la organización en una actividad con ajustes pedidos');
 
-await entrar('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrar('/mi-cuenta/login', ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/actividades/${ID}/editar`, { waitUntil: 'networkidle2' });
 
 const org = await texto();
@@ -47,7 +48,7 @@ di('Ya no hay botón «Enviar a revisión»', ! org.includes('Enviar a revisión
 
 t('Lo que ve la ONG en el panel');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 await p.goto(`${B}/admin/actividades/${ID}`, { waitUntil: 'networkidle2' });
 
 const admin = await texto();

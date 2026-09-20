@@ -6,6 +6,7 @@
 //
 //   DPS_URL=https://ong.sandboxdelta.com node pruebas/evaluaciones-fotos-lectura.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -52,7 +53,7 @@ const entrar = async (puerta, c, k) => {
 
 t('P6 — el tope de fotografías es administrable');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 await p.goto(`${B}/admin/configuracion`, { waitUntil: 'networkidle2' });
 
 const campo = await p.$('[name="evaluacion_max_fotos"]');
@@ -81,7 +82,7 @@ if (! slugEncuesta) {
 
 t('P5 — el organizador tiene su pantalla de evaluaciones');
 
-await entrar('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrar('/mi-cuenta/login', ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/actividades`, { waitUntil: 'networkidle2' });
 di('Hay enlace a Evaluaciones en su cuenta', (await texto()).includes('Evaluaciones'));
 
@@ -99,7 +100,7 @@ di('No enseña el correo de quien respondió', ! /@/.test(
 
 t('P7 y P8 — exportación y descarga, desde el panel');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 
 const csv = await p.evaluate(async (u) => {
   const r = await fetch(u, { credentials: 'same-origin' });

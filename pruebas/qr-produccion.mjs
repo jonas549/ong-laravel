@@ -12,8 +12,9 @@ import { PNG } from 'pngjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'https://ong.sandboxdelta.com';
-const ADMIN = process.env.DPS_ADMIN ?? 'admin@ong-laravel.test';
-const CLAVE = process.env.DPS_ADMIN_CLAVE ?? 'admin1234';
+// Los nombres de las variables de entorno los fija `credenciales.mjs`, que es
+// el que usan todas. Aqui se llamaba DPS_ADMIN_CLAVE y nadie mas lo sabia.
+import { ADMIN, CLAVE_ADMIN as CLAVE } from './credenciales.mjs';
 
 let ok = 0, mal = 0;
 const di = (q, bien, extra = '') => { bien ? ok++ : mal++; console.log(`  ${q.padEnd(58)} ${bien ? 'OK' : '*** MAL ***'} ${extra}`); };
