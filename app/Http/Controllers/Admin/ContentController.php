@@ -158,6 +158,9 @@ class ContentController extends Controller
 
         $ordenables = array_values(array_intersect(['orden', 'titulo', 'nombre', 'autor', 'etiqueta', 'anio', 'activo', 'created_at'], $campos));
         $ordenables[] = 'created_at';
+        // El identificador es la primera columna de toda tabla del panel, y
+        // ordenar por el es la forma de ver que se dio de alta antes.
+        $ordenables[] = 'id';
         $porDefecto = in_array('orden', $campos, true) ? 'orden' : 'created_at';
 
         $tieneOrden = in_array('orden', $campos, true);
@@ -401,7 +404,13 @@ class ContentController extends Controller
 
         $filas = (function () use ($consulta, $campos) {
             foreach ($consulta->cursor() as $fila) {
-                yield $campos->map(function ($meta, $campo) use ($fila) {
+                /*
+                 * El identificador va de primera columna en toda exportacion
+                 * del panel, igual que en la tabla de la que sale. Se antepone
+                 * aqui y no dentro del `map` porque `$campos` son las columnas
+                 * configuradas del CRUD y el id no es una de ellas.
+                 */
+                yield array_merge([$fila->id], $campos->map(function ($meta, $campo) use ($fila) {
                     $valor = $fila->{$campo};
 
                     return match ($meta['tipo']) {
@@ -410,11 +419,16 @@ class ContentController extends Controller
                         'select' => $meta['opciones'][$valor] ?? $valor,
                         default => $valor,
                     };
-                })->values()->all();
+                })->values()->all());
             }
         })();
 
-        return $exportador->descargar($formato, $def['titulo'], $campos->pluck('label')->all(), $filas);
+        return $exportador->descargar(
+            $formato,
+            $def['titulo'],
+            array_merge(['ID'], $campos->pluck('label')->all()),
+            $filas,
+        );
     }
 
     /** @return array<string, mixed> */

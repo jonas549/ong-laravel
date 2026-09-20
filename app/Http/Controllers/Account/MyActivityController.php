@@ -88,9 +88,12 @@ class MyActivityController extends Controller
     // El permiso lo comprueba UpdateActivityRequest::authorize(), que corre
     // antes que las reglas de validación. Repetirlo aquí sería una segunda
     // verdad que mantener, y la de aquí llegaría tarde.
-    public function update(UpdateActivityRequest $request, Activity $activity)
+    public function update(UpdateActivityRequest $request, Activity $activity, ActivityModerationService $moderacion)
     {
         $datos = $request->validated();
+
+        // De dónde venía, antes de que la transacción toque nada.
+        $veniaDeAjustes = $activity->estado === 'ajustes';
         $comuna = Commune::find($datos['commune_id'] ?? null);
 
         DB::transaction(function () use ($request, $activity, $datos, $comuna) {
@@ -158,6 +161,26 @@ class MyActivityController extends Controller
 
             $this->guardarColaboradores($activity, $datos['colaboradores'] ?? []);
         });
+
+        /*
+         * Guardar una actividad que estaba en «necesita ajustes» la devuelve a
+         * revisión. No hay botón aparte y es deliberado: quien corrige lo que
+         * le pidieron da por hecho que con guardar ya está, y el circuito
+         * anterior lo dejaba mirando el mismo aviso rosa de siempre, creyendo
+         * que su corrección no había servido de nada. Mientras tanto la ONG no
+         * se enteraba, porque la actividad seguía fuera de «Pendientes».
+         *
+         * Va fuera de la transacción a propósito: dentro, el correo se
+         * encolaría antes de que el guardado esté confirmado.
+         */
+        if ($veniaDeAjustes) {
+            $moderacion->cambiar(
+                $activity,
+                'revision',
+                $request->user(),
+                trim((string) ($datos['mensaje_ajustes'] ?? '')) ?: null,
+            );
+        }
 
         return redirect()->route('account.activities.saved', $activity);
     }

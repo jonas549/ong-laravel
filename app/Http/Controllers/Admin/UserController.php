@@ -54,7 +54,7 @@ class UserController extends Controller
         $consulta = Papelera::aplicar($consulta, $request);
 
         return view('admin.users.index', [
-            'usuarios' => Listado::ordenar($consulta, $request, ['name', 'email', 'role', 'is_active', 'last_login_at', 'created_at'], 'name')
+            'usuarios' => Listado::ordenar($consulta, $request, ['id', 'name', 'email', 'role', 'is_active', 'last_login_at', 'created_at'], 'name')
                 ->paginate(Listado::porPagina($request))
                 ->withQueryString(),
             'rol' => $rol,

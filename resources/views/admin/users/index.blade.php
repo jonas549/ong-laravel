@@ -35,11 +35,12 @@
 
         <x-panel.tabla
             :filas="$usuarios"
-            :columnas="6"
+            :columnas="7"
             que="usuarios"
             :vacio="request()->hasAny(['q', 'estado', 'papelera']) ? 'Ningún usuario coincide con el filtro.' : 'Sin usuarios.'">
 
             <x-slot:cabecera>
+                <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>
                 <x-panel.columna campo="name">Nombre</x-panel.columna>
                 <x-panel.columna campo="email">Correo</x-panel.columna>
                 <x-panel.columna campo="role">Rol</x-panel.columna>
@@ -50,6 +51,8 @@
 
             @foreach ($usuarios as $u)
                 <tr @class(['fila-eliminada' => $u->trashed()])>
+                    <x-panel.id :valor="$u->id" />
+
                     <td style="font-weight:600;">{{ $u->name }}</td>
                     <td>{{ $u->email }}</td>
                     <td>{{ $u->esAdmin() ? 'Administración' : 'Organizador' }}</td>

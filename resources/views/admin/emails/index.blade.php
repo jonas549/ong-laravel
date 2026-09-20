@@ -60,10 +60,12 @@
 
 <div class="tabla-wrap">
     <table class="tabla">
-        <thead><tr><th>Fecha</th><th>Para</th><th>Asunto</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+        <thead><tr><th class="col-id">ID</th><th>Fecha</th><th>Para</th><th>Asunto</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
         <tbody>
             @forelse ($correos as $c)
                 <tr>
+                    <x-panel.id :valor="$c->id" />
+
                     <td style="white-space:nowrap;">{{ \App\Support\Fecha::diaYHora($c->created_at) }}</td>
                     <td>{{ Str::limit($c->to, 30) }}</td>
                     <td>{{ Str::limit($c->subject, 40) }}</td>
@@ -81,7 +83,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" style="color:var(--gris);">
+                <tr><td colspan="7" style="color:var(--gris);">
                     {{ array_filter($filtros) ? 'Ningún correo coincide con el filtro.' : 'Todavía no se ha enviado ningún correo.' }}
                 </td></tr>
             @endforelse

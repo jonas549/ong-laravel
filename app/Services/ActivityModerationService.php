@@ -82,9 +82,57 @@ class ActivityModerationService
             if ($nuevoEstado === 'cancelada') {
                 $this->avisarInscritos($actividad);
             }
+
+            /*
+             * Una actividad que vuelve de ajustes es la única transición que
+             * va en el otro sentido —de la organización hacia la ONG—, y hasta
+             * ahora no avisaba a nadie: la ONG tenía que entrar a Pendientes
+             * por su cuenta y adivinar cuál de las que había llegado volvía
+             * corregida.
+             */
+            if ($anterior === 'ajustes' && $nuevoEstado === 'revision') {
+                $this->avisarDeVueltaDeAjustes($actividad, $comentario);
+            }
         }
 
         return $actividad;
+    }
+
+    /**
+     * Avisa a la ONG de que una actividad volvió corregida, con el mensaje que
+     * escribió el organizador dentro.
+     *
+     * Va a todos los administradores activos, y no a una dirección fija de
+     * configuración, porque el encargo es que se entere quien modera y no hay
+     * un buzón del equipo: el que primero la vea la atiende.
+     *
+     * Como todo el correo de este proyecto, un fallo aquí no puede tumbar la
+     * moderación: el cambio de estado ya está guardado.
+     */
+    private function avisarDeVueltaDeAjustes(Activity $actividad, ?string $mensaje): void
+    {
+        $destinos = User::where('role', 'admin')
+            ->where('is_active', true)
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->all();
+
+        if (! $destinos) {
+            return;
+        }
+
+        try {
+            app(SmtpConfigService::class)->aplicar();
+
+            foreach ($destinos as $destino) {
+                Mail::to($destino)->send(new \App\Mail\ActivityResubmitted($actividad, $mensaje));
+            }
+        } catch (Throwable $e) {
+            Log::warning('No se pudo avisar a la ONG de la vuelta de ajustes', [
+                'activity' => $actividad->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

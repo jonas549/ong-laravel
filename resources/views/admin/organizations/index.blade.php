@@ -42,10 +42,11 @@
 
 <x-panel.tabla
     :filas="$organizaciones"
-    :columnas="6"
+    :columnas="7"
     :vacio="request()->hasAny(['q', 'estado', 'papelera']) ? 'Ninguna organización coincide con el filtro.' : 'Todavía no hay organizaciones.'">
 
     <x-slot:cabecera>
+        <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>
         <x-panel.columna campo="nombre">Organización</x-panel.columna>
         <x-panel.columna campo="tipo">Tipo</x-panel.columna>
         <th>Contacto</th>
@@ -56,6 +57,8 @@
 
     @foreach ($organizaciones as $o)
         <tr @class(['fila-eliminada' => $o->trashed()])>
+            <x-panel.id :valor="$o->id" />
+
             <td style="font-weight:600;">
                 {{ $o->nombre }}
                 @unless ($o->activo)

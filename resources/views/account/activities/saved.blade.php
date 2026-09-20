@@ -18,7 +18,18 @@
     <img loading="lazy" decoding="async" width="486" height="375" src="{{ asset('img/logo-corazon-15f12e4a.png') }}" alt="" aria-hidden="true"
          style="width:200px;max-width:100%;height:auto;display:block;margin:0 auto 24px;filter:drop-shadow(0 14px 26px rgba(0,0,0,.14));">
 
-    @if ($activity->estado === 'publicada')
+    @if ($activity->vuelveDeAjustes())
+        {{--
+            El caso que el prototipo no contempla y que era el agujero del
+            circuito: corregir lo que te pidieron y no ver por ningún lado que
+            eso haya salido de tus manos. Se dice aquí, en la misma pantalla
+            donde antes ponía sólo «guardamos tus cambios».
+        --}}
+        <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 14px;color:var(--ink);text-wrap:pretty;">¡Enviamos tus correcciones!</h1>
+        <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 auto 32px;max-width:46ch;text-wrap:pretty;">
+            <strong style="color:var(--ink);">{{ $activity->titulo }}</strong> volvió a revisión con tus cambios. El equipo organizador ya recibió el aviso y te escribirá por aquí mismo si hace falta algo más.
+        </p>
+    @elseif ($activity->estado === 'publicada')
         <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 14px;color:var(--ink);text-wrap:pretty;">¡Tus cambios ya están publicados!</h1>
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 auto 32px;max-width:46ch;text-wrap:pretty;">La información de tu actividad se actualizó correctamente y ya está visible para las personas que visitan el sitio.</p>
     @else

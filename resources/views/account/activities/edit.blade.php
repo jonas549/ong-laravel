@@ -82,8 +82,25 @@
                 @if ($activity->estado === 'ajustes' && $activity->observaciones_revision)
                     <br><span style="opacity:.85;">{{ $activity->observaciones_revision }}</span>
                 @endif
+                @if ($activity->vuelveDeAjustes())
+                    <br><span style="opacity:.85;">Recibimos tus correcciones y las estamos revisando.</span>
+                @endif
             </div>
         </div>
+    @endif
+
+    {{--
+        La conversación con la ONG.
+
+        Sólo se pinta si hay algo dicho: en una actividad que nadie ha moderado
+        todavía, una tarjeta vacía con el título «Conversación» sólo ocupa
+        sitio y hace pensar que falta algo.
+    --}}
+    @if ($activity->hilo->isNotEmpty())
+        <section class="card" style="padding:22px 24px;margin-bottom:26px;">
+            <h2 style="font-size:16px;font-weight:700;margin:0 0 14px;color:var(--ink);">Conversación con el equipo organizador</h2>
+            <x-hilo-moderacion :activity="$activity" lado="organizacion" />
+        </section>
     @endif
 
     {{--
@@ -523,6 +540,34 @@
                 </div>
             </div>
 
+            {{--
+                ── Lo que le cuentas a la ONG al devolver la actividad ──
+
+                Sólo cuando viene de «necesita ajustes», que es el único momento
+                en que hay algo que responder. Va pegado al botón de guardar
+                porque se escribe al terminar de corregir, no al empezar.
+
+                Es opcional a propósito. Obligarlo convertiría el hilo en un
+                peaje para poder reenviar, y quien ya hizo lo que le pidieron no
+                tiene por qué justificarse para que le vuelvan a mirar.
+            --}}
+            @if ($activity->estado === 'ajustes')
+                <div style="padding:26px 30px;border-top:1px solid var(--linea);background:#fffdf9;">
+                    <label class="lbl" for="mensaje_ajustes" style="max-width:none;">
+                        ¿Quieres contarle algo al equipo organizador? (opcional)
+                        <textarea class="fld @error('mensaje_ajustes') is-invalid @enderror"
+                                  id="mensaje_ajustes" name="mensaje_ajustes" rows="3" style="resize:vertical;"
+                                  placeholder="Por ejemplo: corregí la fecha y agregué la dirección exacta.">{{ \App\Support\Formulario::viejo('mensaje_ajustes') }}</textarea>
+                        <span class="helper">Lo verán junto a sus observaciones al revisar tu actividad.</span>
+                        @error('mensaje_ajustes') <span class="field-error">{{ $message }}</span> @enderror
+                    </label>
+
+                    <p class="helper" style="margin:14px 0 0;">
+                        Al guardar, tu actividad vuelve automáticamente a revisión. No tienes que enviarla otra vez.
+                    </p>
+                </div>
+            @endif
+
             {{-- ── Barra de acciones ── --}}
             <div style="padding:20px 30px;border-top:1px solid var(--linea);background:#fdfcfb;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 @if ($activity->estado !== 'cancelada')
@@ -544,7 +589,16 @@
         Fuera del prototipo: sin esto, un borrador —el que deja "Duplicar"—
         no tiene forma de llegar a revisión.
     --}}
-    @if (in_array($activity->estado, ['borrador', 'ajustes'], true))
+    {{--
+        En «necesita ajustes» este botón ya no va: guardar devuelve la actividad
+        a revisión sola. Dejarlo obligaba a dos pasos para una sola intención, y
+        quien sólo daba al primero se quedaba mirando el aviso rosa creyendo que
+        su corrección no había servido.
+
+        En un borrador sigue haciendo falta: ahí guardar es guardar, y el
+        borrador que deja «Duplicar» no tendría otra forma de llegar a revisión.
+    --}}
+    @if ($activity->estado === 'borrador')
         <form method="POST" action="{{ route('account.activities.submit', $activity) }}"
               style="margin-top:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
             @csrf

@@ -23,9 +23,14 @@ class ActivityController extends Controller
         // aparece en «pendientes» y no hay forma de encontrarlo.
         $soloAutomaticas = $request->boolean('auto');
 
+        // Las que volvieron corregidas de una petición de ajustes. Es a donde
+        // apunta la alerta del escritorio.
+        $soloVueltas = $request->boolean('vueltas');
+
         $actividades = Activity::with(['organization', 'commune', 'region'])
             ->when($estado, fn ($q) => $q->where('estado', $estado))
             ->when($soloAutomaticas, fn ($q) => $q->where('publicada_automaticamente', true))
+            ->when($soloVueltas, fn ($q) => $q->vueltasDeAjustes())
             ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('titulo', 'like', "%{$b}%"))
             ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
             ->latest('updated_at')
@@ -34,9 +39,22 @@ class ActivityController extends Controller
 
         $conteos = Activity::selectRaw('estado, COUNT(*) n')->groupBy('estado')->pluck('n', 'estado');
         $automaticas = Activity::where('publicada_automaticamente', true)->count();
+        $vueltas = Activity::vueltasDeAjustes()->count();
+
+        /*
+         * Cuáles de las que se están enseñando vuelven de ajustes. Se resuelve
+         * de una vez para toda la página en lugar de preguntárselo a cada fila:
+         * `vuelveDeAjustes()` hace una consulta por actividad y en un listado
+         * de veinte eso son veinte viajes a la base de datos.
+         */
+        $vuelvenDeAjustes = Activity::vueltasDeAjustes()
+            ->whereIn('id', $actividades->pluck('id'))
+            ->pluck('id')
+            ->flip();
 
         return view('admin.activities.index', compact(
             'actividades', 'conteos', 'estado', 'estadoFijo', 'soloAutomaticas', 'automaticas',
+            'soloVueltas', 'vueltas', 'vuelvenDeAjustes',
         ));
     }
 

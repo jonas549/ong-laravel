@@ -78,10 +78,12 @@
 
             <div class="tabla-wrap" style="border:0;">
                 <table class="tabla">
-                    <thead><tr><th>Cuándo</th><th>Quién</th><th>Qué pasó</th><th></th></tr></thead>
+                    <thead><tr><th class="col-id">ID</th><th>Cuándo</th><th>Quién</th><th>Qué pasó</th><th></th></tr></thead>
                     <tbody>
                         @foreach ($versiones as $v)
                             <tr>
+                                <x-panel.id :valor="$v->id" />
+
                                 <td style="white-space:nowrap;">{{ \App\Support\Fecha::conHora($v->created_at) }}</td>
                                 <td>{{ $v->quien() }}</td>
                                 <td class="helper">{{ $v->nota }}</td>
@@ -114,7 +116,7 @@
                             </tr>
 
                             <tr x-show="viendo === {{ $v->id }}" x-cloak>
-                                <td colspan="4" style="background:#fcfcfc;">
+                                <td colspan="5" style="background:#fcfcfc;">
                                     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 0 10px;">
                                         @foreach ($campos as $clave => $campo)
                                             @php

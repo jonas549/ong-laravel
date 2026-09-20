@@ -46,10 +46,11 @@
 
 <x-panel.tabla
     :filas="$comunas"
-    :columnas="5"
+    :columnas="6"
     :vacio="request()->hasAny(['q', 'region', 'estado']) ? 'Ninguna comuna coincide con el filtro.' : 'No hay comunas cargadas. Corre php artisan dps:instalar.'">
 
     <x-slot:cabecera>
+        <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>
         <x-panel.columna campo="nombre">Comuna</x-panel.columna>
         <th>Región</th>
         <th class="num">Actividades</th>
@@ -59,6 +60,8 @@
 
     @foreach ($comunas as $c)
         <tr>
+            <x-panel.id :valor="$c->id" />
+
             <td style="font-weight:600;">{{ $c->nombre }}</td>
             <td>{{ $c->region?->nombre ?? '—' }}</td>
             <td class="num">

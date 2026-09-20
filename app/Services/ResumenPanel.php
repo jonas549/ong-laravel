@@ -257,6 +257,25 @@ class ResumenPanel
             ];
         }
 
+        /*
+         * Las que volvieron corregidas van primero y en rojo: son las unicas
+         * que la ONG ya miro una vez y dejo a medias, asi que del otro lado hay
+         * alguien esperando respuesta desde antes de hoy. En «Pendientes» se
+         * mezclaban con las recien llegadas y no habia forma de distinguirlas.
+         */
+        $vueltas = Activity::vueltasDeAjustes()->count();
+
+        if ($vueltas) {
+            $alertas[] = [
+                'nivel' => 'error',
+                'titulo' => $vueltas === 1
+                    ? 'Una actividad volvio corregida y espera tu revision.'
+                    : $vueltas.' actividades volvieron corregidas y esperan tu revision.',
+                'texto' => 'Les pediste ajustes y la organizacion ya los hizo. En el listado salen marcadas como «Volvio corregida».',
+                'accion' => ['Verlas', route('admin.activities.pendientes', ['vueltas' => 1])],
+            ];
+        }
+
         $fallidos = EmailLog::fallidos()->count();
 
         if ($fallidos) {

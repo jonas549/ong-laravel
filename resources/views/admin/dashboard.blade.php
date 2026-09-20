@@ -126,6 +126,7 @@
             <table class="tabla">
                 <thead>
                     <tr>
+                        <th class="col-id">ID</th>
                         <th>Actividad</th>
                         <th>Organización</th>
                         <th class="num">Inscritos</th>
@@ -136,6 +137,8 @@
                 <tbody>
                     @forelse ($pendientesDeRevision as $a)
                         <tr>
+                            <x-panel.id :valor="$a->id" />
+
                             <td><a class="textlink" href="{{ route('admin.activities.show', $a) }}">{{ Str::limit($a->titulo, 38) }}</a></td>
                             <td>{{ $a->organization?->nombre }}</td>
                             <td class="num">{{ $a->inscritos }}</td>
@@ -150,7 +153,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" style="color:var(--gris);">No hay nada esperando revisión.</td></tr>
+                        <tr><td colspan="6" style="color:var(--gris);">No hay nada esperando revisión.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -170,6 +173,7 @@
         <table class="tabla">
             <thead>
                 <tr>
+                    <th class="col-id">ID</th>
                     <th>Persona</th>
                     <th>Actividad</th>
                     <th>Organización</th>
@@ -181,6 +185,8 @@
                 @forelse ($ultimasInscripciones as $i)
                     @php $t = $i->estado_color; @endphp
                     <tr>
+                        <x-panel.id :valor="$i->id" />
+
                         <td>
                             {{ $i->nombre }}
                             <span class="helper" style="display:block;">{{ $i->correo }}</span>
@@ -201,7 +207,7 @@
                         <td style="white-space:nowrap;">{{ \App\Support\Fecha::relativa($i->created_at) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" style="color:var(--gris);">Todavía no hay inscripciones.</td></tr>
+                    <tr><td colspan="6" style="color:var(--gris);">Todavía no hay inscripciones.</td></tr>
                 @endforelse
             </tbody>
         </table>

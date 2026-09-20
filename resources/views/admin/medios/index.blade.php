@@ -157,7 +157,12 @@
                 <span class="ficha-medio-pie">
                     <span class="ficha-medio-nombre">{{ $medio->etiqueta }}</span>
                     <span class="helper">
-                        {{ $medio->dimensiones ?? '—' }} · {{ $medio->peso_legible }}
+                        {{-- La biblioteca es una rejilla de fichas y no una tabla, así
+                             que el identificador no puede ir de primera columna: va
+                             el primero de la línea de datos, que es su sitio
+                             equivalente. Lo pidió el cliente para todo el panel. --}}
+                        <span class="medio-id" title="Identificador del registro">#{{ $medio->id }}</span>
+                        · {{ $medio->dimensiones ?? '—' }} · {{ $medio->peso_legible }}
                         @if ($medio->es_del_codigo)
                             · <span title="Viene con el diseño y la repone el despliegue">del diseño</span>
                         @endif

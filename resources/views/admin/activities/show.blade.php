@@ -91,6 +91,22 @@
         <section class="card" style="padding:24px;">
             <h3 style="font-size:16px;font-weight:700;margin:0 0 16px;">Moderación</h3>
 
+            @if ($activity->vuelveDeAjustes())
+                {{-- Lo primero de la tarjeta: es el motivo por el que esta
+                     actividad está otra vez aquí, y sin decirlo parece una
+                     más de las que llegan por primera vez. --}}
+                <div class="alert alert-info" style="margin:0 0 16px;">
+                    Volvió corregida. Le pediste ajustes y la organización ya los resolvió.
+                </div>
+            @endif
+
+            {{-- El hilo antes de los botones: lo que se han dicho es el contexto
+                 para decidir, así que va donde se lee primero. --}}
+            <div style="margin-bottom:18px;">
+                <x-hilo-moderacion :activity="$activity" lado="ong"
+                    vacio="Aún no se ha escrito nada sobre esta actividad." />
+            </div>
+
             <div style="display:flex;flex-direction:column;gap:12px;">
                 @if ($activity->estado !== 'publicada')
                     <form method="POST" action="{{ route('admin.activities.approve', $activity) }}">
@@ -104,7 +120,7 @@
                     <label class="helper" for="comentario" style="font-weight:600;">Pedir ajustes</label>
                     <textarea class="fld @error('comentario') is-invalid @enderror" id="comentario" name="comentario" rows="3"
                               placeholder="Explica qué falta o qué hay que corregir…">{{ \App\Support\Formulario::viejo('comentario') }}</textarea>
-                    <span class="helper">El organizador recibe este texto tal cual, por correo.</span>
+                    <span class="helper">El organizador recibe este texto tal cual, por correo, y queda en el hilo de arriba. Podrá responderte al reenviar la actividad corregida.</span>
                     @error('comentario') <span class="field-error">{{ $message }}</span> @enderror
                     <button type="submit" class="btn btn-outline btn-sm">Enviar observaciones</button>
                 </form>

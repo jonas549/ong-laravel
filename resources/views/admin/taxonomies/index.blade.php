@@ -61,7 +61,7 @@
 
             <x-panel.tabla
                 :filas="$terminos"
-                :columnas="$puedeReordenar ? 5 : 4"
+                :columnas="$puedeReordenar ? 6 : 5"
                 que="términos"
                 :vacio="request()->hasAny(['q', 'estado', 'papelera']) ? 'Ningún término coincide con el filtro.' : 'Sin términos en este grupo. Agrega el primero aquí al lado.'">
 
@@ -69,6 +69,7 @@
                     @if ($puedeReordenar)
                         <th style="width:30px;"><span class="visualmente-oculto">Orden</span></th>
                     @endif
+                    <x-panel.columna :campo="$puedeReordenar ? null : 'id'" clase="col-id">ID</x-panel.columna>
                     <x-panel.columna :campo="$puedeReordenar ? null : 'nombre'">Término</x-panel.columna>
                     <th class="num">En uso</th>
                     <x-panel.columna :campo="$puedeReordenar ? null : 'activo'">Se ofrece</x-panel.columna>
@@ -89,6 +90,8 @@
                         @if ($puedeReordenar)
                             <td style="cursor:grab;color:var(--gris);" aria-hidden="true">⣿</td>
                         @endif
+
+                        <x-panel.id :valor="$t->id" />
 
                         <td>
                             @if ($t->trashed())

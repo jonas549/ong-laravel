@@ -960,6 +960,97 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .tabla .num { text-align: right; font-variant-numeric: tabular-nums; }
 
+/*
+ * La columna de identificador, primera en todas las tablas del panel.
+ *
+ * Peticion expresa del cliente: poder decir «la 142» por telefono o en un
+ * ticket sin tener que describir la fila. Va estrecha y en cifras tabulares
+ * para que no baile entre filas, y en gris para que no compita con el dato
+ * que de verdad se lee, que es el de al lado.
+ *
+ * `width:1%` con `white-space:nowrap` es el truco de toda la vida para que
+ * una celda ocupe solo lo que mide su contenido: el resto del ancho se lo
+ * reparten las demas columnas.
+ */
+.tabla .col-id {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--gris);
+    font-weight: 600;
+}
+
+.tabla thead th.col-id { text-align: right; }
+
+/* El mismo identificador, en la rejilla de la biblioteca de medios. */
+.medio-id { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* ── El hilo de moderacion ──────────────────────────────────── */
+
+/*
+ * Conversacion entre la ONG y la organizacion. Lo propio a la derecha y en
+ * naranjo, lo del otro a la izquierda y en gris, que es la convencion que
+ * cualquiera reconoce sin que se lo expliquen.
+ *
+ * `box-sizing` explicito y acotado: aqui no hay reset global —ningun HTML
+ * fuente lo tiene— y sin esto el relleno se suma por fuera del `max-width`
+ * y las burbujas se salen de la tarjeta. Ya mordio cuatro veces en este
+ * proyecto.
+ */
+.hilo { display: flex; flex-direction: column; gap: 12px; }
+
+.hilo-mensaje {
+    box-sizing: border-box;
+    max-width: 88%;
+    align-self: flex-start;
+    background: var(--gris-100);
+    border-radius: 14px 14px 14px 4px;
+    padding: 11px 14px;
+}
+
+.hilo-mensaje-propio {
+    align-self: flex-end;
+    background: var(--naranjo-100);
+    border-radius: 14px 14px 4px 14px;
+}
+
+.hilo-mensaje-sistema { background: #fff8e6; }
+
+.hilo-firma {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--gris);
+    margin-bottom: 4px;
+}
+
+.hilo-firma strong { color: var(--gris-700); font-weight: 700; }
+
+/*
+ * `pre-wrap` y no `normal`: la organizacion escribe estos mensajes en un
+ * textarea y suele enumerar los ajustes en lineas sueltas. Sin esto se
+ * pegan todos en un parrafo y se pierde justo lo que los hacia legibles.
+ */
+.hilo-texto {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.hilo-movimiento {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--gris);
+}
+
 .tabla-wrap {
     overflow-x: auto;
     border: 1px solid var(--linea);

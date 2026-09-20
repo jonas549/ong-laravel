@@ -46,7 +46,7 @@ class EvaluationController extends Controller
         );
 
         $listado = Listado::ordenar($consulta->with('activity'), $request, [
-            'nombre', 'correo', 'experiencia', 'motivacion', 'created_at',
+            'id', 'nombre', 'correo', 'experiencia', 'motivacion', 'created_at',
         ], 'created_at', 'desc')
             ->paginate(Listado::porPagina($request))
             ->withQueryString();
@@ -170,7 +170,7 @@ class EvaluationController extends Controller
         $formato = Filtro::texto($request, 'formato') === 'csv' ? 'csv' : 'xlsx';
 
         $cabeceras = [
-            'Fecha', 'Actividad', 'Organización', 'Nombre', 'Correo',
+            'ID', 'Fecha', 'Actividad', 'Organización', 'Nombre', 'Correo',
             'Experiencia (1-5)', 'Motivación (1-5)',
             'Qué significa el Patrimonio Social', 'Cómo se enteró',
             'Fotografía', 'Autoriza difusión',
@@ -183,6 +183,7 @@ class EvaluationController extends Controller
         $filas = function () use ($request) {
             foreach ($this->consulta($request)->with('activity.organization')->lazyById(100) as $e) {
                 yield [
+                    $e->id,
                     /*
                      * La fecha va como objeto y no como texto ISO: así Excel la
                      * reconoce como fecha y se puede ordenar y filtrar por ella.

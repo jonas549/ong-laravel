@@ -62,12 +62,13 @@ class ParticipantController extends Controller
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValuesWithStyle(
-                ['Nombre', 'Correo', 'Fecha inscripción', 'Mayor de edad', 'Baja'],
+                ['ID', 'Nombre', 'Correo', 'Fecha inscripción', 'Mayor de edad', 'Baja'],
                 (new Style)->withFontBold(true),
             ));
 
             foreach ($inscritos as $i) {
                 $writer->addRow(Row::fromValues([
+                    $i->id,
                     $i->nombre,
                     $i->correo,
                     $i->created_at->locale('es')->isoFormat('D MMM YYYY'),

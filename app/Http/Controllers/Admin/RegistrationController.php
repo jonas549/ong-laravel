@@ -37,7 +37,7 @@ class RegistrationController extends Controller
             ->with('activity');
 
         $inscritos = Listado::ordenar($inscritos, $request, [
-            'nombre', 'correo', 'estado', 'created_at',
+            'id', 'nombre', 'correo', 'estado', 'created_at',
         ], 'created_at', 'desc')
             ->paginate(Listado::porPagina($request))
             ->withQueryString();
@@ -78,12 +78,13 @@ class RegistrationController extends Controller
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValuesWithStyle(
-                ['Nombre', 'Correo', 'Actividad', 'Organización', 'Fecha de inscripción', 'Estado'],
+                ['ID', 'Nombre', 'Correo', 'Actividad', 'Organización', 'Fecha de inscripción', 'Estado'],
                 (new Style)->withFontBold(true),
             ));
 
             foreach ($inscritos as $i) {
                 $writer->addRow(Row::fromValues([
+                    $i->id,
                     $i->nombre,
                     $i->correo,
                     $i->activity?->titulo ?? '(actividad borrada)',

@@ -38,7 +38,7 @@ class RegionController extends Controller
             ->when($estado !== '', fn ($q) => $q->where('activo', $estado === 'si'));
 
         return view('admin.regiones.index', [
-            'comunas' => Listado::ordenar($consulta, $request, ['nombre', 'activo'], 'nombre')
+            'comunas' => Listado::ordenar($consulta, $request, ['id', 'nombre', 'activo'], 'nombre')
                 ->paginate(Listado::porPagina($request))
                 ->withQueryString(),
             'regiones' => Region::orderBy('orden')->orderBy('nombre')->get(),
@@ -80,11 +80,11 @@ class RegionController extends Controller
 
         $filas = (function () {
             foreach (Commune::with('region')->withCount('activities')->orderBy('nombre')->cursor() as $c) {
-                yield [$c->nombre, $c->region?->nombre, $c->activo ? 'Si' : 'No', $c->activities_count];
+                yield [$c->id, $c->nombre, $c->region?->nombre, $c->activo ? 'Sí' : 'No', $c->activities_count];
             }
         })();
 
         return $exportador->descargar($formato, 'Comunas',
-            ['Comuna', 'Region', 'Se ofrece', 'Actividades'], $filas);
+            ['ID', 'Comuna', 'Región', 'Se ofrece', 'Actividades'], $filas);
     }
 }

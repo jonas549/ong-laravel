@@ -39,11 +39,13 @@
 <div class="tabla-wrap">
     <table class="tabla">
         <thead>
-            <tr><th>Plantilla</th><th>Cuándo se envía</th><th>Asunto</th><th>Estado</th><th></th></tr>
+            <tr><th class="col-id">ID</th><th>Plantilla</th><th>Cuándo se envía</th><th>Asunto</th><th>Estado</th><th></th></tr>
         </thead>
         <tbody>
             @forelse ($plantillas as $p)
                 <tr>
+                    <x-panel.id :valor="$p->id" />
+
                     <td style="font-weight:600;">{{ $p->nombre }}</td>
                     <td style="color:var(--gris);">{{ $p->descripcion }}</td>
                     <td>{{ Str::limit($p->asunto, 40) }}</td>
@@ -56,7 +58,7 @@
                 </tr>
             @empty
                 @unless ($faltan)
-                    <tr><td colspan="5" style="color:var(--gris);">No hay plantillas.</td></tr>
+                    <tr><td colspan="6" style="color:var(--gris);">No hay plantillas.</td></tr>
                 @endunless
             @endforelse
 

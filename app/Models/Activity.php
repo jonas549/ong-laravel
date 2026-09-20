@@ -134,6 +134,21 @@ class Activity extends Model
         return $this->hasMany(ActivityStatusLog::class)->latest();
     }
 
+    /**
+     * El hilo de moderación: lo que se han dicho la ONG y la organización.
+     *
+     * En orden de lectura —lo primero arriba— porque es una conversación y no
+     * un registro de auditoría. El historial completo sigue estando en
+     * `statusLogs`, del revés, que es como se lee un log.
+     */
+    public function hilo(): HasMany
+    {
+        return $this->hasMany(ActivityStatusLog::class)
+            ->whereNotNull('comentario')
+            ->where('comentario', '!=', '')
+            ->oldest();
+    }
+
     public function terms(): BelongsToMany
     {
         return $this->belongsToMany(TaxonomyTerm::class);
@@ -312,6 +327,44 @@ class Activity extends Model
         }
 
         return parent::resolveRouteBinding($value, $field);
+    }
+
+    /**
+     * Las que volvieron de «necesita ajustes» y siguen esperando una segunda
+     * mirada.
+     *
+     * No hace falta columna para saberlo: lo dice el propio historial. La
+     * condicion es que el ultimo movimiento de la actividad —el de id mas
+     * alto— sea justo el de «ajustes → revision». En cuanto la ONG hace algo
+     * (publicar, volver a pedir ajustes, cancelar) se escribe un movimiento
+     * nuevo, ese deja de ser el ultimo, y la actividad sale de la lista sola.
+     *
+     * Se prefirio a un `vuelta_de_ajustes_at` en la tabla porque una columna
+     * hay que acordarse de limpiarla en cuatro sitios, y el dia que uno se
+     * olvida el panel avisa de algo que ya se atendio.
+     */
+    public function scopeVueltasDeAjustes(Builder $consulta): Builder
+    {
+        return $consulta->where('estado', 'revision')->whereExists(
+            fn ($q) => $q->selectRaw('1')
+                ->from('activity_status_logs as l')
+                ->whereColumn('l.activity_id', 'activities.id')
+                ->where('l.a_estado', 'revision')
+                ->where('l.de_estado', 'ajustes')
+                ->whereRaw('l.id = (select max(id) from activity_status_logs where activity_id = activities.id)')
+        );
+    }
+
+    /** Si esta actividad concreta viene de vuelta de una peticion de ajustes. */
+    public function vuelveDeAjustes(): bool
+    {
+        if ($this->estado !== 'revision') {
+            return false;
+        }
+
+        $ultimo = $this->statusLogs()->reorder('id', 'desc')->first();
+
+        return $ultimo?->de_estado === 'ajustes' && $ultimo->a_estado === 'revision';
     }
 
     public function puedeRecibirInscripciones(): bool

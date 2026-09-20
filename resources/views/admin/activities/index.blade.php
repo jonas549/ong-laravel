@@ -26,11 +26,24 @@
             Publicadas solas <span class="count-badge">{{ $automaticas }}</span>
         </a>
     @endif
+
+    {{--
+        Las que volvieron corregidas. Dentro de «Estamos revisando» se mezclan
+        con las que llegan por primera vez, y no son lo mismo: de éstas hay
+        alguien esperando respuesta desde que se le pidieron los ajustes.
+    --}}
+    @if ($vueltas > 0)
+        <a class="tab {{ $soloVueltas ? 'on' : '' }}" href="{{ route('admin.activities.index', ['vueltas' => 1]) }}"
+           title="Les pediste ajustes y la organización ya los resolvió">
+            Volvieron corregidas <span class="count-badge">{{ $vueltas }}</span>
+        </a>
+    @endif
 </div>
 
 <form method="GET" style="display:flex;gap:10px;margin-bottom:20px;max-width:420px;">
     <input type="hidden" name="estado" value="{{ $estado }}">
     @if ($soloAutomaticas) <input type="hidden" name="auto" value="1"> @endif
+    @if ($soloVueltas) <input type="hidden" name="vueltas" value="1"> @endif
     <input class="fld" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar por nombre…">
     <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
 </form>
@@ -39,6 +52,7 @@
     <table class="tabla">
         <thead>
             <tr>
+                <th class="col-id">ID</th>
                 <th>Actividad</th>
                 <th>Organización</th>
                 <th>Fecha</th>
@@ -52,6 +66,8 @@
             @forelse ($actividades as $a)
                 @php $t = $a->estado_color; @endphp
                 <tr>
+                    <x-panel.id :valor="$a->id" />
+
                     <td style="font-weight:600;">
                         {{ Str::limit($a->titulo, 46) }}
                         @if ($a->destacada)
@@ -60,6 +76,10 @@
                         @if ($a->publicada_automaticamente)
                             <span title="Se publicó sola, sin pasar por revisión"
                                   style="margin-left:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo-600);white-space:nowrap;">Sin revisar</span>
+                        @endif
+                        @if ($vuelvenDeAjustes->has($a->id))
+                            <span title="Le pediste ajustes y la organización ya los resolvió"
+                                  style="margin-left:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:#fdeaf0;color:#a82249;white-space:nowrap;">Volvió corregida</span>
                         @endif
                     </td>
                     <td>{{ $a->organization?->nombre }}</td>
@@ -74,7 +94,7 @@
                     <td><a class="btn btn-outline btn-sm" href="{{ route('admin.activities.show', $a) }}">Revisar</a></td>
                 </tr>
             @empty
-                <tr><td colspan="7" style="color:var(--gris);">No hay actividades con ese filtro.</td></tr>
+                <tr><td colspan="8" style="color:var(--gris);">No hay actividades con ese filtro.</td></tr>
             @endforelse
         </tbody>
     </table>

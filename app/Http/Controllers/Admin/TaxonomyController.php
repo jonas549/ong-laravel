@@ -59,7 +59,7 @@ class TaxonomyController extends Controller
             'limite' => TaxonomyTerm::limiteDe($grupo),
             'puedeReordenar' => $puedeReordenar,
             'verEliminados' => Papelera::incluyeEliminados($request),
-            'terminos' => Listado::ordenar($consulta, $request, ['nombre', 'orden', 'activo'], 'orden')
+            'terminos' => Listado::ordenar($consulta, $request, ['id', 'nombre', 'orden', 'activo'], 'orden')
                 ->paginate($puedeReordenar ? 200 : Listado::porPagina($request))
                 ->withQueryString(),
         ]);
@@ -159,11 +159,11 @@ class TaxonomyController extends Controller
 
         $filas = (function () use ($grupo) {
             foreach (TaxonomyTerm::where('grupo', $grupo)->withCount('activities')->orderBy('orden')->cursor() as $t) {
-                yield [$t->nombre, $t->orden, $t->activo ? 'Sí' : 'No', $t->activities_count];
+                yield [$t->id, $t->nombre, $t->orden, $t->activo ? 'Sí' : 'No', $t->activities_count];
             }
         })();
 
         return $exportador->descargar($formato, TaxonomyTerm::GRUPOS[$grupo],
-            ['Nombre', 'Orden', 'Se ofrece', 'Actividades que lo usan'], $filas);
+            ['ID', 'Nombre', 'Orden', 'Se ofrece', 'Actividades que lo usan'], $filas);
     }
 }

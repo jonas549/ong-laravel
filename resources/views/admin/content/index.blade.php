@@ -65,7 +65,7 @@
 
     <x-panel.tabla
         :filas="$filas"
-        :columnas="$columnas->count() + ($puedeReordenar ? 2 : 1)"
+        :columnas="$columnas->count() + ($puedeReordenar ? 3 : 2)"
         que="registros"
         :vacio="$conFiltros ? 'Ningún registro coincide con el filtro.' : 'Todavía no hay registros. Pulsa «Agregar» para crear el primero.'"
         :acciones-en="route('admin.content.masivas', $tipo)"
@@ -80,6 +80,8 @@
             @if ($puedeReordenar)
                 <th style="width:30px;"><span class="visualmente-oculto">Orden</span></th>
             @endif
+            {{-- Mientras se arrastra no se ordena por nada, tampoco por aquí. --}}
+            <x-panel.columna :campo="$puedeReordenar ? null : 'id'" clase="col-id">ID</x-panel.columna>
             @foreach ($columnas as $campo => $meta)
                 <x-panel.columna :campo="$puedeReordenar || ! in_array($campo, $ordenables, true) ? null : $campo">{{ $meta['label'] }}</x-panel.columna>
             @endforeach
@@ -102,6 +104,8 @@
                 @if ($puedeReordenar)
                     <td style="cursor:grab;color:var(--gris);" aria-hidden="true">⣿</td>
                 @endif
+
+                <x-panel.id :valor="$fila->id" />
 
                 @foreach ($columnas as $campo => $meta)
                     <td @if ($loop->first) style="font-weight:600;" @endif>

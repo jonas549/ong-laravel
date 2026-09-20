@@ -98,12 +98,13 @@
 
 <x-panel.tabla
     :filas="$evaluaciones"
-    :columnas="6"
+    :columnas="7"
     :vacio="request()->hasAny(['q', 'actividad', 'desde', 'hasta', 'foto'])
         ? 'Ninguna evaluación coincide con el filtro.'
         : 'Todavía no hay evaluaciones. Llegan cuando alguien escanea el QR de una actividad.'">
 
     <x-slot:cabecera>
+        <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>
         <x-panel.columna campo="created_at">Fecha</x-panel.columna>
         <th>Actividad</th>
         <x-panel.columna campo="nombre">Persona</x-panel.columna>
@@ -114,6 +115,8 @@
 
     @foreach ($evaluaciones as $e)
         <tr>
+            <x-panel.id :valor="$e->id" />
+
             <td style="white-space:nowrap;">{{ \App\Support\Fecha::corta($e->created_at) }}</td>
 
             <td>{{ Str::limit($e->activity?->titulo ?? '(actividad borrada)', 34) }}</td>

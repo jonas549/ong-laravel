@@ -3,6 +3,13 @@
     'campo' => null,
     // Alinear a la derecha, para las de números.
     'num' => false,
+    /*
+     * Clases extra del encabezado. Va como propiedad y NO como `class=`: el
+     * `@class` de abajo emite el atributo entero, así que junto a un `class=`
+     * estático salen dos y el navegador se queda con el primero. Es el mismo
+     * fallo que ya se comió la clase de columna activa.
+     */
+    'clase' => null,
 ])
 
 {{--
@@ -29,7 +36,13 @@
         : null;
 @endphp
 
-<th @class(['num' => $num]) @if ($activo) aria-sort="{{ request('dir') === 'desc' ? 'descending' : 'ascending' }}" @endif>
+@php
+    $clasesTh = [];
+    if ($num) { $clasesTh[] = 'num'; }
+    if (filled($clase)) { $clasesTh[] = $clase; }
+@endphp
+
+<th @class($clasesTh) @if ($activo) aria-sort="{{ request('dir') === 'desc' ? 'descending' : 'ascending' }}" @endif>
     @if ($enlace)
         {{-- Un solo `class`: `@class` emite el atributo entero, asi que junto a
              un `class=` estatico salian dos y el navegador se queda con el

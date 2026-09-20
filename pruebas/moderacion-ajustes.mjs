@@ -105,27 +105,24 @@ try {
     di('se guarda', p.url().includes('/mi-cuenta/actividades'), p.url());
 
     /*
-     * ESTA es la respuesta a la pregunta: guardar NO mueve el estado. La
-     * actividad sigue en «Necesitamos algunos ajustes» hasta que la persona
-     * pulse el botón de reenviar.
+     * ESTA es la respuesta a la pregunta, y CAMBIÓ el 2026-09-20 (P2).
+     *
+     * Antes guardar no movía nada: la actividad seguía en «Necesitamos algunos
+     * ajustes» hasta pulsar un botón aparte, y quien corregía se quedaba
+     * mirando el mismo aviso rosa convencido de que su corrección no había
+     * servido de nada. Ahora guardar la devuelve a revisión, que es lo que
+     * cualquiera da por hecho al guardar lo que le pidieron corregir.
      */
-    di('guardar NO la devuelve a revisión: sigue en «ajustes»', estado() === 'ajustes', estado());
+    di('guardar SÍ la devuelve a revisión', estado() === 'revision', estado());
 
     /* ══════════════════════════════════════════════════════════════ */
-    t('El organizador la reenvía');
+    t('Ya no hace falta un segundo paso');
 
     await p.goto(`${B}/mi-cuenta/actividades/${id}/editar`, { waitUntil: 'networkidle2' });
 
     const hayBoton = await p.evaluate(() => !! [...document.querySelectorAll('button[type=submit]')]
         .find((b) => b.textContent.includes('Enviar a revisión')));
-    di('hay un botón «Enviar a revisión»', hayBoton);
-
-    await p.evaluate(() => [...document.querySelectorAll('button[type=submit]')]
-        .find((b) => b.textContent.includes('Enviar a revisión')).click());
-    await p.waitForNavigation({ waitUntil: 'networkidle2' });
-    await esperar(300);
-
-    di('vuelve DIRECTA a «revisión», sin estado intermedio', estado() === 'revision', estado());
+    di('no queda botón «Enviar a revisión» que pulsar', ! hayBoton);
 
     const tras = await p.evaluate(() => document.body.innerText);
     di('y la pantalla lo dice', /Estamos revisando tu actividad|revisión/i.test(tras));
@@ -136,6 +133,16 @@ try {
         .split('\n').map((l) => l.trim()).reverse();
     di('el historial guarda los dos saltos',
         saltos.join(' , ') === 'revision->ajustes , ajustes->revision', saltos.join(' , '));
+
+    /* El borrador sí conserva su botón: ahí guardar es guardar, y sin él un
+       borrador no tendría forma de llegar a revisión. */
+    const borrador = sql(`SELECT id FROM activities WHERE estado='borrador' LIMIT 1`).trim();
+    if (borrador) {
+        await p.goto(`${B}/mi-cuenta/actividades/${borrador}/editar`, { waitUntil: 'networkidle2' });
+        di('un borrador sí conserva «Enviar a revisión»',
+            await p.evaluate(() => !! [...document.querySelectorAll('button[type=submit]')]
+                .find((b) => b.textContent.includes('Enviar a revisión'))));
+    }
 
     di('los estados posibles siguen siendo cinco, sin uno intermedio nuevo',
         Number(sql("SELECT COUNT(DISTINCT a_estado) FROM activity_status_logs")) <= 5);

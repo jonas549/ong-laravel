@@ -246,3 +246,21 @@ Lo que conviene comprobar ahí, y no aquí:
 
   Ojo con medir la altura contra el interlineado en vez de usar `Range`: da
   falso positivo en cualquier enlace con relleno.
+
+## Escenarios que hay que limpiar
+
+### `datos-hilo.php` — el hilo de moderación
+
+Deja la actividad 5 en «revisión» y sin historial para que
+`hilo-moderacion.mjs` pueda recorrer el circuito entero desde el principio.
+
+**Hay que limpiarlo al terminar** con `limpia-hilo.php`: la 5 es la única
+actividad sembrada en «necesita ajustes», así que dejarla en «revisión»
+descuadra las cuentas por estado de cualquier suite que las mire, y el fallo
+aparece lejos de aquí.
+
+```
+php artisan tinker --execute="require base_path('pruebas/datos-hilo.php');"
+node pruebas/hilo-moderacion.mjs
+php artisan tinker --execute="require base_path('pruebas/limpia-hilo.php');"
+```

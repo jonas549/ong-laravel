@@ -91,6 +91,14 @@ class UpdateActivityRequest extends FormRequest
 
             'abierta_publico' => ['nullable', 'boolean'],
             'inscripcion_habilitada' => ['nullable', 'boolean'],
+
+            /*
+             * El mensaje con el que el organizador acompaña una corrección.
+             * Opcional a propósito: obligar a escribir algo para poder
+             * reenviar convertiría el hilo en un peaje. Sólo se pinta cuando
+             * la actividad viene de «necesita ajustes».
+             */
+            'mensaje_ajustes' => ['nullable', 'string', 'max:2000'],
             'info_previa' => ['nullable', 'string', 'max:2000'],
 
             'correo_contacto' => ['nullable', 'email', 'max:255', new CorreoEnviable],

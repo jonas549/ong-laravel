@@ -105,10 +105,12 @@
 
 <div class="tabla-wrap">
     <table class="tabla">
-        <thead><tr><th>Fecha</th><th>Correo</th><th>Cuenta</th><th>Panel</th><th>Resultado</th><th>Lo hizo</th><th>IP</th><th>Dispositivo</th></tr></thead>
+        <thead><tr><th class="col-id">ID</th><th>Fecha</th><th>Correo</th><th>Cuenta</th><th>Panel</th><th>Resultado</th><th>Lo hizo</th><th>IP</th><th>Dispositivo</th></tr></thead>
         <tbody>
             @forelse ($accesos as $a)
                 <tr>
+                    <x-panel.id :valor="$a->id" />
+
                     <td style="white-space:nowrap;">{{ \App\Support\Fecha::diaYHora($a->created_at) }}</td>
                     <td>{{ $a->email ?? '—' }}</td>
                     <td style="color:var(--gris);font-size:13px;">{{ $a->user?->name ?? '—' }}</td>
@@ -125,7 +127,7 @@
                     <td style="color:var(--gris);font-size:13px;">{{ $a->dispositivo }}</td>
                 </tr>
             @empty
-                <tr><td colspan="8" style="text-align:center;padding:34px;color:var(--gris);">Todavía no hay accesos registrados.</td></tr>
+                <tr><td colspan="9" style="text-align:center;padding:34px;color:var(--gris);">Todavía no hay accesos registrados.</td></tr>
             @endforelse
         </tbody>
     </table>

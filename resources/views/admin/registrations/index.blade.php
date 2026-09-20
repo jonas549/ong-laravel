@@ -28,10 +28,11 @@
 
 <x-panel.tabla
     :filas="$inscritos"
-    :columnas="5"
+    :columnas="6"
     :vacio="request()->hasAny(['q', 'estado']) ? 'Ninguna inscripción coincide con el filtro.' : 'Todavía no hay inscripciones.'">
 
     <x-slot:cabecera>
+        <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>
         <x-panel.columna campo="nombre">Persona</x-panel.columna>
         <x-panel.columna campo="correo">Correo</x-panel.columna>
         <th>Actividad</th>
@@ -42,6 +43,8 @@
     @foreach ($inscritos as $i)
         @php $c = $i->estado_color; @endphp
         <tr>
+            <x-panel.id :valor="$i->id" />
+
             <td style="font-weight:600;">{{ $i->nombre }}</td>
             <td>{{ $i->correo }}</td>
             <td>{{ Str::limit($i->activity?->titulo, 38) }}</td>

@@ -24,7 +24,7 @@ use Illuminate\Validation\Rule;
 class MediaController extends Controller
 {
     /** Por dónde se puede ordenar. Lista blanca: lo que llega por la URL entra en la consulta. */
-    private const ORDENABLES = ['created_at', 'nombre', 'peso'];
+    private const ORDENABLES = ['id', 'created_at', 'nombre', 'peso'];
 
     public function __construct(private Biblioteca $biblioteca) {}
 

@@ -53,7 +53,7 @@ class OrganizationController extends Controller
         $consulta = Papelera::aplicar($consulta, $request);
 
         return view('admin.organizations.index', [
-            'organizaciones' => Listado::ordenar($consulta, $request, ['nombre', 'tipo', 'verificada', 'activo', 'created_at'], 'nombre')
+            'organizaciones' => Listado::ordenar($consulta, $request, ['id', 'nombre', 'tipo', 'verificada', 'activo', 'created_at'], 'nombre')
                 ->paginate(Listado::porPagina($request))
                 ->withQueryString(),
             'soloPendientes' => $soloPendientes,
@@ -170,6 +170,7 @@ class OrganizationController extends Controller
 
             foreach ($consulta->cursor() as $o) {
                 yield [
+                    $o->id,
                     $o->nombre,
                     $o->tipo_label,
                     $o->user?->email,
@@ -183,7 +184,7 @@ class OrganizationController extends Controller
         })();
 
         return $exportador->descargar($formato, 'Organizaciones', [
-            'Nombre', 'Tipo', 'Correo de la cuenta', 'Correo de contacto',
+            'ID', 'Nombre', 'Tipo', 'Correo de la cuenta', 'Correo de contacto',
             'Verificada', 'Activa', 'Actividades', 'Alta',
         ], $filas);
     }
