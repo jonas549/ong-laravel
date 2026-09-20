@@ -137,9 +137,16 @@
             <td class="eval-texto">{{ $e->significado }}</td>
 
             <td style="white-space:nowrap;text-align:right;">
-                @if ($e->tieneFoto())
-                    <a class="btn btn-outline btn-sm" href="{{ route('admin.evaluaciones.foto', $e) }}" target="_blank" rel="noopener">
-                        {{ $e->foto_autorizada ? 'Foto ✓' : 'Foto' }}
+                {{-- Una respuesta puede traer varias fotos: se enlaza la
+                     primera y se dice cuántas son. Enlazarlas todas aquí
+                     llenaría la columna de botones iguales; la cuadrícula de
+                     Fotografías es donde se ven una a una. --}}
+                @if ($e->fotos->isNotEmpty())
+                    <a class="btn btn-outline btn-sm" href="{{ route('admin.evaluaciones.foto', $e->fotos->first()) }}" target="_blank" rel="noopener">
+                        {{ $e->foto_autorizada ? 'Fotos ✓' : 'Fotos' }}
+                        @if ($e->fotos->count() > 1)
+                            <span class="helper" style="margin-left:4px;">{{ $e->fotos->count() }}</span>
+                        @endif
                     </a>
                 @endif
 

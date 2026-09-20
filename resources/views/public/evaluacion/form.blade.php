@@ -58,7 +58,7 @@
         <form method="POST" action="{{ route('evaluar.store', $activity) }}"
               enctype="multipart/form-data"
               class="evaluacion-form"
-              x-data="encuestaEvaluacion({{ Js::from($erroresGuia) }}, {{ ActivityEvaluation::MAX_SIGNIFICADO }})"
+              x-data="encuestaEvaluacion({{ Js::from($erroresGuia) }}, {{ ActivityEvaluation::MAX_SIGNIFICADO }}, {{ $maxFotos }})"
               x-on:submit="revisarAntesDeEnviar($event)"
               x-on:input="revisarCampo($event.target.closest('[data-campo]')?.dataset.campo)"
               x-on:change="revisarCampo($event.target.closest('[data-campo]')?.dataset.campo)">
@@ -179,51 +179,82 @@
                 @error('como_se_entero') <span class="field-error">{{ $message }}</span> @enderror
             </div>
 
-            {{-- ── Fotografía ── --}}
-            <div class="evaluacion-campo" data-campo="foto" data-etiqueta="Fotografía">
-                <label class="evaluacion-lbl" for="ev-foto">Subir una fotografía</label>
+            {{--
+                ── Fotografías ──
+
+                Cuántas caben lo decide la ONG en Configuración → General. Con
+                el ajuste en 0 el campo no se pinta: es la forma de apagar la
+                recogida de fotos sin tocar código ni dejar un botón que no
+                lleva a nada.
+            --}}
+            @if ($maxFotos > 0)
+            <div class="evaluacion-campo" data-campo="fotos" data-etiqueta="Fotografías">
+                <label class="evaluacion-lbl" for="ev-fotos">
+                    {{ $maxFotos === 1 ? 'Subir una fotografía' : 'Subir fotografías' }}
+                </label>
 
                 {{--
                     Punto 11 de la tanda del 11/09. Va ANTES del selector y no
                     junto a la casilla: quien sube una foto tiene que saber para
                     qué se va a usar antes de elegirla, no después.
                 --}}
-                <p class="helper evaluacion-foto-uso">La fotografía podrá ser utilizada para la difusión y comunicación del Día del Patrimonio Social.</p>
+                <p class="helper evaluacion-foto-uso">Las fotografías podrán ser utilizadas para la difusión y comunicación del Día del Patrimonio Social.</p>
+
+                {{-- Las elegidas, cada una con su botón de quitar. --}}
+                <div class="evaluacion-fotos-tira" x-show="tieneFoto" x-cloak>
+                    <template x-for="(f, i) in fotos" x-bind:key="f.previa">
+                        <div class="evaluacion-foto-ficha">
+                            <img x-bind:src="f.previa" alt="" class="evaluacion-foto-imagen">
+                            <button type="button" class="evaluacion-foto-sacar"
+                                    x-on:click="quitarFoto(i)"
+                                    x-bind:aria-label="'Quitar ' + f.nombre">×</button>
+                            <span class="evaluacion-foto-nombre" x-text="f.nombre"></span>
+                        </div>
+                    </template>
+                </div>
 
                 <div class="evaluacion-foto">
-                    <div class="evaluacion-foto-previa">
-                        {{-- La miniatura, cuando ya hay foto elegida. --}}
-                        <img x-show="previa" x-cloak x-bind:src="previa" alt="" class="evaluacion-foto-imagen">
-
-                        <span x-show="!previa" class="evaluacion-foto-icono" aria-hidden="true">
+                    <div class="evaluacion-foto-previa" x-show="!tieneFoto">
+                        <span class="evaluacion-foto-icono" aria-hidden="true">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         </span>
                     </div>
 
                     <div class="evaluacion-foto-datos">
-                        <label class="btn btn-outline btn-sm evaluacion-foto-boton" for="ev-foto">
-                            <span x-text="tieneFoto ? 'Cambiar imagen' : 'Elegir imagen'">Elegir imagen</span>
+                        {{-- Con el cupo lleno el botón desaparece: un botón que
+                             sólo sirve para dar un error no es un botón. --}}
+                        <label class="btn btn-outline btn-sm evaluacion-foto-boton" for="ev-fotos"
+                               x-show="huecos > 0" x-cloak>
+                            <span x-text="textoBotonFoto">{{ $maxFotos === 1 ? 'Elegir imagen' : 'Elegir imágenes' }}</span>
                         </label>
 
-                        <input type="file" id="ev-foto" name="foto" accept="image/jpeg,image/png"
+                        <input type="file" id="ev-fotos" name="fotos[]" accept="image/jpeg,image/png"
+                               @if ($maxFotos > 1) multiple @endif
                                class="evaluacion-foto-input"
-                               x-on:change="elegirFoto($event)">
+                               x-on:change="elegirFotos($event)">
 
-                        <span class="helper evaluacion-foto-pie" x-show="!tieneFoto">JPG o PNG, hasta 5 MB</span>
+                        <span class="helper evaluacion-foto-pie">
+                            JPG o PNG, hasta 5 MB
+                            @if ($maxFotos > 1)
+                                · hasta {{ $maxFotos }} fotografías
+                            @endif
+                        </span>
 
-                        <span class="helper evaluacion-foto-nombre" x-show="tieneFoto" x-cloak x-text="nombreFoto"></span>
+                        <span class="helper" x-show="tieneFoto && maximoFotos > 1" x-cloak
+                              x-text="fotos.length + ' de ' + maximoFotos"></span>
 
                         <button type="button" class="btn btn-ghost btn-sm evaluacion-foto-quitar"
-                                x-show="tieneFoto" x-cloak x-on:click="quitarFoto()">Quitar</button>
+                                x-show="tieneFoto" x-cloak x-on:click="vaciar()">Quitar todas</button>
 
                         <span class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</span>
                     </div>
                 </div>
 
-                {{-- El error del navegador (tipo o tamaño), antes de enviar nada. --}}
+                {{-- El error del navegador (tipo, tamaño o cupo), antes de enviar nada. --}}
                 <span class="field-error" x-show="errorFoto" x-cloak x-text="errorFoto"></span>
 
-                @error('foto') <span class="field-error">{{ $message }}</span> @enderror
+                @error('fotos') <span class="field-error">{{ $message }}</span> @enderror
+                @error('fotos.*') <span class="field-error">{{ $message }}</span> @enderror
 
                 {{--
                     La autorización.
@@ -235,6 +266,10 @@
                     El servidor lo vuelve a comprobar —sin archivo guarda
                     `false` pase lo que pase— porque esto de aquí es comodidad,
                     no garantía.
+
+                    Es UNA autorización para todas las fotos del envío, no una
+                    por archivo: el consentimiento se firma una vez y sobre lo
+                    que se manda. Ver la migración de `activity_evaluation_photos`.
 
                     `x-cloak` evita que asome durante el instante que Alpine
                     tarda en arrancar.
@@ -257,6 +292,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             <button type="submit" class="btn btn-primary evaluacion-enviar">Enviar evaluación</button>
 

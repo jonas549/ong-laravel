@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\ActivityEvaluation;
+use App\Models\EvaluationPhoto;
 use App\Services\Biblioteca;
 use App\Services\Evaluaciones;
 use App\Services\Exportador;
@@ -13,6 +14,8 @@ use App\Support\Filtro;
 use App\Support\Listado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -45,7 +48,7 @@ class EvaluationController extends Controller
             (clone $consulta)->reorder()->get(['experiencia', 'motivacion'])
         );
 
-        $listado = Listado::ordenar($consulta->with('activity'), $request, [
+        $listado = Listado::ordenar($consulta->with(['activity', 'fotos']), $request, [
             'id', 'nombre', 'correo', 'experiencia', 'motivacion', 'created_at',
         ], 'created_at', 'desc')
             ->paginate(Listado::porPagina($request))
@@ -68,27 +71,46 @@ class EvaluationController extends Controller
      * autorización no es una foto que falte revisar: es una foto que **no se
      * puede publicar**, y tenerlas mezcladas en una misma cuadrícula es la
      * forma más fácil de que alguien coja la equivocada.
+     *
+     * Desde que una respuesta puede traer varias fotos, lo que se pagina son
+     * las FOTOS y no las respuestas: con veinticuatro respuestas de tres fotos
+     * cada una, paginar respuestas daba páginas de setenta y dos imágenes.
      */
     public function fotos(Request $request)
     {
         $cual = Filtro::texto($request, 'estado') === 'sin-autorizar' ? 'sin-autorizar' : 'autorizadas';
 
-        $consulta = $this->consulta($request)->conFoto();
-
-        $consulta = $cual === 'autorizadas'
-            ? $consulta->where('foto_autorizada', true)
-            : $consulta->where('foto_autorizada', false);
-
         return view('admin.evaluaciones.fotos', [
-            'fotos' => $consulta->with('activity')->paginate(24)->withQueryString(),
+            'fotos' => $this->consultaDeFotos($request, $cual)
+                ->with('evaluation.activity')
+                ->paginate(24)
+                ->withQueryString(),
             'cual' => $cual,
             'filtros' => $this->filtros($request),
             'actividades' => $this->actividadesConEvaluaciones(),
             'cuantas' => [
-                'autorizadas' => ActivityEvaluation::query()->autorizadas()->count(),
-                'sin-autorizar' => ActivityEvaluation::query()->sinAutorizar()->count(),
+                'autorizadas' => $this->consultaDeFotos($request, 'autorizadas')->count(),
+                'sin-autorizar' => $this->consultaDeFotos($request, 'sin-autorizar')->count(),
             ],
         ]);
+    }
+
+    /**
+     * Las fotos que caen dentro de los filtros de la pantalla.
+     *
+     * Se apoya en `consulta()` en vez de repetir los filtros: son los mismos
+     * que los del listado de respuestas, y dos listas de filtros que tienen
+     * que decir lo mismo acaban diciendo cosas distintas.
+     */
+    private function consultaDeFotos(Request $request, string $cual)
+    {
+        $evaluaciones = (clone $this->consulta($request))->reorder()
+            ->where('foto_autorizada', $cual === 'autorizadas');
+
+        return EvaluationPhoto::query()
+            ->whereIn('activity_evaluation_id', $evaluaciones->select('id'))
+            ->orderByDesc('activity_evaluation_id')
+            ->orderBy('orden');
     }
 
     /**
@@ -101,13 +123,12 @@ class EvaluationController extends Controller
      * Se responde en streaming para no cargar en memoria una foto de varios
      * megabytes por cada miniatura de la cuadrícula.
      */
-    public function foto(ActivityEvaluation $evaluacion): StreamedResponse
+    public function foto(EvaluationPhoto $foto): StreamedResponse
     {
-        abort_unless($evaluacion->tieneFoto(), 404);
-        abort_unless(Storage::disk('local')->exists($evaluacion->foto_path), 404);
+        abort_unless(Storage::disk('local')->exists($foto->ruta), 404);
 
         return Storage::disk('local')->response(
-            $evaluacion->foto_path,
+            $foto->ruta,
             null,
             // `inline` y no `attachment`: esto se pinta en la cuadrícula del
             // panel, no se descarga.
@@ -123,27 +144,101 @@ class EvaluationController extends Controller
      * archivos que no usa ninguna vista— y una autorización es el permiso para
      * publicar, no la publicación.
      */
-    public function aBiblioteca(Request $request, ActivityEvaluation $evaluacion, Biblioteca $biblioteca)
+    public function aBiblioteca(Request $request, EvaluationPhoto $foto, Biblioteca $biblioteca)
     {
-        abort_unless($evaluacion->tieneFoto(), 404);
-
-        if (! $evaluacion->foto_autorizada) {
+        if (! $foto->estaAutorizada()) {
             return back()->with('error', 'Esa fotografía no tiene autorización de difusión.');
         }
 
-        $absoluta = Storage::disk('local')->path($evaluacion->foto_path);
+        $absoluta = Storage::disk('local')->path($foto->ruta);
 
         abort_unless(is_file($absoluta), 404);
 
+        $evaluacion = $foto->evaluation;
+
         $medio = $biblioteca->adoptar(
             $absoluta,
-            'evaluacion-'.$evaluacion->id.'-'.($evaluacion->activity?->slug ?? 'actividad').'.'
-                .pathinfo($evaluacion->foto_path, PATHINFO_EXTENSION),
+            'evaluacion-'.$evaluacion->id.'-'.$foto->id.'-'
+                .($evaluacion->activity?->slug ?? 'actividad').'.'.$foto->extension(),
             carpeta: 'Evaluaciones',
             usuario: $request->user(),
         );
 
         return back()->with('ok', 'La fotografía ya está en la biblioteca de medios como «'.$medio->nombre.'».');
+    }
+
+    /**
+     * Descarga en un zip las fotografías que están a la vista.
+     *
+     * **Respeta los filtros de la pantalla**, que es el encargo entero: si se
+     * está filtrando por una actividad o por fechas, se bajan ésas y no todo.
+     * Un botón que siempre se lo lleva todo obliga a separar a mano después, y
+     * entonces no ahorra nada.
+     *
+     * El zip se arma en un archivo temporal y no en memoria: cien fotos de
+     * medio mega son cincuenta megas, y `memory_limit` no está para eso.
+     *
+     * Las carpetas de dentro van por actividad, que es como se van a usar.
+     */
+    public function descargarFotos(Request $request): BinaryFileResponse
+    {
+        abort_unless(class_exists(\ZipArchive::class), 503, 'Este servidor no tiene la extensión zip de PHP.');
+
+        $cual = Filtro::texto($request, 'estado') === 'sin-autorizar' ? 'sin-autorizar' : 'autorizadas';
+
+        $fotos = $this->consultaDeFotos($request, $cual)->with('evaluation.activity')->get();
+
+        abort_if($fotos->isEmpty(), 404, 'No hay fotografías que descargar con esos filtros.');
+
+        $temporal = tempnam(sys_get_temp_dir(), 'dps-fotos-');
+
+        $zip = new \ZipArchive;
+        $zip->open($temporal, \ZipArchive::OVERWRITE);
+
+        foreach ($fotos as $foto) {
+            $absoluta = Storage::disk('local')->path($foto->ruta);
+
+            // Una fila sin su archivo no puede tumbar la descarga entera.
+            if (! is_file($absoluta)) {
+                continue;
+            }
+
+            $evaluacion = $foto->evaluation;
+            $carpeta = Str::slug($evaluacion?->activity?->titulo ?? 'sin-actividad');
+
+            $zip->addFile(
+                $absoluta,
+                $carpeta.'/'.$evaluacion?->id.'-'.Str::slug($evaluacion?->nombre ?? 'anonimo')
+                    .'-'.$foto->id.'.'.$foto->extension(),
+            );
+        }
+
+        /*
+         * Un aviso dentro del propio zip con de dónde salió.
+         *
+         * Las sin autorizar son las que más falta hacen: el zip se descomprime
+         * en el escritorio de alguien, lejos de la pestaña del panel que decía
+         * que esas fotos no se pueden publicar.
+         */
+        $zip->addFromString('LEEME.txt', $this->avisoDelZip($cual, $fotos->count()));
+        $zip->close();
+
+        return response()->download(
+            $temporal,
+            'fotografias-'.$cual.'-'.Fecha::iso(now()).'.zip',
+            ['Content-Type' => 'application/zip'],
+        )->deleteFileAfterSend(true);
+    }
+
+    private function avisoDelZip(string $cual, int $cuantas): string
+    {
+        $cabecera = "Fotografías de las evaluaciones del Día del Patrimonio Social\n"
+            ."Descargadas el ".Fecha::iso(now())." · {$cuantas} archivos\n\n";
+
+        return $cabecera.($cual === 'autorizadas'
+            ? "AUTORIZADAS PARA DIFUSIÓN.\nQuien las subió marcó la autorización de uso de su imagen.\n"
+            : "SIN AUTORIZACIÓN DE DIFUSIÓN.\nEstas fotografías NO se pueden publicar: quien las subió no\n"
+                ."autorizó el uso de su imagen. Sirven para ver cómo fue la actividad,\ny ahí se acaba lo que se puede hacer con ellas.\n");
     }
 
     /**
@@ -155,8 +250,10 @@ class EvaluationController extends Controller
      */
     public function destroy(ActivityEvaluation $evaluacion)
     {
-        if ($evaluacion->tieneFoto()) {
-            Storage::disk('local')->delete($evaluacion->foto_path);
+        // Todas sus fotos, no una: el borrado en cascada de la base se lleva
+        // las filas, pero los archivos del disco hay que quitarlos a mano.
+        foreach ($evaluacion->fotos as $foto) {
+            Storage::disk('local')->delete($foto->ruta);
         }
 
         $evaluacion->delete();
@@ -173,7 +270,7 @@ class EvaluationController extends Controller
             'ID', 'Fecha', 'Actividad', 'Organización', 'Nombre', 'Correo',
             'Experiencia (1-5)', 'Motivación (1-5)',
             'Qué significa el Patrimonio Social', 'Cómo se enteró',
-            'Fotografía', 'Autoriza difusión',
+            'Fotografías', 'Autoriza difusión', 'Enlaces a las fotografías',
         ];
 
         /*
@@ -181,7 +278,7 @@ class EvaluationController extends Controller
          * que las filas se leen de cien en cien y no se acumulan en memoria.
          */
         $filas = function () use ($request) {
-            foreach ($this->consulta($request)->with('activity.organization')->lazyById(100) as $e) {
+            foreach ($this->consulta($request)->with(['activity.organization', 'fotos'])->lazyById(100) as $e) {
                 yield [
                     $e->id,
                     /*
@@ -199,9 +296,23 @@ class EvaluationController extends Controller
                     $e->motivacion,
                     $e->significado,
                     $e->origen_label,
-                    // El otro defecto de Cowork: «Si» sin tilde.
-                    $e->tieneFoto() ? 'Sí' : 'No',
-                    $e->tieneFoto() ? ($e->foto_autorizada ? 'Sí' : 'No') : '',
+                    // El otro defecto de Cowork: «Si» sin tilde. Ahora además
+                    // dice cuántas son, que con varias por respuesta importa.
+                    $e->fotos->count() ?: 'No',
+                    $e->fotos->isNotEmpty() ? ($e->foto_autorizada ? 'Sí' : 'No') : '',
+                    /*
+                     * Los enlaces a las fotos, uno por línea dentro de la misma
+                     * celda. Son URL del panel y piden sesión de administrador:
+                     * quien abra el Excel sin estar dentro no verá nada, que es
+                     * justo lo que tiene que pasar con fotos de asistentes.
+                     *
+                     * Absolutas y no relativas: esto se abre en Excel, no en el
+                     * navegador, y una ruta relativa ahí no lleva a ninguna parte.
+                     */
+                    $e->fotos
+                        ->map(fn ($f) => route('admin.evaluaciones.foto', $f))
+                        ->implode("
+"),
                 ];
             }
         };

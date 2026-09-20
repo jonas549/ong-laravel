@@ -173,7 +173,7 @@ const avisoUso = await p.$eval('.evaluacion-foto-uso', (n) => ({
     <= document.querySelector('.evaluacion-foto-boton').getBoundingClientRect().bottom,
 })).catch(() => null);
 di('El aviso de uso de la fotografía está y dice lo pedido',
-  avisoUso?.texto === 'La fotografía podrá ser utilizada para la difusión y comunicación del Día del Patrimonio Social.',
+  avisoUso?.texto === 'Las fotografías podrán ser utilizadas para la difusión y comunicación del Día del Patrimonio Social.',
   avisoUso?.texto);
 di('Y se ve, antes de elegir el archivo', (avisoUso?.alto ?? 0) > 8 && avisoUso?.encimaDelSelector,
   `alto ${avisoUso?.alto} · encima ${avisoUso?.encimaDelSelector}`);
@@ -181,7 +181,7 @@ di('Y se ve, antes de elegir el archivo', (avisoUso?.alto ?? 0) > 8 && avisoUso?
 di('Está oculta mientras no hay foto',
   await p.$eval('.evaluacion-autorizacion', (n) => n.getBoundingClientRect().height === 0));
 
-const entradaFoto = await p.$('#ev-foto');
+const entradaFoto = await p.$('#ev-fotos');
 await entradaFoto.uploadFile(FOTO);
 await esperar(900);
 
@@ -190,7 +190,7 @@ di('Aparece en cuanto se elige una',
 di('Se ve la miniatura de lo elegido',
   await p.$eval('.evaluacion-foto-imagen', (n) => n.getBoundingClientRect().height > 10));
 
-const reducida = await p.$eval('#ev-foto', (n) => {
+const reducida = await p.$eval('#ev-fotos', (n) => {
   const f = n.files[0];
   return f ? { nombre: f.name, tipo: f.type, bytes: f.size } : null;
 });
@@ -204,7 +204,7 @@ di('Y la casilla se desmarca sola',
   await p.$eval('input[name="foto_autorizada"]', (n) => !n.checked));
 
 // ── Punto 12: el texto de la autorización y su enlace ──
-await (await p.$('#ev-foto')).uploadFile(FOTO);
+await (await p.$('#ev-fotos')).uploadFile(FOTO);
 await esperar(900);
 const autorizacion = await p.$eval('.evaluacion-autorizacion', (n) => ({
   texto: n.textContent.replace(/\s+/g, ' ').trim(),
@@ -307,7 +307,7 @@ await ir(encuesta(ABIERTA));
 await dejarPasarElTiempo();
 const correoFoto = correoNuevo();
 await rellenar(correoFoto);
-await (await p.$('#ev-foto')).uploadFile(FOTO);
+await (await p.$('#ev-fotos')).uploadFile(FOTO);
 await esperar(1200);
 await p.click('input[name="foto_autorizada"]');
 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('.evaluacion-enviar')]);
@@ -317,9 +317,10 @@ di('Se guardó', cuantas() === antesFoto + 1);
 
 const guardada = ultima(tinker(
   `$e = App\\Models\\ActivityEvaluation::where('correo','${correoFoto}')->first();`
-  + ` $r = $e && $e->foto_path ? Illuminate\\Support\\Facades\\Storage::disk('local')->path($e->foto_path) : null;`
+  + ` $f = $e ? $e->fotos()->first() : null;`
+  + ` $r = $f ? Illuminate\\Support\\Facades\\Storage::disk('local')->path($f->ruta) : null;`
   + ` $m = $r && is_file($r) ? getimagesize($r) : [0,0];`
-  + ` echo ($e->foto_path ?? 'SIN').'|'.($e->foto_autorizada ? 1 : 0).'|'.$m[0].'x'.$m[1].'|'.(is_file($r ?? '') ? filesize($r) : 0);`
+  + ` echo ($f->ruta ?? 'SIN').'|'.($e->foto_autorizada ? 1 : 0).'|'.$m[0].'x'.$m[1].'|'.(is_file($r ?? '') ? filesize($r) : 0);`
 ));
 const [ruta, autorizada, medidas, peso] = guardada.split('|');
 

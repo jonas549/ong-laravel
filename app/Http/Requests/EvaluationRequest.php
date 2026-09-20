@@ -98,7 +98,8 @@ class EvaluationRequest extends FormRequest
              * `mimes` mira el contenido del archivo, no la extensión: un .exe
              * renombrado a .jpg no pasa.
              */
-            'foto' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'fotos' => ['nullable', 'array', 'max:'.ActivityEvaluation::maximoFotos()],
+            'fotos.*' => ['file', 'mimes:jpg,jpeg,png', 'max:5120'],
             'foto_autorizada' => ['nullable', 'boolean'],
         ];
     }
@@ -113,7 +114,8 @@ class EvaluationRequest extends FormRequest
             'significado' => 'tu respuesta sobre el Patrimonio Social',
             'motivacion' => 'tu motivación para volver a participar',
             'como_se_entero' => 'cómo te enteraste',
-            'foto' => 'la fotografía',
+            'fotos' => 'las fotografías',
+            'fotos.*' => 'la fotografía',
         ];
     }
 
@@ -125,8 +127,9 @@ class EvaluationRequest extends FormRequest
             'motivacion.required' => 'Elige una nota del 1 al 5 para tu motivación.',
             'significado.required' => 'Cuéntanos brevemente qué significa para ti el Patrimonio Social.',
             'significado.max' => 'Tu respuesta no puede pasar de :max caracteres.',
-            'foto.mimes' => 'La fotografía tiene que ser un archivo JPG o PNG.',
-            'foto.max' => 'La fotografía no puede pesar más de 5 MB.',
+            'fotos.max' => 'Sólo puedes subir :max fotografías.',
+            'fotos.*.mimes' => 'Las fotografías tienen que ser archivos JPG o PNG.',
+            'fotos.*.max' => 'Cada fotografía tiene que pesar menos de 5 MB.',
         ];
     }
 

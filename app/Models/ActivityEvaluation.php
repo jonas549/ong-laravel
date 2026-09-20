@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Setting;
 
 /**
  * Una respuesta a la encuesta de evaluación de una actividad.
@@ -49,6 +51,25 @@ class ActivityEvaluation extends Model
     /** Lo que cabe en la respuesta abierta. El mismo número en la regla y en el contador. */
     public const MAX_SIGNIFICADO = 300;
 
+    /** Cuántas fotos admite una respuesta si la ONG no ha dicho otra cosa. */
+    public const MAX_FOTOS_POR_DEFECTO = 3;
+
+    /**
+     * El tope de fotografías por respuesta, el que haya puesto la ONG.
+     *
+     * Vive aquí y no repartido por el formulario, la regla de validación y el
+     * guardado, que son los tres sitios que lo necesitan. Se acota entre 0 y
+     * 10: un 0 apaga el campo, y por arriba hay que parar en algún sitio
+     * porque cada foto es una subida más en la misma petición y el límite de
+     * `post_max_size` no lo pone la ONG.
+     */
+    public static function maximoFotos(): int
+    {
+        $valor = (int) Setting::get('evaluacion_max_fotos', self::MAX_FOTOS_POR_DEFECTO);
+
+        return max(0, min(10, $valor));
+    }
+
     protected $fillable = [
         'activity_id', 'nombre', 'correo',
         'experiencia', 'significado', 'motivacion',
@@ -69,6 +90,19 @@ class ActivityEvaluation extends Model
         return $this->belongsTo(Activity::class);
     }
 
+    /**
+     * Las fotografías de esta respuesta.
+     *
+     * Desde el 2026-09-20 son varias y no una: el máximo lo pone la ONG en
+     * Configuración → General. La autorización sigue siendo una sola, la de
+     * `foto_autorizada`, porque el consentimiento se firma una vez sobre el
+     * envío entero.
+     */
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(EvaluationPhoto::class, 'activity_evaluation_id')->orderBy('orden')->orderBy('id');
+    }
+
     /* ── Lectura ─────────────────────────────────────────── */
 
     public function getOrigenLabelAttribute(): string
@@ -78,14 +112,20 @@ class ActivityEvaluation extends Model
 
     public function tieneFoto(): bool
     {
-        return filled($this->foto_path);
+        return $this->fotos()->exists();
+    }
+
+    /** Cuántas trae. Se usa en el listado, donde una sola cifra basta. */
+    public function cuantasFotos(): int
+    {
+        return $this->fotos->count();
     }
 
     /* ── Consultas ───────────────────────────────────────── */
 
     public function scopeConFoto(Builder $q): Builder
     {
-        return $q->whereNotNull('foto_path');
+        return $q->whereHas('fotos');
     }
 
     /**
@@ -96,11 +136,11 @@ class ActivityEvaluation extends Model
      */
     public function scopeAutorizadas(Builder $q): Builder
     {
-        return $q->whereNotNull('foto_path')->where('foto_autorizada', true);
+        return $q->whereHas('fotos')->where('foto_autorizada', true);
     }
 
     public function scopeSinAutorizar(Builder $q): Builder
     {
-        return $q->whereNotNull('foto_path')->where('foto_autorizada', false);
+        return $q->whereHas('fotos')->where('foto_autorizada', false);
     }
 }

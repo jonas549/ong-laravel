@@ -148,6 +148,12 @@ class SettingsSeeder extends Seeder
                     .'Un 0 la deja abierta para siempre.',
             ],
             [
+                'grupo' => 'general', 'clave' => 'evaluacion_max_fotos', 'tipo' => 'int', 'valor' => '3',
+                'label' => 'Fotografías que puede subir cada persona',
+                'descripcion' => 'Cuántas fotos admite la encuesta de evaluación en una misma respuesta. '
+                    .'Un 0 quita el campo de fotografía de la encuesta.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'acceso_intentos', 'tipo' => 'int', 'valor' => '5',
                 'label' => 'Intentos de acceso antes de bloquear',
                 'descripcion' => 'Cuántas contraseñas erróneas seguidas se admiten antes de cerrar el acceso a esa cuenta desde esa IP.',

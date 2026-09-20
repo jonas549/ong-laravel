@@ -47,6 +47,7 @@ class EvaluationController extends Controller
             'activity' => $activity,
             'origenes' => ActivityEvaluation::ORIGENES,
             'escalas' => ActivityEvaluation::ESCALAS,
+            'maxFotos' => ActivityEvaluation::maximoFotos(),
         ]);
     }
 
@@ -70,14 +71,28 @@ class EvaluationController extends Controller
         $datos = $request->validated();
 
         /*
-         * La foto se guarda ANTES de la fila, pero se borra si la fila no llega
-         * a existir: un archivo huérfano en el disco no lo ve nadie nunca más.
+         * Las fotos se guardan ANTES de la fila, pero se borran si la fila no
+         * llega a existir: un archivo huérfano en el disco no lo ve nadie
+         * nunca más.
+         *
+         * Se recortan al tope de la ONG aquí también, y no sólo en la regla de
+         * validación: quien manda el formulario a mano puede saltarse las dos
+         * cosas, pero el disco lo toca este método.
          */
-        $foto = $request->file('foto');
-        $rutaFoto = $foto instanceof UploadedFile ? $this->guardarFoto($foto) : null;
+        $subidas = collect($request->file('fotos') ?? [])
+            ->filter(fn ($f) => $f instanceof UploadedFile)
+            ->take(ActivityEvaluation::maximoFotos());
+
+        $rutas = $subidas->map(fn (UploadedFile $f) => $this->guardarFoto($f))->all();
+
+        $borrarRutas = function () use ($rutas) {
+            foreach ($rutas as $ruta) {
+                Storage::disk('local')->delete($ruta);
+            }
+        };
 
         try {
-            ActivityEvaluation::create([
+            $evaluacion = ActivityEvaluation::create([
                 'activity_id' => $activity->id,
                 'nombre' => $datos['nombre'],
                 'correo' => mb_strtolower(trim($datos['correo'])),
@@ -85,16 +100,22 @@ class EvaluationController extends Controller
                 'significado' => $datos['significado'],
                 'motivacion' => $datos['motivacion'],
                 'como_se_entero' => $datos['como_se_entero'] ?? null,
-                'foto_path' => $rutaFoto,
                 /*
                  * Sin foto no hay nada que autorizar. La casilla puede llegar
                  * marcada de un intento anterior —el navegador recuerda las
                  * casillas al volver atrás— y guardarla a true sin archivo
                  * dejaría una autorización sobre nada.
+                 *
+                 * Una sola autorización para todas las fotos del envío: es lo
+                 * que se firmó, una vez y sobre lo que se manda.
                  */
-                'foto_autorizada' => $rutaFoto !== null && $request->boolean('foto_autorizada'),
+                'foto_autorizada' => $rutas !== [] && $request->boolean('foto_autorizada'),
                 'ip_hash' => $this->huella($request),
             ]);
+
+            foreach ($rutas as $orden => $ruta) {
+                $evaluacion->fotos()->create(['ruta' => $ruta, 'orden' => $orden]);
+            }
         } catch (UniqueConstraintViolationException) {
             /*
              * Ya había evaluado. **No es un error y no se le enseña como tal:**
@@ -106,15 +127,11 @@ class EvaluationController extends Controller
              * `exists()` previo porque dos envíos a la vez pasarían los dos por
              * la comprobación antes de que ninguno guardara.
              */
-            if ($rutaFoto) {
-                Storage::disk('local')->delete($rutaFoto);
-            }
+            $borrarRutas();
 
             return redirect()->route('evaluar.gracias', $activity)->with('repetida', true);
         } catch (\Throwable $e) {
-            if ($rutaFoto) {
-                Storage::disk('local')->delete($rutaFoto);
-            }
+            $borrarRutas();
 
             throw $e;
         }

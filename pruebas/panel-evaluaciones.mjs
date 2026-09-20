@@ -112,7 +112,9 @@ tinker(`App\\Models\\ActivityEvaluation::where('id',${idLarga})->update(['signif
 
 t('Los filtros');
 await ir(`${B}/admin/evaluaciones?actividad=${IDA}&q=Riquelme`);
-const buscadas = await p.$$eval('tbody tr td:nth-child(3)', (n) => n.map((c) => c.textContent.trim()));
+// La columna «Persona» es la CUARTA desde que el ID es la primera de todas las
+// tablas del panel (P1). Iba por posición y se corrió un puesto.
+const buscadas = await p.$$eval('tbody tr td:nth-child(4)', (n) => n.map((c) => c.textContent.trim()));
 di('Buscar por nombre acota el listado', buscadas.length === 1 && buscadas[0].includes('Riquelme'), buscadas.join(' · '));
 
 await ir(`${B}/admin/evaluaciones?actividad=${IDA}&q=Elena`);
@@ -160,8 +162,8 @@ tinker(
   "$d = 'evaluaciones/pruebas'; Illuminate\\Support\\Facades\\Storage::disk('local')->put($d.'/si.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));"
   + " Illuminate\\Support\\Facades\\Storage::disk('local')->put($d.'/no.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));"
   + " $t = App\\Models\\ActivityEvaluation::orderBy('id')->take(2)->get();"
-  + " $t[0]->update(['foto_path' => $d.'/si.png', 'foto_autorizada' => true]);"
-  + " $t[1]->update(['foto_path' => $d.'/no.png', 'foto_autorizada' => false]);"
+  + " $t[0]->fotos()->delete(); $t[0]->fotos()->create(['ruta' => $d.'/si.png']); $t[0]->update(['foto_autorizada' => true]);"
+  + " $t[1]->fotos()->delete(); $t[1]->fotos()->create(['ruta' => $d.'/no.png']); $t[1]->update(['foto_autorizada' => false]);"
   + " echo 'LISTO';"
 );
 
@@ -190,18 +192,20 @@ di('El aviso está arriba del todo, antes de ninguna foto',
 di('Y no ofrece pasarla a la biblioteca', (await p.$('form[action*="biblioteca"]')) === null);
 
 t('La foto se sirve desde el disco privado, con sesión');
-const conFoto = ultima(tinker("echo App\\Models\\ActivityEvaluation::whereNotNull('foto_path')->value('id');"));
+// La foto ya no es una columna de la evaluación: es una fila de su tabla, y
+// la ruta que la sirve va por el id de la FOTO.
+const conFoto = ultima(tinker("echo App\\Models\\EvaluationPhoto::orderBy('id')->value('id');"));
 
 const conSesion = await p.evaluate(async (url) => {
   const res = await fetch(url, { credentials: 'include' });
   return { estado: res.status, tipo: res.headers.get('content-type') };
-}, `${B}/admin/evaluaciones/${conFoto}/foto`);
+}, `${B}/admin/evaluaciones/fotos/${conFoto}`);
 di('Con sesión de admin, la foto se ve', conSesion.estado === 200 && (conSesion.tipo ?? '').includes('image'), `${conSesion.estado} ${conSesion.tipo}`);
 
 // Y sin sesión, no. Es la comprobación que justifica el disco privado.
 const anonima = await nav.createBrowserContext();
 const pAnon = await anonima.newPage();
-const sinSesion = await pAnon.goto(`${B}/admin/evaluaciones/${conFoto}/foto`, { waitUntil: 'networkidle2' });
+const sinSesion = await pAnon.goto(`${B}/admin/evaluaciones/fotos/${conFoto}`, { waitUntil: 'networkidle2' });
 di('**Sin sesión NO se puede ver**', sinSesion.status() !== 200 || pAnon.url().includes('login'),
   `${sinSesion.status()} → ${pAnon.url().replace(B, '')}`);
 await anonima.close();

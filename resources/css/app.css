@@ -3019,6 +3019,72 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
 
 .evaluacion-foto-imagen { width: 100%; height: 100%; object-fit: cover; }
 
+/*
+ * ── La tira de fotografias elegidas ──
+ *
+ * Desde el 2026-09-20 la encuesta admite varias fotos, con el tope que ponga
+ * la ONG. Se enseñan en fila, cada una con su boton de quitar encima, en vez
+ * de la miniatura unica que habia antes.
+ *
+ * `box-sizing` explicito y acotado: aqui no hay reset global —ningun HTML
+ * fuente lo tiene— y sin esto el relleno se suma por fuera del ancho fijado.
+ */
+.evaluacion-fotos-tira {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.evaluacion-foto-ficha {
+    box-sizing: border-box;
+    position: relative;
+    width: 108px;
+    display: block;
+    text-decoration: none;
+}
+
+.evaluacion-foto-ficha .evaluacion-foto-imagen {
+    width: 108px;
+    height: 88px;
+    border-radius: 12px;
+    border: 1px solid var(--linea);
+    background: var(--gris-100);
+}
+
+/*
+ * El boton de quitar va ENCIMA de la miniatura y no debajo. Debajo, con las
+ * fichas en fila, cada boton queda a una altura distinta segun lo largo que
+ * sea el nombre del archivo de al lado, y la fila entera baila.
+ */
+.evaluacion-foto-sacar {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--linea);
+    background: #fff;
+    color: var(--gris-700);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .14);
+}
+
+.evaluacion-foto-sacar:hover { color: var(--rosa); border-color: var(--rosa); }
+
+.evaluacion-foto-ficha .evaluacion-foto-nombre {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: var(--gris);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .evaluacion-foto-icono { display: grid; place-items: center; }
 
 .evaluacion-foto-datos {

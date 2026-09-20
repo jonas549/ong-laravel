@@ -83,10 +83,12 @@ di('las columnas ordenables son enlaces', hayColumna);
 if (hayColumna) {
   await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.evaluate(() => document.querySelector('th a.col-orden').click())]);
   di('ordenar conserva el filtro', p.url().includes('q=ZZT') && p.url().includes('orden='), p.url().split('?')[1] ?? '');
-  const primeroAsc = await p.evaluate(() => document.querySelector('tbody tr td:nth-child(2)')?.textContent.trim());
+  // La tercera celda: la primera es la casilla de selección y la segunda el
+  // ID, que es la primera columna de toda tabla del panel desde P1.
+  const primeroAsc = await p.evaluate(() => document.querySelector('tbody tr td:nth-child(3)')?.textContent.trim());
 
   await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.evaluate(() => document.querySelector('th a.col-orden').click())]);
-  const primeroDesc = await p.evaluate(() => document.querySelector('tbody tr td:nth-child(2)')?.textContent.trim());
+  const primeroDesc = await p.evaluate(() => document.querySelector('tbody tr td:nth-child(3)')?.textContent.trim());
   di('volver a pulsar le da la vuelta', primeroAsc !== primeroDesc, `${primeroAsc} -> ${primeroDesc}`);
 }
 

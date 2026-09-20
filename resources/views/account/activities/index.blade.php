@@ -29,6 +29,10 @@
         {{-- No está en el prototipo: sin esto no hay forma de llegar al perfil
              ni de cerrar sesión. --}}
         <div style="display:flex;align-items:center;gap:14px;">
+            {{-- Las evaluaciones de sus actividades. Es una pantalla nueva y no
+                 estaba en el prototipo: sin este enlace no hay forma de llegar. --}}
+            <a class="crumb" href="{{ route('account.evaluaciones.index') }}">Evaluaciones</a>
+            <span class="crumb" aria-hidden="true">·</span>
             <a class="crumb" href="{{ route('account.perfil') }}">Mi perfil</a>
             <span class="crumb" aria-hidden="true">·</span>
             <form method="POST" action="{{ route('account.logout') }}">

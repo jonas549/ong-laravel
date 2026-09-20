@@ -2,7 +2,17 @@
 @section('title', 'Fotografías de las evaluaciones')
 
 @section('actions')
-    <a href="{{ route('admin.evaluaciones.index') }}" class="btn btn-outline btn-sm">Ver respuestas</a>
+    {{--
+        La descarga se lleva EXACTAMENTE lo que hay a la vista: se le pasan los
+        mismos parámetros de la URL, filtros incluidos. Un botón que siempre se
+        lo lleva todo obliga a separar a mano después, y entonces no ahorra nada.
+
+        `request()->query()` y no una lista de campos: así un filtro nuevo en la
+        pantalla viaja solo, sin que nadie tenga que acordarse de añadirlo aquí.
+    --}}
+    <a href="{{ route('admin.evaluaciones.fotos.zip', request()->query() + ['estado' => $cual]) }}"
+       class="btn btn-outline btn-sm">Descargar estas fotografías</a>
+    <a href="{{ route('admin.evaluaciones.index', request()->query()) }}" class="btn btn-outline btn-sm">Ver respuestas</a>
 @endsection
 
 {{--
@@ -79,21 +89,25 @@
     </section>
 @else
     <section class="eval-fotos">
-        @foreach ($fotos as $e)
+        @foreach ($fotos as $foto)
+            @php $e = $foto->evaluation; @endphp
             <article class="card eval-foto">
-                <a href="{{ route('admin.evaluaciones.foto', $e) }}" target="_blank" rel="noopener" class="eval-foto-marco">
+                <a href="{{ route('admin.evaluaciones.foto', $foto) }}" target="_blank" rel="noopener" class="eval-foto-marco">
                     {{-- `loading="lazy"`: una cuadrícula de veinticuatro fotos son
                          veinticuatro peticiones al disco privado, y las de abajo
                          no hacen falta hasta que se llega a ellas. --}}
-                    <img src="{{ route('admin.evaluaciones.foto', $e) }}" alt="Fotografía enviada por {{ $e->nombre }}" loading="lazy">
+                    <img src="{{ route('admin.evaluaciones.foto', $foto) }}" alt="Fotografía enviada por {{ $e?->nombre }}" loading="lazy">
                 </a>
 
                 <div class="eval-foto-datos">
-                    <p class="eval-foto-actividad">{{ Str::limit($e->activity?->titulo ?? '(actividad borrada)', 40) }}</p>
-                    <p class="helper">{{ $e->nombre }} · {{ \App\Support\Fecha::corta($e->created_at) }}</p>
+                    <p class="eval-foto-actividad">{{ Str::limit($e?->activity?->titulo ?? '(actividad borrada)', 40) }}</p>
+                    <p class="helper">
+                        {{ $e?->nombre }} · {{ \App\Support\Fecha::corta($foto->created_at) }}
+                        <span class="col-id" style="width:auto;" title="Identificador de la fotografía">#{{ $foto->id }}</span>
+                    </p>
 
                     @if ($cual === 'autorizadas')
-                        <form method="POST" action="{{ route('admin.evaluaciones.biblioteca', $e) }}">
+                        <form method="POST" action="{{ route('admin.evaluaciones.biblioteca', $foto) }}">
                             @csrf
                             <button type="submit" class="btn btn-outline btn-sm" data-cargando="Copiando…">Pasar a la biblioteca</button>
                         </form>

@@ -31,12 +31,19 @@ const PESO_MAXIMO = 5 * 1024 * 1024;
 
 const TIPOS = ['image/jpeg', 'image/png'];
 
-export const encuestaEvaluacion = (errores = [], maximoTexto = 300) => ({
+export const encuestaEvaluacion = (errores = [], maximoTexto = 300, maximoFotos = 1) => ({
     ...guiaDeErrores(errores),
 
-    /* ── Foto ── */
-    nombreFoto: '',
-    previa: '',
+    /*
+     * ── Fotos ──
+     *
+     * Desde el 2026-09-20 son varias y no una, con el tope puesto por la ONG
+     * en Configuración → General. Cada entrada es
+     * `{ archivo, previa, nombre }`: el archivo YA reducido, que es lo que se
+     * acaba enviando, y su URL de objeto para la miniatura.
+     */
+    fotos: [],
+    maximoFotos,
     reduciendo: false,
     errorFoto: '',
 
@@ -44,7 +51,25 @@ export const encuestaEvaluacion = (errores = [], maximoTexto = 300) => ({
     escritos: 0,
     maximoTexto,
 
+    /*
+     * La raíz del componente.
+     *
+     * NO se lee de `$el` fuera de `init()`: dentro de un manejador puesto en
+     * un botón —«Quitar todas», la × de una miniatura— `$el` ES ese botón, y
+     * `$el.querySelector('input[type=file]')` no encuentra nada. Eso dejaba el
+     * input con el archivo viejo dentro: la miniatura desaparecía, el usuario
+     * creía haberla quitado, y volvía a enviarse igual. Lo pilló
+     * `encuesta-evaluacion.mjs` al reintentar la subida del mismo archivo y no
+     * ver la segunda miniatura, porque el navegador no emite `change` cuando
+     * el input ya tiene ese archivo.
+     *
+     * Es la misma trampa que ya se comió el autoguardado del editor del home,
+     * el reordenar y el buscador del panel.
+     */
+    raiz: null,
+
     init() {
+        this.raiz = this.$el;
         this.iniciarGuia(this.$el);
 
         // El navegador conserva lo escrito al volver atrás, así que el contador
@@ -54,7 +79,18 @@ export const encuestaEvaluacion = (errores = [], maximoTexto = 300) => ({
     },
 
     get tieneFoto() {
-        return this.nombreFoto !== '';
+        return this.fotos.length > 0;
+    },
+
+    /** Cuántas más caben. Cero deja el botón de elegir fuera. */
+    get huecos() {
+        return Math.max(0, this.maximoFotos - this.fotos.length);
+    },
+
+    get textoBotonFoto() {
+        if (this.maximoFotos === 1) return this.tieneFoto ? 'Cambiar imagen' : 'Elegir imagen';
+
+        return this.tieneFoto ? 'Agregar otra' : 'Elegir imágenes';
     },
 
     get restantes() {
@@ -67,47 +103,74 @@ export const encuestaEvaluacion = (errores = [], maximoTexto = 300) => ({
 
     /* ─────────────────────────────────────────────── la foto ── */
 
-    async elegirFoto(evento) {
+    async elegirFotos(evento) {
         const entrada = evento.target;
-        const archivo = entrada.files && entrada.files[0];
+        const elegidas = [...(entrada.files || [])];
 
         this.errorFoto = '';
 
-        if (!archivo) {
-            this.quitarFoto(entrada);
+        if (elegidas.length === 0) {
+            // Cancelar el diálogo no puede borrar lo que ya estaba elegido:
+            // el input se vacía solo y hay que devolverle su contenido.
+            this.sincronizar();
             return;
         }
 
-        if (!TIPOS.includes(archivo.type)) {
-            this.errorFoto = 'La fotografía tiene que ser un archivo JPG o PNG.';
-            this.quitarFoto(entrada);
-            return;
-        }
+        /*
+         * Con tope 1 el selector sustituye en vez de acumular. Es lo que
+         * espera cualquiera de un campo que sólo admite una: «Cambiar imagen»
+         * no puede dejar la anterior puesta y quejarse de que ya no caben.
+         */
+        if (this.maximoFotos === 1) this.vaciar();
 
-        this.reduciendo = true;
+        let sobran = 0;
 
-        try {
-            const reducida = await this.reducir(archivo);
+        for (const archivo of elegidas) {
+            if (!TIPOS.includes(archivo.type)) {
+                this.errorFoto = 'Las fotografías tienen que ser archivos JPG o PNG.';
+                continue;
+            }
 
-            if (reducida && this.reemplazar(entrada, reducida)) {
-                this.mostrar(reducida);
-            } else {
-                // No se pudo reducir ni reemplazar: se sube el original, que es
-                // lo que había antes de todo esto. Sólo hay que avisar si además
-                // se pasa del límite, porque entonces el servidor lo va a
-                // rechazar y más vale decirlo ahora que después del envío.
-                if (archivo.size > PESO_MAXIMO) {
-                    this.errorFoto = 'La fotografía pesa más de 5 MB y este navegador no puede reducirla. '
+            if (this.fotos.length >= this.maximoFotos) { sobran++; continue; }
+
+            this.reduciendo = true;
+
+            try {
+                const reducida = await this.reducir(archivo);
+                const definitiva = reducida || archivo;
+
+                /*
+                 * Sin reducir y por encima del límite: el servidor la va a
+                 * rechazar, así que se dice ahora y no después del envío.
+                 */
+                if (!reducida && archivo.size > PESO_MAXIMO) {
+                    this.errorFoto = `«${archivo.name}» pesa más de 5 MB y este navegador no puede reducirla. `
                         + 'Prueba con una foto más pequeña.';
-                    this.quitarFoto(entrada);
-                    return;
+                    continue;
                 }
 
-                this.mostrar(archivo);
+                this.fotos.push({
+                    archivo: definitiva,
+                    nombre: definitiva.name,
+                    previa: URL.createObjectURL(definitiva),
+                });
+            } finally {
+                this.reduciendo = false;
             }
-        } finally {
-            this.reduciendo = false;
         }
+
+        if (sobran > 0) {
+            this.errorFoto = this.maximoFotos === 1
+                ? 'Sólo se puede subir una fotografía.'
+                : `Sólo se pueden subir ${this.maximoFotos} fotografías, así que se dejaron fuera `
+                    + `${sobran === 1 ? 'la última' : 'las ' + sobran + ' últimas'}.`;
+        }
+
+        this.sincronizar();
+
+        // La caja puede estar marcada como fallida de un rebote anterior; con
+        // foto puesta, ya no lo está.
+        if (this.tieneFoto) this.revisarCampo('fotos');
     },
 
     /**
@@ -209,18 +272,25 @@ export const encuestaEvaluacion = (errores = [], maximoTexto = 300) => ({
     },
 
     /**
-     * Mete el archivo reducido en el input, que es lo que se acaba enviando.
+     * Vuelca la lista de fotos elegidas dentro del input, que es lo que se
+     * acaba enviando.
      *
      * `input.files` sólo admite una `FileList`, y la única forma de fabricar
-     * una es con `DataTransfer`. Donde no exista, se devuelve false y se sube
-     * el original.
+     * una es con `DataTransfer`. Donde no exista —navegadores viejos— se deja
+     * lo que el usuario eligió tal cual: se subirán los originales sin reducir
+     * y sin poder quitar ninguno, que es peor pero sigue funcionando.
+     *
+     * Se llama después de CADA cambio —elegir, quitar, vaciar—, porque el
+     * input y la lista son dos cosas distintas y lo que viaja es el input.
      */
-    reemplazar(entrada, archivo) {
-        if (typeof DataTransfer !== 'function') return false;
+    sincronizar() {
+        const entrada = this.campoFotos();
+
+        if (!entrada || typeof DataTransfer !== 'function') return false;
 
         try {
             const paquete = new DataTransfer();
-            paquete.items.add(archivo);
+            for (const f of this.fotos) paquete.items.add(f.archivo);
             entrada.files = paquete.files;
 
             return true;
@@ -229,37 +299,41 @@ export const encuestaEvaluacion = (errores = [], maximoTexto = 300) => ({
         }
     },
 
-    mostrar(archivo) {
-        this.nombreFoto = archivo.name;
-
-        if (this.previa) URL.revokeObjectURL(this.previa);
-
-        this.previa = URL.createObjectURL(archivo);
-
-        // La caja de la foto puede estar marcada como fallida de un rebote
-        // anterior; con foto puesta, ya no lo está.
-        this.revisarCampo('foto');
+    campoFotos() {
+        return this.raiz?.querySelector('input[type="file"][name="fotos[]"]');
     },
 
-    quitarFoto(entrada) {
-        const campo = entrada || this.$el.querySelector('input[type="file"][name="foto"]');
+    quitarFoto(indice) {
+        const fuera = this.fotos[indice];
 
-        if (campo) campo.value = '';
+        if (fuera?.previa) URL.revokeObjectURL(fuera.previa);
 
-        if (this.previa) URL.revokeObjectURL(this.previa);
+        this.fotos.splice(indice, 1);
+        this.errorFoto = '';
+        this.sincronizar();
 
-        this.previa = '';
-        this.nombreFoto = '';
+        if (!this.tieneFoto) this.desmarcarAutorizacion();
+    },
 
-        /*
-         * Y se desmarca la autorización.
-         *
-         * Sin esto queda una autorización sobre una foto que ya no está: la
-         * casilla se oculta pero sigue marcada, y al enviar viajaría un `true`
-         * sin archivo. El servidor lo vuelve a comprobar —ahí está la garantía
-         * de verdad— pero dejarlo marcado aquí es prometer algo que no es.
-         */
-        const casilla = this.$el.querySelector('input[name="foto_autorizada"]');
+    vaciar() {
+        for (const f of this.fotos) {
+            if (f.previa) URL.revokeObjectURL(f.previa);
+        }
+
+        this.fotos = [];
+        this.sincronizar();
+        this.desmarcarAutorizacion();
+    },
+
+    /*
+     * Sin fotos no puede quedar una autorización en pie.
+     *
+     * La casilla se oculta pero sigue marcada, y al enviar viajaría un `true`
+     * sin archivo. El servidor lo vuelve a comprobar —ahí está la garantía de
+     * verdad— pero dejarlo marcado aquí es prometer algo que no es.
+     */
+    desmarcarAutorizacion() {
+        const casilla = this.raiz?.querySelector('input[name="foto_autorizada"]');
         if (casilla) casilla.checked = false;
     },
 });

@@ -41,8 +41,10 @@ $borrarEscenario = function () use ($prefijo) {
     $viejas = Activity::withTrashed()->where('slug', 'like', $prefijo.'%')->get();
 
     foreach ($viejas as $vieja) {
-        foreach (ActivityEvaluation::where('activity_id', $vieja->id)->whereNotNull('foto_path')->get() as $conFoto) {
-            Storage::disk('local')->delete($conFoto->foto_path);
+        foreach (ActivityEvaluation::where('activity_id', $vieja->id)->with('fotos')->get() as $conFoto) {
+            foreach ($conFoto->fotos as $unaFoto) {
+                Storage::disk('local')->delete($unaFoto->ruta);
+            }
         }
 
         ActivityEvaluation::where('activity_id', $vieja->id)->delete();

@@ -91,6 +91,22 @@ class ActivityPolicy
     }
 
     /**
+     * Las evaluaciones que dejaron los asistentes, y sus fotografías.
+     *
+     * Hasta el 2026-09-20 esto era sólo del administrador. Lo abrió el cliente
+     * con una condición que aquí es la línea entera: **el organizador ve las de
+     * SUS actividades y ninguna más**. Es la misma regla que los inscritos, así
+     * que se apoya en la misma comprobación y no en una segunda parecida.
+     *
+     * Las fotos siguen en el disco privado y se sirven por una ruta que pide
+     * este permiso: abrir la pantalla no abre los archivos.
+     */
+    public function viewEvaluations(?User $user, Activity $activity): Response
+    {
+        return $this->respuesta($user, $activity);
+    }
+
+    /**
      * El mensaje importa: "no es de tu organización" le dice a un organizador
      * que se equivocó de ficha, y un 403 pelado no le dice nada.
      */

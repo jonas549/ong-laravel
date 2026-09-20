@@ -182,6 +182,17 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
          */
         Route::get('/actividades/{activity}/qr.png', [QrController::class, 'png'])->name('activities.qr.png');
         Route::get('/actividades/{activity}/qr.svg', [QrController::class, 'svg'])->name('activities.qr.svg');
+
+        /*
+         * Las evaluaciones de SUS actividades.
+         *
+         * El prefijo `/mi-cuenta` no acota nada por sí solo: sólo garantiza que
+         * hay sesión de organizador, no de CUÁL. Lo que acota es
+         * `ActivityPolicy::viewEvaluations`, y la ruta de la foto lo vuelve a
+         * pedir sobre la actividad de esa foto concreta.
+         */
+        Route::get('/evaluaciones', [Account\EvaluationController::class, 'index'])->name('evaluaciones.index');
+        Route::get('/evaluaciones/fotos/{foto}', [Account\EvaluationController::class, 'foto'])->name('evaluaciones.foto');
     });
 });
 
@@ -272,8 +283,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/evaluaciones', [Admin\EvaluationController::class, 'index'])->name('evaluaciones.index');
         Route::get('/evaluaciones/fotos', [Admin\EvaluationController::class, 'fotos'])->name('evaluaciones.fotos');
         Route::get('/evaluaciones/exportar', [Admin\EvaluationController::class, 'descargar'])->name('evaluaciones.exportar');
-        Route::get('/evaluaciones/{evaluacion}/foto', [Admin\EvaluationController::class, 'foto'])->name('evaluaciones.foto');
-        Route::post('/evaluaciones/{evaluacion}/biblioteca', [Admin\EvaluationController::class, 'aBiblioteca'])->name('evaluaciones.biblioteca');
+        /*
+         * Las fotos se direccionan por SU id y no por el de la evaluación:
+         * desde el 2026-09-20 una respuesta puede traer varias, y con el id de
+         * la evaluación no habría forma de pedir la segunda.
+         */
+        Route::get('/evaluaciones/descargar-fotos', [Admin\EvaluationController::class, 'descargarFotos'])->name('evaluaciones.fotos.zip');
+        Route::get('/evaluaciones/fotos/{foto}', [Admin\EvaluationController::class, 'foto'])->name('evaluaciones.foto');
+        Route::post('/evaluaciones/fotos/{foto}/biblioteca', [Admin\EvaluationController::class, 'aBiblioteca'])->name('evaluaciones.biblioteca');
         Route::delete('/evaluaciones/{evaluacion}', [Admin\EvaluationController::class, 'destroy'])->name('evaluaciones.destroy');
 
         // La misma descarga del QR que en la cuenta del organizador.
