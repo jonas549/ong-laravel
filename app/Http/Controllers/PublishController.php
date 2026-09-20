@@ -17,7 +17,9 @@ use App\Services\CorreoTransaccional;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\UniqueConstraintViolationException;
 use App\Support\ArchivosRetenidos;
+use App\Support\Filtro;
 use Illuminate\Http\File;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +49,29 @@ class PublishController extends Controller
         }
 
         return view('public.publish.wizard', $this->catalogos());
+    }
+
+    /**
+     * El buscador de organizaciones del paso 3.
+     *
+     * Devuelve las que coinciden con lo escrito, diciendo de cada una si está
+     * libre —importada del listado histórico y sin cuenta todavía— o si ya
+     * tiene dueño.
+     *
+     * **Es público y no filtra nada sensible**: los nombres de las
+     * organizaciones participantes se publican en el propio sitio, en la
+     * portada y en cada ficha de actividad. Lo único que se añade es si tiene
+     * cuenta o no, que es lo que el formulario necesita para saber si ofrecer
+     * reclamarla o mandar a iniciar sesión. No salen correos ni nada de quien
+     * la administra.
+     *
+     * Lleva freno en la ruta: es una consulta `LIKE` sin sesión.
+     */
+    public function organizaciones(Request $request)
+    {
+        return response()->json([
+            'organizaciones' => Organization::buscarPorNombre(Filtro::texto($request, 'q')),
+        ]);
     }
 
     public function store(PublishActivityRequest $request, ActivityModerationService $moderacion)
@@ -113,10 +138,38 @@ class PublishController extends Controller
                         'is_active' => true,
                     ]);
 
-                    $organizacion = Organization::create($campos + [
-                        'user_id' => $usuario->id,
-                        'logo_path' => $campos['logo_path'] ?? null,
-                    ]);
+                    /*
+                     * P10. Si eligió una organización del listado histórico, se
+                     * le pone dueño en vez de crear otra igual. Es lo que evita
+                     * el duplicado: hasta aquí, quien encontraba su nombre ya
+                     * registrado no tenía más salida que escribir una variante.
+                     *
+                     * `reclamada()` la relee de la base y exige que siga libre,
+                     * así que un `org_id` cambiado a mano no se lleva una
+                     * organización ajena.
+                     *
+                     * De los campos del formulario sólo se aplican los que la
+                     * persona sí ha podido rellenar: el nombre, el tipo y el
+                     * logo son los de la ONG y no se pisan con lo que venga,
+                     * que para eso se le han dejado de pedir.
+                     */
+                    if ($reclamada = $request->reclamada()) {
+                        $organizacion = $reclamada;
+
+                        $organizacion->fill([
+                            'user_id' => $usuario->id,
+                            'correo_contacto' => $campos['correo_contacto'],
+                            'enlace_web' => $campos['enlace_web'],
+                            'enlace_red_social' => $campos['enlace_red_social'],
+                            'num_voluntarios' => $campos['num_voluntarios'],
+                            'unidad_educativa' => $campos['unidad_educativa'],
+                        ])->save();
+                    } else {
+                        $organizacion = Organization::create($campos + [
+                            'user_id' => $usuario->id,
+                            'logo_path' => $campos['logo_path'] ?? null,
+                        ]);
+                    }
                 }
 
                 $comuna = Commune::find($datos['commune_id'] ?? null);
@@ -259,6 +312,34 @@ class PublishController extends Controller
      *
      * @return array<string, mixed>
      */
+    /**
+     * La organización libre que se estuviera reclamando, si la hay.
+     *
+     * Se vuelve a leer de la base y no de lo que llega en el POST: el id viene
+     * del navegador, así que decidir con lo que él diga permitiría reclamar una
+     * organización que ya tiene dueño sólo con cambiar el número.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function organizacionReclamada(): ?array
+    {
+        $id = (int) old('org_id');
+
+        if ($id <= 0) {
+            return null;
+        }
+
+        $organizacion = Organization::sinReclamar()->where('activo', true)->find($id);
+
+        return $organizacion ? [
+            'id' => $organizacion->id,
+            'nombre' => $organizacion->nombre,
+            'tipo' => $organizacion->tipo,
+            'tipo_otro' => $organizacion->tipo_otro,
+            'libre' => true,
+        ] : null;
+    }
+
     private function catalogos(): array
     {
         return app(ActivityCatalogService::class)->todos()
@@ -267,6 +348,13 @@ class PublishController extends Controller
                 // Con sesión abierta, el paso 3 sale relleno con lo que ya hay
                 // guardado y el paso de «crea tu acceso» no se pinta.
                 'organizacion' => Auth::user()?->organization,
+                /*
+                 * La organización que se estuviera reclamando al rebotar el
+                 * formulario. Sin esto, un error de validación le devuelve la
+                 * pantalla pidiéndole otra vez el logo y el tipo, que es justo
+                 * lo que P10 quita.
+                 */
+                'organizacionElegida' => $this->organizacionReclamada(),
             ];
     }
 }

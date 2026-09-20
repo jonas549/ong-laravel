@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\Filtro;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,6 +48,65 @@ class Organization extends Model
                 $org->slug = static::slugUnico($org->nombre);
             }
         });
+    }
+
+    /**
+     * Sin reclamar: está en el listado pero todavía no tiene cuenta.
+     *
+     * Es lo que deja el importador del listado histórico. La primera persona
+     * que la elija en el wizard y ponga su contraseña se queda con ella.
+     */
+    public function scopeSinReclamar(Builder $q): Builder
+    {
+        return $q->whereNull('user_id');
+    }
+
+    public function estaSinReclamar(): bool
+    {
+        return $this->user_id === null;
+    }
+
+    /**
+     * Busca organizaciones por nombre para el autocompletado del wizard.
+     *
+     * Devuelve las dos clases y las distingue, en vez de esconder las que ya
+     * tienen cuenta: quien escribe el nombre de su organización y no la ve
+     * vuelve a crearla con una variante del nombre, que es exactamente cómo
+     * aparecieron los duplicados que hay hoy en producción. Verla y que le
+     * digan «ésta ya tiene cuenta, inicia sesión» le lleva a donde tiene que ir.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function buscarPorNombre(string $texto, int $tope = 8)
+    {
+        $texto = trim($texto);
+
+        if (mb_strlen($texto) < 2) {
+            return collect();
+        }
+
+        // `Filtro::like` es el que ya usa el resto del panel para esto.
+        $como = '%'.Filtro::like($texto).'%';
+
+        return static::query()
+            ->where('activo', true)
+            ->where('nombre', 'like', $como)
+            /*
+             * Las que empiezan por lo escrito, primero. Sin esto, escribir
+             * «del» ofrece antes «Fundación Aldea del Sur» que «Delta», que es
+             * lo que casi seguro se estaba buscando.
+             */
+            ->orderByRaw('CASE WHEN nombre LIKE ? THEN 0 ELSE 1 END', [Filtro::like($texto).'%'])
+            ->orderBy('nombre')
+            ->limit($tope)
+            ->get(['id', 'nombre', 'tipo', 'tipo_otro', 'user_id'])
+            ->map(fn (self $o) => [
+                'id' => $o->id,
+                'nombre' => $o->nombre,
+                'tipo' => $o->tipo,
+                'tipo_otro' => $o->tipo_otro,
+                'libre' => $o->estaSinReclamar(),
+            ]);
     }
 
     public static function slugUnico(string $nombre): string

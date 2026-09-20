@@ -96,6 +96,17 @@ Route::post('/publicar-actividad', [PublishController::class, 'store'])
     ->name('publish.store');
 Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::class, 'done'])->name('publish.done');
 
+/*
+ * El buscador de organizaciones del paso 3.
+ *
+ * Va antes del catch-all de páginas sueltas y después del `store`, con su
+ * propio freno: es una consulta `LIKE` abierta y sin sesión, así que sin
+ * límite sería una forma cómoda de pasear la tabla entera letra a letra.
+ */
+Route::get('/organizaciones/buscar', [PublishController::class, 'organizaciones'])
+    ->middleware('throttle:60,1')
+    ->name('publish.organizaciones');
+
 Route::get('/noticias', [PostController::class, 'index'])->name('posts.index');
 Route::get('/noticias/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 

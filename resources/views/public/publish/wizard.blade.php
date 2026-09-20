@@ -49,6 +49,12 @@
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null },
         comunas: {{ Js::from($regiones->mapWithKeys(fn ($r) => [$r->id => $r->communes->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre])->values()])) }},
         errores: {{ Js::from($erroresDelServidor) }},
+        {{-- El buscador de organizaciones del paso 3 (P9). Al volver de un
+             rebote hay que devolverle lo que había escrito y la organización
+             que hubiera elegido, o el formulario le pediría el logo otra vez. --}}
+        rutaOrganizaciones: {{ Js::from(route('publish.organizaciones')) }},
+        buscarOrg: {{ Js::from(old('org_nombre', $organizacion?->nombre ?? '')) }},
+        orgElegida: {{ Js::from($organizacionElegida) }},
      })">
 
 @include('public.publish.partials.pasos')

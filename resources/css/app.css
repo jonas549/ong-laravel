@@ -986,6 +986,74 @@ a.textlink:hover { color: var(--naranjo-600); }
 /* El mismo identificador, en la rejilla de la biblioteca de medios. */
 .medio-id { font-variant-numeric: tabular-nums; font-weight: 600; }
 
+/* ── El buscador de organizaciones del paso 3 ───────────────── */
+
+/*
+ * Cuelga del `<label>`, que lleva `position:relative`. Va en capa aparte y no
+ * empujando el formulario: una lista que abre y cierra moviendo los campos de
+ * abajo hace que se pulse lo que no era.
+ *
+ * `box-sizing` explicito y acotado: aqui no hay reset global y sin esto el
+ * relleno se suma por fuera del ancho.
+ */
+.org-sugerencias {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 30;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 4px 0 0;
+    padding: 4px;
+    list-style: none;
+    max-height: 256px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--linea);
+    border-radius: 14px;
+    box-shadow: 0 18px 40px -22px rgba(0, 0, 0, .3);
+}
+
+.org-sugerencia {
+    box-sizing: border-box;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 9px 11px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    text-align: left;
+    font: inherit;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.org-sugerencia:hover,
+.org-sugerencia:focus-visible { background: var(--naranjo-100); }
+
+.org-sugerencia-nombre { min-width: 0; overflow-wrap: anywhere; }
+
+/*
+ * El estado va a la derecha y no se parte: «Ya tiene cuenta» es la diferencia
+ * entre poder reclamarla y tener que iniciar sesion, y partido en dos lineas
+ * se lee como parte del nombre.
+ */
+.org-sugerencia-estado {
+    flex: none;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--gris);
+    white-space: nowrap;
+}
+
+.org-sugerencia-estado-tomada { color: var(--rosa); }
+
 /* ── El hilo de moderacion ──────────────────────────────────── */
 
 /*

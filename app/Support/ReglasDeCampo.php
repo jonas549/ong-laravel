@@ -28,6 +28,16 @@ namespace App\Support;
 class ReglasDeCampo
 {
     /**
+     * El aviso de «ese correo ya tiene cuenta» (P11).
+     *
+     * Vive aquí y no suelto en el Form Request porque lo usan dos sitios: la
+     * regla que lo produce y la vista que decide si pintar debajo los enlaces
+     * de iniciar sesión y recuperar contraseña. Comparando constantes y no
+     * frases, cambiar el texto no apaga los enlaces en silencio.
+     */
+    public const CORREO_YA_EXISTE = 'Este usuario ya existe. Inicia sesión para publicar con su cuenta.';
+
+    /**
      * Los atributos HTML que corresponden a unas reglas.
      *
      * @param  string|array<int, mixed>  $reglas

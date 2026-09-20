@@ -25,16 +25,77 @@
 
     <div style="padding:30px;display:flex;flex-direction:column;gap:18px;border-bottom:1px solid var(--linea);">
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            {{--
+                ── El buscador de organizaciones (P9) ──
+
+                Escribir dos letras ofrece las que ya están en el listado. No es
+                un desplegable cerrado: el campo sigue admitiendo cualquier
+                nombre, porque una organización que no esté en el listado tiene
+                que poder publicar igual. La sugerencia ayuda, no obliga.
+
+                La lista se cierra con Escape y al salir del campo, con un
+                respiro para que el clic en una sugerencia llegue antes que el
+                `blur` —si no, se cierra justo antes de registrar el clic y no
+                se puede elegir nada con el ratón—.
+            --}}
             <label class="lbl" data-campo="org_nombre" data-obligatorio
-                   data-etiqueta="{{ CamposDeActividad::etiqueta('org_nombre') }}">Nombre de la organización *
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('org_nombre') }}"
+                   style="position:relative;">Nombre de la organización *
+                {{-- `x-model` además del manejador: elegir una sugerencia
+                     escribe el nombre en el campo, y sin la atadura el valor
+                     sólo cambiaba en el componente. Arranca con lo que
+                     devuelva el servidor tras un rebote. --}}
                 <input class="fld @error('org_nombre') is-invalid @enderror" name="org_nombre"
-                       value="@viejo('org_nombre', $organizacion?->nombre)" placeholder="Ej. Fundación Junto al Barrio">
+                       x-model="buscarOrg"
+                       placeholder="Ej. Fundación Junto al Barrio"
+                       autocomplete="off" role="combobox" aria-autocomplete="list"
+                       x-bind:aria-expanded="sugerenciasAbiertas"
+                       x-on:input="escribirOrg($event.target.value)"
+                       x-on:focus="if (sugerencias.length) sugerenciasAbiertas = true"
+                       x-on:blur="setTimeout(() => sugerenciasAbiertas = false, 160)"
+                       x-on:keydown.escape.prevent="sugerenciasAbiertas = false">
+
+                <span class="helper" x-show="buscando" x-cloak>Buscando…</span>
+
+                <ul class="org-sugerencias" x-show="sugerenciasAbiertas" x-cloak role="listbox">
+                    <template x-for="o in sugerencias" x-bind:key="o.id">
+                        <li>
+                            <button type="button" class="org-sugerencia" x-on:click="elegirOrg(o)">
+                                <span class="org-sugerencia-nombre" x-text="o.nombre"></span>
+                                <span class="org-sugerencia-estado"
+                                      x-text="o.libre ? 'En el listado' : 'Ya tiene cuenta'"
+                                      x-bind:class="o.libre ? '' : 'org-sugerencia-estado-tomada'"></span>
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+
+                {{-- Reclamada: se dice cuál y se ofrece deshacerlo. --}}
+                <span class="helper" x-show="reclamando" x-cloak style="color:var(--naranjo-600);">
+                    Encontramos tu organización en nuestro listado. No hace falta que vuelvas a cargar sus datos.
+                    <button type="button" class="textlink" style="background:none;border:0;padding:0;cursor:pointer;font:inherit;"
+                            x-on:click="soltarOrg()">No es ésta</button>
+                </span>
+
+                {{-- P11, en su otra cara: la organización ya tiene cuenta. --}}
+                <span class="field-error" x-show="orgTomada" x-cloak>
+                    <span x-text="orgTomada?.nombre"></span> ya tiene una cuenta.
+                    <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
+                    o <a class="textlink" href="{{ route('password.request') }}">recupera la contraseña</a>
+                    para publicar con ella.
+                </span>
+
+                {{-- El id viaja aparte del nombre: el servidor no se fía del
+                     nombre para decidir a qué organización se suma. --}}
+                <input type="hidden" name="org_id" x-bind:value="orgElegida?.id ?? ''">
+
                 @error('org_nombre') <span class="field-error">{{ $message }}</span> @enderror
+                @error('org_id') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Tipo de organización
                 <input class="fld" x-bind:value="tipo" readonly style="background:#f8f9fa;color:var(--gris);">
-                <span class="helper">Prellenado del paso anterior.</span>
+                <span class="helper" x-text="reclamando ? 'Viene de nuestro listado.' : 'Prellenado del paso anterior.'">Prellenado del paso anterior.</span>
             </label>
         </div>
 
@@ -60,7 +121,12 @@
             @error('org_unidad_educativa') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
-        <div x-data="{ logo: '' }">
+        {{--
+            P10: reclamando una organización del listado, el logo no se pide.
+            Ya lo tiene la ONG, y volver a pedírselo a quien sólo venía a
+            ponerse una contraseña es el trabajo que el punto quita.
+        --}}
+        <div x-data="{ logo: '' }" x-show="! reclamando">
             <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:8px;">Logo de la organización</div>
             <div style="display:flex;align-items:center;gap:16px;">
                 <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
@@ -113,6 +179,25 @@
                    x-model="correoCuenta" placeholder="contacto@organizacion.cl" autocomplete="email">
             <span class="helper">Con este correo entrarás a tu cuenta.</span>
             @error('email') <span class="field-error">{{ $message }}</span> @enderror
+
+            {{--
+                P11. Cuando el correo ya tiene cuenta, decirlo no basta: hay que
+                dar las dos salidas. Van aquí, pegadas al campo, y no dentro del
+                mensaje de error: el resumen de arriba escribe los mensajes con
+                `x-text`, que escapa el HTML, así que unos enlaces metidos en el
+                texto se leerían literales.
+
+                Se reconoce por la constante y no comparando la frase suelta:
+                cambiar el texto no puede apagar los enlaces sin que nadie lo
+                note.
+            --}}
+            @if ($errors->get('email') && in_array(\App\Support\ReglasDeCampo::CORREO_YA_EXISTE, $errors->get('email'), true))
+                <span class="helper" style="display:block;margin-top:2px;">
+                    <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
+                    o <a class="textlink" href="{{ route('password.request') }}">recupera tu contraseña</a>
+                    si no la recuerdas.
+                </span>
+            @endif
         </label>
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">

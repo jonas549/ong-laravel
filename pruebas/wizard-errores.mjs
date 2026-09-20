@@ -380,13 +380,15 @@ t('El formulario de inscripción público');
 
 const slug = await p.evaluate(async (base) => {
     const html = await (await fetch(`${base}/actividades`)).text();
-    return html.match(/\/actividades\/([a-z0-9-]+)"/)?.[1] ?? null;
+    // La ficha vive en /activity/{id}/{slug} desde el 18/09; el listado ya
+    // no enlaza a /actividades/{slug}, que sólo queda como redirección.
+    return html.match(/\/activity\/(\d+\/[a-z0-9-]+)"/)?.[1] ?? null;
 }, B);
 
 if (! slug) {
     di('hay una actividad publicada para probar', false, 'ninguna publicada');
 } else {
-    await p.goto(`${B}/actividades/${slug}`, { waitUntil: 'networkidle2' });
+    await p.goto(`${B}/activity/${slug}`, { waitUntil: 'networkidle2' });
     await p.waitForFunction(() => window.Alpine !== undefined);
 
     const hayForm = await p.$('form[action*="inscribirse"]');
