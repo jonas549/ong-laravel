@@ -19,14 +19,10 @@
 <main style="flex:1;">
 <div class="rise" style="max-width:1080px;margin:0 auto;padding:34px 32px 96px;">
 
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;">
-        <div class="crumb">
-            <a href="{{ route('home') }}">Inicio</a> →
-            <a href="{{ route('account.activities.index') }}">Mi cuenta</a> → Evaluaciones
-        </div>
-
-        <a class="crumb" href="{{ route('account.activities.index') }}">Volver a mis actividades</a>
-    </div>
+    <x-cuenta.barra>
+        <a href="{{ route('home') }}">Inicio</a> →
+        <a href="{{ route('account.activities.index') }}">Mi cuenta</a> → Evaluaciones
+    </x-cuenta.barra>
 
     <h1 style="font-family:var(--font-title);font-size:34px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px;color:var(--ink);">
         Evaluaciones de tus actividades

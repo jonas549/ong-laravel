@@ -90,7 +90,16 @@ try {
       cargada: e.naturalWidth > 0,
     }));
     di('con logo se pinta el logo', conLogo.tag === 'IMG' && conLogo.cargada, JSON.stringify(conLogo));
-    di('en la misma caja, sin deformarse', conLogo.caja === '54x54' && conLogo.ajuste === 'contain', JSON.stringify(conLogo));
+    /*
+     * Q5/Q2: el alto es el que manda y el ancho se adapta. Antes se exigía
+     * 54×54 clavado, y eso es justo lo que hacía ilegible un logo apaisado:
+     * uno de 668×100 salía en 54×8 px. Lo que no puede cambiar es el alto
+     * —si no, la firma baila— ni deformarse.
+     */
+    const anchoLogo = parseInt(conLogo.caja.split('x')[0], 10);
+    di('el alto no cambia y el ancho se adapta, sin deformarse',
+      conLogo.caja.endsWith('x54') && anchoLogo >= 54 && anchoLogo <= 170 && conLogo.ajuste === 'contain',
+      JSON.stringify(conLogo));
 
     t('Sitio web y redes del organizador');
     let e = await enlaces();

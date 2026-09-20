@@ -22,7 +22,9 @@
 {{-- PANTALLA 4 — PARTICIPANTES de mi-cuenta.html --}}
 <div class="rise" style="max-width:1080px;margin:0 auto;padding:34px 32px 96px;">
 
-    <div class="crumb" style="margin-bottom:20px;">Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Participantes</div>
+    <x-cuenta.barra>
+        Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Participantes
+    </x-cuenta.barra>
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:26px;">
         <div>

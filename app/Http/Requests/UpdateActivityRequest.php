@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\ActivityCollaborator;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
+use App\Support\Enlace;
 use App\Support\FechaEscrita;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
@@ -58,6 +59,13 @@ class UpdateActivityRequest extends FormRequest
             'hora_inicio' => FechaEscrita::hora($this->input('hora_inicio')),
             'hora_termino' => FechaEscrita::hora($this->input('hora_termino')),
         ]);
+
+            /*
+             * Q3: los enlaces se completan antes de validar. Nadie escribe
+             * `https://` al copiar la direccion de su Instagram, y rechazarlo
+             * era culpar a la persona de algo que el servidor resuelve solo.
+             */
+        $this->merge(Enlace::normalizarCampos($this->all(), ['enlace_web', 'enlace_red_social']));
     }
 
     /** @return array<string, mixed> */
@@ -111,8 +119,8 @@ class UpdateActivityRequest extends FormRequest
             'info_previa' => ['nullable', 'string', 'max:2000'],
 
             'correo_contacto' => ['nullable', 'email', 'max:255', new CorreoEnviable],
-            'enlace_red_social' => ['nullable', 'url', 'max:255'],
-            'enlace_web' => ['nullable', 'url', 'max:255'],
+            'enlace_red_social' => Enlace::reglas(),
+            'enlace_web' => Enlace::reglas(),
 
             // 2 MB y 1200×600 recomendado, como dice el propio formulario.
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],

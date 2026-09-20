@@ -23,8 +23,16 @@
                         <div class="logo-chip" @if ($duplicado) aria-hidden="true" @endif
                              style="display:flex;align-items:center;gap:8px;height:46px;padding:0 16px;background:#fff;border:1px solid #eef0f1;border-radius:10px;box-shadow:0 6px 18px -14px rgba(0,0,0,.25);flex:none;">
                             @if ($p->logo_path ?? null)
+                                {{--
+                                    Alto fijo y ancho libre, por lo mismo que en
+                                    la ficha de actividad: los logos son casi
+                                    siempre palabras, y en un cuadrado de 30 px
+                                    uno de 668×100 quedaba en 30×4. El tope de
+                                    92 evita que una pastilla se estire más que
+                                    el nombre que lleva al lado.
+                                --}}
                                 <img loading="lazy" decoding="async" src="{{ asset($p->logo_path) }}" alt=""
-                                     style="width:30px;height:30px;object-fit:contain;flex:none;">
+                                     style="width:auto;max-width:92px;height:30px;object-fit:contain;flex:none;">
                             @elseif (isset($p->iniciales))
                                 <span style="display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--naranjo-100);color:var(--naranjo-600);font-size:11px;font-weight:800;flex:none;">{{ $p->iniciales }}</span>
                             @else

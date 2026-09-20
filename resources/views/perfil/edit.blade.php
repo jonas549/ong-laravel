@@ -15,7 +15,9 @@
 @if (! $esAdmin)
 <main style="flex:1;">
 <div class="rise" style="max-width:900px;margin:0 auto;padding:34px 32px 96px;">
-    <div class="crumb" style="margin-bottom:20px;">Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Perfil</div>
+    <x-cuenta.barra>
+        Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Perfil
+    </x-cuenta.barra>
     <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;margin:0 0 26px;color:var(--ink);">Mi perfil</h1>
 @endif
 

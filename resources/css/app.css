@@ -2495,6 +2495,24 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
     box-sizing: border-box;
 }
 
+/*
+ * Un logo de verdad se ensancha; el cuadrado es sólo para las iniciales.
+ *
+ * Los logos de las organizaciones son casi siempre palabras, no símbolos: de
+ * los cuatro cargados en producción, uno mide 668×100 px y otro 256×40.
+ * Metidos en un cuadrado de 54, `object-fit: contain` los dejaba en 54×8 —
+ * están ahí, cargan, y no se lee ni una letra—. Eso era «el logo no se ve».
+ *
+ * Con el alto fijo y el ancho libre cada uno ocupa lo que pide su forma: el
+ * cuadrado se queda en 54×54 y el apaisado llega hasta 170 px, que es donde
+ * empezaría a comerse el nombre de la organización.
+ */
+img.org-logo {
+    width: auto;
+    min-width: 54px;
+    max-width: 170px;
+}
+
 /* Sin logo, las iniciales. Ver el porqué en la vista. */
 .org-logo--iniciales {
     display: grid;

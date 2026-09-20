@@ -47,7 +47,9 @@
         errores: {{ Js::from($erroresDelServidor) }},
      })">
 
-    <div class="crumb" style="margin-bottom:20px;">Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Editar</div>
+    <x-cuenta.barra>
+        Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Editar
+    </x-cuenta.barra>
     <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;margin:0 0 18px;color:var(--ink);">Editar actividad</h1>
 
     @if ($activity->estado === 'publicada')
@@ -526,14 +528,14 @@
                     </label>
 
                     <label class="lbl">Enlace a red social
-                        <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_red_social"
+                        <input class="fld @error('enlace_red_social') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_red_social"
                                value="@viejo('enlace_red_social', $activity->organization->enlace_red_social)">
                         <span class="helper">Instagram, Facebook u otro.</span>
                         @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl">Enlace a página web (opcional)
-                        <input class="fld @error('enlace_web') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_web"
+                        <input class="fld @error('enlace_web') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_web"
                                placeholder="https://tusitio.cl" value="@viejo('enlace_web', $activity->organization->enlace_web)">
                         <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                         @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror

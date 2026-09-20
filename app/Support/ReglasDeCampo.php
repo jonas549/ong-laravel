@@ -55,7 +55,15 @@ class ReglasDeCampo
                 'required' => $attrs['required'] = true,
                 // `required_if` a propósito no pone nada: ver la cabecera.
                 'email' => $attrs['type'] = 'email',
-                'url' => $attrs['type'] = 'url',
+                /*
+                 * Q3: `type="url"` no, a propósito. El navegador corta el
+                 * envío de «instagram.com/loquesea» con su propio aviso, en
+                 * su idioma y sin decir qué falta, y es una dirección que el
+                 * servidor completa solo. Se queda en texto con el teclado de
+                 * URL y el `data-autoprotocolo` que pone el `https://` al
+                 * salir del campo.
+                 */
+                'url' => $attrs = $attrs + ['type' => 'text', 'inputmode' => 'url', 'data-autoprotocolo' => true],
                 'numeric', 'integer' => $attrs['inputmode'] = 'numeric',
                 'max' => $attrs[static::esNumero($lista) ? 'max' : 'maxlength'] = $valor,
                 'min' => $attrs[static::esNumero($lista) ? 'min' : 'minlength'] = $valor,

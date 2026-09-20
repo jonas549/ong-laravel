@@ -11,6 +11,7 @@ use App\Models\Post;
 use App\Models\Stat;
 use App\Models\Testimonial;
 use App\Services\Exportador;
+use App\Support\Enlace;
 use App\Support\Filtro;
 use App\Support\Listado;
 use App\Support\Papelera;
@@ -66,7 +67,7 @@ class ContentController extends Controller
                 'grupo' => ['label' => 'Grupo', 'tipo' => 'select', 'reglas' => 'required|string|max:30', 'opciones' => Partner::GRUPOS],
                 'tamano' => ['label' => 'Tamaño del logo', 'tipo' => 'select', 'reglas' => 'required|string|in:grande,mediano,chico,normal', 'opciones' => Partner::TAMANOS, 'ayuda' => 'Sólo se aplica en Auspician, Participan y Colaboran. En la marquesina todas las pastillas van del mismo alto.'],
                 'logo_path' => ['label' => 'Logo', 'tipo' => 'imagen', 'reglas' => 'nullable|string|max:255'],
-                'url' => ['label' => 'Enlace', 'tipo' => 'text', 'reglas' => 'nullable|url|max:255'],
+                'url' => ['label' => 'Enlace', 'tipo' => 'text', 'reglas' => 'nullable|url:http,https|max:255'],
                 'color' => ['label' => 'Color (si no hay logo)', 'tipo' => 'text', 'reglas' => 'nullable|string|max:40'],
                 'orden' => ['label' => 'Orden', 'tipo' => 'number', 'reglas' => 'nullable|integer|min:0'],
                 'activo' => ['label' => 'Visible', 'tipo' => 'bool', 'reglas' => 'nullable|boolean'],
@@ -445,10 +446,24 @@ class ContentController extends Controller
         $reglas = [];
         $nombres = [];
 
+        /*
+         * Q3: un campo de enlace se completa antes de validar. Se reconoce por
+         * su regla y no por una segunda lista de campos: asi, el dia que se
+         * anada otro enlace al catalogo, se comporta igual sin tener que
+         * acordarse de apuntarlo en ningun sitio.
+         */
+        $enlaces = [];
+
         foreach ($def['campos'] as $campo => $meta) {
             $reglas[$campo] = $meta['reglas'];
             $nombres[$campo] = mb_strtolower($meta['label']);
+
+            if (preg_match('/(^|\|)url(:|\||$)/', (string) $meta['reglas'])) {
+                $enlaces[] = $campo;
+            }
         }
+
+        $request->merge(Enlace::normalizarCampos($request->all(), $enlaces));
 
         $datos = $request->validate($reglas, [], $nombres);
 

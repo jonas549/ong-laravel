@@ -356,8 +356,14 @@ export const campoValidado = (pistas) => ({
             return 'Eso no parece una dirección de correo.';
         }
 
-        if (pistas.formato === 'url' && !/^https?:\/\/\S+\.\S+/i.test(v)) {
-            return 'La dirección tiene que empezar por http:// o https://';
+        /*
+         * Q3: el protocolo no se exige. Se acepta «instagram.com/loquesea» y
+         * lo completa `data-autoprotocolo` al salir del campo; lo único que se
+         * mira aquí es que haya algo con forma de dominio, que es lo que el
+         * servidor no va a poder arreglar solo.
+         */
+        if (pistas.formato === 'url' && ! /^([a-z][a-z0-9+.-]*:\/\/)?[^\s/]+\.[^\s/]{2,}/i.test(v)) {
+            return 'Eso no parece una direccion web. Ejemplo: instagram.com/tuorganizacion';
         }
 
         if (pistas.numero) {

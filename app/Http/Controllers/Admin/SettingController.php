@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Support\CatalogoAjustes;
+use App\Support\Enlace;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -55,11 +56,26 @@ class SettingController extends Controller
                 ],
                 $ajuste->tipo === 'int' => ['required', 'integer', 'min:0', 'max:365'],
                 str_contains($ajuste->clave, 'email') => ['required', 'email', 'max:255'],
+                /*
+                 * Q3: los ajustes que son un enlace —hoy solo el del kit de
+                 * difusion— se validan como tal y se completan antes, igual
+                 * que los del wizard. Se reconocen por el sufijo `_url` de la
+                 * clave, que es lo unico que los distingue de un texto.
+                 *
+                 * `nullable` y no `required`: el propio ajuste dice que vacio
+                 * no pinta el boton, asi que tiene que poder vaciarse.
+                 */
+                str_ends_with($ajuste->clave, '_url') => Enlace::reglas(),
                 default => ['required', 'string', 'max:255'],
             };
 
             $nombres[$ajuste->clave] = mb_strtolower($ajuste->label ?: $ajuste->clave);
         }
+
+        $request->merge(Enlace::normalizarCampos(
+            $request->all(),
+            collect($ajustes)->pluck('clave')->filter(fn ($c) => str_ends_with($c, '_url'))->all(),
+        ));
 
         $request->validate($reglas, [], $nombres);
 

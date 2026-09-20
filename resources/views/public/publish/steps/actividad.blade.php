@@ -495,14 +495,14 @@
             </label>
 
             <label class="lbl">Enlace a red social
-                <input class="fld @error('enlace_red_social') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_red_social"
+                <input class="fld @error('enlace_red_social') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_red_social"
                        value="@viejo('enlace_red_social', $organizacion?->enlace_red_social)" placeholder="https://instagram.com/...">
                 <span class="helper">Solo un enlace: Instagram, Facebook, LinkedIn o el que prefieras.</span>
                 @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
             <label class="lbl">Enlace a página web (opcional)
-                <input class="fld @error('enlace_web') is-invalid @enderror" type="url" data-autoprotocolo name="enlace_web"
+                <input class="fld @error('enlace_web') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_web"
                        value="@viejo('enlace_web', $organizacion?->enlace_web)" placeholder="https://tusitio.cl">
                 <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
                 @error('enlace_web') <span class="field-error">{{ $message }}</span> @enderror

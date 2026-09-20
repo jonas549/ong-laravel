@@ -8,6 +8,7 @@ use App\Support\ReclamarOrganizacion;
 use App\Support\ReglasDeCampo;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
+use App\Support\Enlace;
 use App\Support\FechaEscrita;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Support\ArchivosRetenidos;
@@ -51,6 +52,13 @@ class PublishActivityRequest extends FormRequest
                 ? preg_replace('/\s+/u', ' ', trim($this->input('org_nombre')))
                 : $this->input('org_nombre'),
         ]);
+
+            /*
+             * Q3: los enlaces se completan antes de validar. Nadie escribe
+             * `https://` al copiar la direccion de su Instagram, y rechazarlo
+             * era culpar a la persona de algo que el servidor resuelve solo.
+             */
+        $this->merge(Enlace::normalizarCampos($this->all(), ['enlace_web', 'enlace_red_social']));
     }
 
     /*
@@ -152,8 +160,8 @@ class PublishActivityRequest extends FormRequest
 
             'usar_correo_cuenta' => ['nullable', 'boolean'],
             'correo_contacto' => ['nullable', 'email', 'max:255', new CorreoEnviable],
-            'enlace_red_social' => ['nullable', 'url', 'max:255'],
-            'enlace_web' => ['nullable', 'url', 'max:255'],
+            'enlace_red_social' => Enlace::reglas(),
+            'enlace_web' => Enlace::reglas(),
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
             // Los topes vienen del prototipo (3 temas, 5 características).

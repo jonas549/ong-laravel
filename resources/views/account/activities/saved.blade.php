@@ -14,7 +14,15 @@
     texto da por hecho que los cambios quedan a la vista. Cuando la actividad
     todavía no está publicada eso no es cierto y el copy se ajusta.
 --}}
-<div class="rise" style="max-width:720px;margin:0 auto;padding:88px 32px 120px;text-align:center;">
+{{-- La barra va aparte y por encima: esta pantalla es de cierre, centrada y
+     sin migas, y la barra no puede heredar el `text-align: center`. --}}
+<div style="max-width:1080px;margin:0 auto;padding:34px 32px 0;text-align:left;">
+    <x-cuenta.barra>
+        Mi cuenta → <a href="{{ route('account.activities.index') }}">Mis actividades</a> → Guardado
+    </x-cuenta.barra>
+</div>
+
+<div class="rise" style="max-width:720px;margin:0 auto;padding:24px 32px 120px;text-align:center;">
     <img loading="lazy" decoding="async" width="486" height="375" src="{{ asset('img/logo-corazon-15f12e4a.png') }}" alt="" aria-hidden="true"
          style="width:200px;max-width:100%;height:auto;display:block;margin:0 auto 24px;filter:drop-shadow(0 14px 26px rgba(0,0,0,.14));">
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Services\Exportador;
+use App\Support\Enlace;
 use App\Support\Fecha;
 use App\Support\Filtro;
 use App\Support\Listado;
@@ -79,6 +80,10 @@ class OrganizationController extends Controller
 
     public function update(Request $request, Organization $organization)
     {
+        // Q3: aqui tambien. Un enlace escrito sin `https://` se completa antes
+        // de validar, en las tres pantallas donde se puede escribir uno.
+        $request->merge(Enlace::normalizarCampos($request->all(), ['enlace_web', 'enlace_red_social']));
+
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'tipo' => ['required', Rule::in(Organization::TIPOS)],
@@ -86,8 +91,8 @@ class OrganizationController extends Controller
             'unidad_educativa' => ['nullable', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:2000'],
             'correo_contacto' => ['nullable', 'email', 'max:255'],
-            'enlace_web' => ['nullable', 'url', 'max:255'],
-            'enlace_red_social' => ['nullable', 'url', 'max:255'],
+            'enlace_web' => Enlace::reglas(),
+            'enlace_red_social' => Enlace::reglas(),
             'logo_path' => ['nullable', 'string', 'max:255'],
             'requiere_revision' => ['nullable', 'boolean'],
         ], [], [

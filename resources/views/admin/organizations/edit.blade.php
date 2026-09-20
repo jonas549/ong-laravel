@@ -44,8 +44,8 @@
                            :valor="$organizacion->correo_contacto" reglas="nullable|email|max:255"
                            ayuda="El que se publica. No es el de la cuenta con la que entra." />
 
-            <x-panel.campo nombre="enlace_web" label="Sitio web" :valor="$organizacion->enlace_web" reglas="nullable|url|max:255" />
-            <x-panel.campo nombre="enlace_red_social" label="Red social" :valor="$organizacion->enlace_red_social" reglas="nullable|url|max:255" />
+            <x-panel.campo nombre="enlace_web" label="Sitio web" :valor="$organizacion->enlace_web" reglas="nullable|url:http,https|max:255" />
+            <x-panel.campo nombre="enlace_red_social" label="Red social" :valor="$organizacion->enlace_red_social" reglas="nullable|url:http,https|max:255" />
 
             {{--
                 Antes era un campo de texto con la ruta escrita a mano y la nota
