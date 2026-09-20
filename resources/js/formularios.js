@@ -562,22 +562,102 @@ export const campoFecha = () => ({
  * teclear los dos puntos a mano.
  *
  * Sigue siendo `type="text"` por lo mismo que la fecha: los campos nativos de
- * hora no dejan pegar. El reloj va al lado, en un `input[type=time]`
- * transparente debajo del botón, y ESCRIBE en el campo de texto.
+ * hora no dejan pegar. Al lado va un desplegable propio de horas en punto, que
+ * ESCRIBE en el campo de texto.
+ *
+ * El desplegable sustituyó al `input[type=time]` nativo el 2026-09-20 (P13):
+ * su rueda de minutos iba de 00 a 59 y se abría proponiendo la hora actual,
+ * que es justo lo que el cliente no quería.
  *
  * Se normaliza igual que en el servidor, y un poco más generoso: `horaIso` de
  * los dos Form Requests exige un separador, así que «0930» a secas se le
  * atragantaba. Aquí se convierte antes de enviarlo, y de paso se le enseñó al
  * servidor a entenderlo por su cuenta para quien navegue sin JavaScript.
  */
+/**
+ * Las horas que ofrece el desplegable: las 24 en punto.
+ *
+ * P13. Antes esto lo resolvía el `<input type="time">` del navegador, y su
+ * rueda de minutos va de 00 a 59: para poner las nueve había que pasar por
+ * sesenta valores que nadie iba a elegir, y encima se abría proponiendo la
+ * hora actual. Las actividades empiezan en punto, así que se ofrecen las
+ * horas en punto y nada más.
+ *
+ * Cada una se etiqueta dos veces —«17:00» y «5 PM»— porque el encargo pedía
+ * las dos cosas: la lista de horas cerradas y el AM/PM. El valor que viaja es
+ * el de 24 horas, que es lo que valida el servidor (`H:i`).
+ *
+ * El campo sigue siendo de texto y sigue admitiendo que se escriba o se pegue
+ * cualquier hora, minutos incluidos: el desplegable es un atajo para lo
+ * normal, no una jaula. Una actividad que empiece a las 9:30 se puede seguir
+ * escribiendo.
+ */
+const HORAS_EN_PUNTO = Array.from({ length: 24 }, (_, h) => {
+    const doce = h % 12 === 0 ? 12 : h % 12;
+
+    return {
+        valor: String(h).padStart(2, '0') + ':00',
+        etiqueta: String(h).padStart(2, '0') + ':00',
+        sufijo: doce + (h < 12 ? ' AM' : ' PM'),
+    };
+});
+
 export const campoHora = () => ({
     entrada: null,
-    reloj: null,
+
+    /* El desplegable de horas en punto (P13). */
+    horas: HORAS_EN_PUNTO,
+    abierto: false,
+    raiz: null,
 
     init() {
+        /*
+         * La raíz se guarda aquí, que es el único sitio donde `$el` lo es:
+         * dentro del manejador de un botón, `$el` es ese botón. Es la trampa
+         * de Alpine que ya se comió cuatro cosas en este proyecto.
+         */
+        this.raiz = this.$el;
         this.entrada = this.$refs.hora ?? null;
-        this.reloj = this.$refs.reloj ?? null;
     },
+
+    alternar() {
+        if (this.entrada?.disabled) return;
+
+        this.abierto = ! this.abierto;
+
+        // Abierto, se deja a la vista la hora que ya estuviera puesta.
+        if (this.abierto) this.$nextTick(() => this.acercarLaElegida());
+    },
+
+    elegir(valor) {
+        if (! this.entrada) return;
+
+        this.entrada.value = valor;
+        this.abierto = false;
+
+        // El `input` es lo que despierta a la guía de errores; el `change`, a
+        // quien escuche el campo desde fuera.
+        this.entrada.dispatchEvent(new Event('input', { bubbles: true }));
+        this.entrada.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+
+    /** Si una hora de la lista es la que ya está escrita. */
+    esLaElegida(valor) {
+        return (this.entrada?.value ?? '').trim() === valor;
+    },
+
+    /**
+     * Deja la hora elegida a la vista al abrir.
+     *
+     * Son veinticuatro y la caja enseña seis: sin esto, abrir con las 18:00
+     * puestas enseña la madrugada y parece que no hay nada elegido.
+     */
+    acercarLaElegida() {
+        const marcada = this.raiz?.querySelector('.hora-opcion-elegida');
+
+        if (marcada) marcada.scrollIntoView({ block: 'center' });
+    },
+
 
     /**
      * Al escribir: los dos puntos se ponen solos tras la hora.
@@ -656,24 +736,4 @@ export const campoHora = () => ({
         this.entrada.value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     },
 
-    /** El reloj escribe en el campo de texto; no lo sustituye. */
-    desdeReloj() {
-        const valor = this.reloj?.value;
-
-        if (! valor) return;
-
-        this.entrada.value = valor.slice(0, 5);
-        this.entrada.dispatchEvent(new Event('input', { bubbles: true }));
-    },
-
-    /** Y al revés: el reloj se abre por donde ya diga el campo. */
-    sincronizarReloj() {
-        if (! this.reloj) return;
-
-        this.normalizar();
-
-        if (/^\d{2}:\d{2}$/.test(this.entrada.value)) {
-            this.reloj.value = this.entrada.value;
-        }
-    },
 });

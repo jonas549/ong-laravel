@@ -70,9 +70,15 @@
             <input class="fld" style="flex:1;min-width:240px;" type="search" name="q"
                    value="{{ $busqueda }}" placeholder="Buscar por nombre o correo">
 
-            {{-- Filtrar por «pendiente» devolvería todo y por «confirmado» nada:
-                 las dos únicas respuestas útiles son con baja y sin baja. --}}
-            <select class="fld" style="width:auto;min-width:180px;" name="estado" x-on:change="$el.form.submit()">
+            {{--
+                El filtro no ofrece estados y nunca los ofreció de verdad:
+                «pendiente» devolvería todo y «confirmado» nada, porque el
+                doble opt-in no se construyó. Lo único que distingue a una
+                inscripción de otra es si se dio de baja, y eso es lo que se
+                filtra. Se revisó al quitar la columna (P17).
+            --}}
+            <select class="fld" style="width:auto;min-width:180px;" name="estado" x-on:change="$el.form.submit()"
+                    aria-label="Mostrar">
                 <option value="">Todas las inscripciones</option>
                 <option value="activas" @selected($estado === 'activas')>Sin baja</option>
                 <option value="cancelado" @selected($estado === 'cancelado')>Dadas de baja</option>
@@ -95,23 +101,34 @@
             <div style="overflow-x:auto;">
                 <table class="plist">
                     <thead>
-                        <tr><th>Nombre</th><th>Correo</th><th>Fecha inscripción</th><th>Mayor de edad</th><th>Estado</th></tr>
+                        {{--
+                            P17: fuera la columna «Estado». En la práctica sólo
+                            pintaba un guion: de tres estados posibles, dos no
+                            se le enseñan al organizador, así que la columna
+                            estaba vacía en casi todas las filas y ocupaba el
+                            ancho que le hace falta al correo.
+
+                            Quien se dio de baja se distingue igual, y mejor:
+                            la fila va atenuada y con el nombre tachado, y
+                            lleva una etiqueta junto al nombre. Se ve de un
+                            vistazo, sin recorrer la fila hasta el final.
+                        --}}
+                        <tr><th>Nombre</th><th>Correo</th><th>Fecha inscripción</th><th>Mayor de edad</th></tr>
                     </thead>
                     <tbody>
                         @foreach ($inscritos as $p)
-                            <tr>
-                                <td style="font-weight:600;color:var(--ink);">{{ $p->nombre }}</td>
+                            <tr @class(['plist-baja' => $p->estado_visible])>
+                                <td style="font-weight:600;color:var(--ink);">
+                                    {{ $p->nombre }}
+                                    {{-- La etiqueta va pegada al nombre: es lo
+                                         primero que se lee de la fila. --}}
+                                    @if ($p->estado_visible)
+                                        <span class="plist-baja-marca">{{ $p->estado_visible }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $p->correo }}</td>
                                 <td>{{ $p->created_at->locale('es')->isoFormat('D MMM YYYY') }}</td>
                                 <td>{{ $p->es_mayor_edad ? 'Sí' : 'No' }}</td>
-                                {{-- Sólo se rotula a quien se dio de baja: ver `estado_visible`. --}}
-                                <td>
-                                    @if ($p->estado_visible)
-                                        <span style="font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:999px;background:#fdeaf0;color:#a82249;">{{ $p->estado_visible }}</span>
-                                    @else
-                                        <span class="helper" aria-hidden="true">—</span>
-                                    @endif
-                                </td>
                             </tr>
                         @endforeach
                     </tbody>

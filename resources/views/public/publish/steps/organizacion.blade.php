@@ -107,12 +107,14 @@
             @error('org_tipo_otro') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
-        <label class="lbl" style="max-width:280px;" x-show="esEmpresa()" x-cloak>¿Cuántos trabajadores participan como voluntarios?
-            <input class="fld @error('org_num_voluntarios') is-invalid @enderror" name="org_num_voluntarios"
-                   inputmode="numeric" value="@viejo('org_num_voluntarios', $organizacion?->num_voluntarios)" placeholder="Ej. 25">
-            <span class="helper">Número aproximado. Escribe 0 si no aplica.</span>
-            @error('org_num_voluntarios') <span class="field-error">{{ $message }}</span> @enderror
-        </label>
+        {{--
+            P15: «¿Cuántos trabajadores participan como voluntarios?» se fue de
+            aquí al paso de la actividad. Estaba junto al nombre de la empresa,
+            que es donde se cuenta quién eres, y lo que pregunta es cuánta gente
+            pone la empresa EN LA ACTIVIDAD. Lo pidió el cliente.
+
+            Se sigue guardando en la organización, que es donde vive el campo.
+        --}}
 
         <label class="lbl" x-show="esEducativa()" x-cloak data-campo="org_unidad_educativa" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('org_unidad_educativa') }}">¿Qué unidad, grupo o comunidad educativa organiza la actividad? *

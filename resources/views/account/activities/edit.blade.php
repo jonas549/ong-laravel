@@ -246,19 +246,39 @@
                                    x-on:input="alEscribir($event)" x-on:blur="normalizar()"
                                    x-bind:disabled="sinFecha"
                                    value="@viejo('hora_inicio', $hora($activity->hora_inicio))">
-                            {{-- Mismo montaje que el calendario de la fecha: el botón abre el
-                                 desplegable y el input nativo está debajo, transparente y sin
-                                 recibir clics, sólo para que salga anclado aquí. --}}
-                            <input type="time" class="campo-selector-nativo" x-ref="reloj"
-                                   tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
-                                   x-on:change="desdeReloj()">
+                            {{--
+                        P13: el desplegable es nuestro y ofrece las horas en
+                        punto. Antes había aquí un `input[type=time]` nativo,
+                        con su rueda de 00 a 59 minutos y abriéndose por la
+                        hora actual; las actividades empiezan en punto y eso
+                        eran sesenta valores que nadie iba a elegir.
 
-                            <button type="button" class="campo-selector-boton"
-                                    x-bind:disabled="sinFecha"
-                                    x-on:click="sincronizarReloj(); $refs.reloj.showPicker ? $refs.reloj.showPicker() : $refs.hora.focus()"
-                                    aria-label="Elegir la hora en un reloj">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
-                            </button>
+                        El campo de texto de al lado sigue admitiendo
+                        cualquier hora escrita o pegada: esto es un atajo, no
+                        una jaula.
+                    --}}
+                    <button type="button" class="campo-selector-boton"
+                            x-bind:disabled="sinFecha"
+                            x-on:click="alternar()"
+                            x-bind:aria-expanded="abierto"
+                            aria-label="Elegir la hora">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
+                    </button>
+
+                    <ul class="hora-lista" x-show="abierto" x-cloak role="listbox"
+                        x-on:click.outside="abierto = false"
+                        x-on:keydown.escape.window="abierto = false">
+                        <template x-for="h in horas" x-bind:key="h.valor">
+                            <li>
+                                <button type="button" class="hora-opcion"
+                                        x-bind:class="esLaElegida(h.valor) ? 'hora-opcion-elegida' : ''"
+                                        x-on:click="elegir(h.valor)">
+                                    <span x-text="h.etiqueta"></span>
+                                    <span class="hora-opcion-ampm" x-text="h.sufijo"></span>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
                         </span>
                         <span class="helper">Ej. 10:00</span>
                         @error('hora_inicio') <span class="field-error">{{ $message }}</span> @enderror
@@ -274,19 +294,39 @@
                                    x-on:input="alEscribir($event)" x-on:blur="normalizar()"
                                    x-bind:disabled="sinFecha"
                                    value="@viejo('hora_termino', $hora($activity->hora_termino))">
-                            {{-- Mismo montaje que el calendario de la fecha: el botón abre el
-                                 desplegable y el input nativo está debajo, transparente y sin
-                                 recibir clics, sólo para que salga anclado aquí. --}}
-                            <input type="time" class="campo-selector-nativo" x-ref="reloj"
-                                   tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
-                                   x-on:change="desdeReloj()">
+                            {{--
+                        P13: el desplegable es nuestro y ofrece las horas en
+                        punto. Antes había aquí un `input[type=time]` nativo,
+                        con su rueda de 00 a 59 minutos y abriéndose por la
+                        hora actual; las actividades empiezan en punto y eso
+                        eran sesenta valores que nadie iba a elegir.
 
-                            <button type="button" class="campo-selector-boton"
-                                    x-bind:disabled="sinFecha"
-                                    x-on:click="sincronizarReloj(); $refs.reloj.showPicker ? $refs.reloj.showPicker() : $refs.hora.focus()"
-                                    aria-label="Elegir la hora en un reloj">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
-                            </button>
+                        El campo de texto de al lado sigue admitiendo
+                        cualquier hora escrita o pegada: esto es un atajo, no
+                        una jaula.
+                    --}}
+                    <button type="button" class="campo-selector-boton"
+                            x-bind:disabled="sinFecha"
+                            x-on:click="alternar()"
+                            x-bind:aria-expanded="abierto"
+                            aria-label="Elegir la hora">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
+                    </button>
+
+                    <ul class="hora-lista" x-show="abierto" x-cloak role="listbox"
+                        x-on:click.outside="abierto = false"
+                        x-on:keydown.escape.window="abierto = false">
+                        <template x-for="h in horas" x-bind:key="h.valor">
+                            <li>
+                                <button type="button" class="hora-opcion"
+                                        x-bind:class="esLaElegida(h.valor) ? 'hora-opcion-elegida' : ''"
+                                        x-on:click="elegir(h.valor)">
+                                    <span x-text="h.etiqueta"></span>
+                                    <span class="hora-opcion-ampm" x-text="h.sufijo"></span>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
                         </span>
                         <span class="helper">Ej. 13:30</span>
                         @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
