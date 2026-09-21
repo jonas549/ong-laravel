@@ -89,9 +89,13 @@ class HomeController extends Controller
      * «deltadigital.cl» —de antes de que el wizard lo impidiera— y salían las
      * dos, una detrás de otra, que es repetición de verdad y no la del bucle.
      *
-     * Si no hay ninguna organización con actividad publicada se cae a las
-     * pastillas de siempre: en una instalación recién sembrada el home no
-     * puede quedarse con un hueco.
+     * **Y también las del listado histórico del cliente** —las que traen
+     * `anios_participacion`—, aunque no hayan publicado aquí todavía: son las
+     * organizaciones participantes de ediciones anteriores, que es lo que
+     * anuncia la sección.
+     *
+     * Si no hay ninguna de las dos se cae a las pastillas de siempre: en una
+     * instalación recién sembrada el home no puede quedarse con un hueco.
      *
      * @param  \Illuminate\Support\Collection  $pastillas
      * @return \Illuminate\Support\Collection
@@ -100,7 +104,9 @@ class HomeController extends Controller
     {
         $organizaciones = Organization::query()
             ->where('activo', true)
-            ->whereHas('activities', fn ($q) => $q->where('estado', 'publicada'))
+            ->where(fn ($q) => $q
+                ->whereHas('activities', fn ($a) => $a->where('estado', 'publicada'))
+                ->orWhereNotNull('anios_participacion'))
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'logo_path'])
             // Por nombre normalizado: «Delta  Digital» y «delta digital» son la

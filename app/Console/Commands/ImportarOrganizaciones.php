@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Organization;
+use App\Support\Enlace;
+use Illuminate\Http\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Console\Command;
 use OpenSpout\Reader\CSV\Options as OpcionesCsv;
 use OpenSpout\Reader\CSV\Reader as LectorCsv;
@@ -18,26 +21,38 @@ use Throwable;
  * que se las asignemos a mano»— y por eso `organizations.user_id` pasó a
  * admitir nulos.
  *
- * **Es idempotente y no pisa nada.** Una organización que ya existe se deja
- * como está, tenga cuenta o no: el listado del cliente no puede cambiarle el
- * tipo a quien ya se registró y lo eligió él mismo. Sólo se crean las que
- * faltan.
+ * **Es idempotente y no pisa nada**: se puede correr dos veces. El listado
+ * del cliente no puede cambiarle el tipo a quien ya se registró y lo eligió
+ * él mismo (ver más abajo qué se hace con las que ya existen).
  *
- * El archivo del cliente todavía no ha llegado, así que esto se prueba con
- * `--ejemplo`, que siembra tres organizaciones inventadas y deja el circuito
- * entero funcionando. Cuando llegue el Excel no hay que tocar código:
+ *   php artisan dps:importar-organizaciones ~/listado.csv --logos=~/logos --simular
+ *   php artisan dps:importar-organizaciones ~/listado.csv --logos=~/logos
  *
- *   php artisan dps:importar-organizaciones ~/listado.xlsx
- *   php artisan dps:importar-organizaciones ~/listado.csv --simular
+ * `--ejemplo` siembra tres organizaciones inventadas, para probar el circuito
+ * sin archivo.
  *
  * Columnas que lee, por su nombre en la primera fila (en cualquier orden, y
  * sin distinguir mayúsculas ni tildes): `nombre` —la única obligatoria—,
- * `tipo`, `descripcion`, `web`, `correo`.
+ * `tipo`, `detalle_cliente`, `descripcion`, `web`, `correo`,
+ * `anios_participacion` y `logo_archivo`.
+ *
+ * **Los logos van aparte**, en una carpeta que se pasa con `--logos`: cada
+ * fila busca ahí el archivo de su `logo_archivo` —por el nombre sin extensión,
+ * porque un PDF del cliente llega convertido a PNG— y se copia al disco
+ * público como si lo hubiera subido la propia organización. La carpeta ya
+ * tiene que venir optimizada: aquí no se reduce nada.
+ *
+ * Una organización que ya existe **con cuenta** no se toca, salvo para
+ * apuntarle de qué ediciones viene si ese dato está vacío: es lo que la mete
+ * en la marquesina, y no pisa nada que haya escrito ella. Una que ya existe
+ * **sin cuenta** —de una importación anterior— se completa en lo que tenga
+ * vacío, sin cambiar lo que ya tenga.
  */
 class ImportarOrganizaciones extends Command
 {
     protected $signature = 'dps:importar-organizaciones
         {archivo? : Ruta del .xlsx o .csv con el listado}
+        {--logos= : Carpeta con los logos ya optimizados, por su logo_archivo}
         {--simular : Dice qué haría, sin escribir nada}
         {--ejemplo : Usa tres organizaciones de muestra en vez de un archivo}';
 
@@ -47,10 +62,29 @@ class ImportarOrganizaciones extends Command
     private const COLUMNAS = [
         'nombre' => ['nombre', 'organizacion', 'organización', 'institucion', 'institución'],
         'tipo' => ['tipo', 'tipo de organizacion', 'tipo de organización'],
+        'detalle' => ['detalle_cliente', 'detalle', 'clasificacion', 'clasificación'],
         'descripcion' => ['descripcion', 'descripción', 'resena', 'reseña'],
-        'web' => ['web', 'sitio web', 'url', 'pagina web', 'página web'],
+        'web' => ['web', 'sitio web', 'sitio_web', 'url', 'pagina web', 'página web'],
         'correo' => ['correo', 'email', 'correo de contacto', 'mail'],
+        'anios' => ['anios_participacion', 'años de participación', 'anios de participacion', 'participacion'],
+        'logo' => ['logo_archivo', 'logo'],
     ];
+
+    /**
+     * La clasificación del cliente que sí dice qué tipo de organización es.
+     *
+     * El resto —«Socia», «No socia», «Exsocia», «Organizaciones de base»…—
+     * habla de su relación con la red, no de qué son, y se queda sin tipo.
+     */
+    private const TIPO_POR_DETALLE = [
+        'instituciones educativas' => 'Institución educativa',
+        'sector publico' => 'Municipalidad u organismo público',
+        'empresa participante de actividad' => 'Empresa o institución privada',
+        'empresa organizadora de actividad' => 'Empresa o institución privada',
+    ];
+
+    /** Lo que el sitio acepta como logo, en el orden en que se busca. */
+    private const EXTENSIONES_LOGO = ['png', 'jpg', 'jpeg', 'webp'];
 
     public function handle(): int
     {
@@ -70,8 +104,17 @@ class ImportarOrganizaciones extends Command
             return self::SUCCESS;
         }
 
-        $creadas = 0;
-        $saltadas = 0;
+        $carpetaLogos = $this->option('logos') ? rtrim((string) $this->option('logos'), '/\\') : null;
+
+        if ($carpetaLogos !== null && ! is_dir($carpetaLogos)) {
+            $this->error("No encuentro la carpeta de logos: {$carpetaLogos}");
+
+            return self::FAILURE;
+        }
+
+        $cuenta = ['creadas' => 0, 'con_logo' => 0, 'libres_completadas' => 0, 'con_cuenta' => 0, 'borradas' => 0, 'repetidas' => 0];
+        $sinLogo = [];
+        $vistos = [];
 
         foreach ($filas as $fila) {
             $nombre = $this->limpiar($fila['nombre'] ?? '');
@@ -80,23 +123,74 @@ class ImportarOrganizaciones extends Command
                 continue;
             }
 
+            // El mismo nombre dos veces en el propio listado: la segunda sobra.
+            $clave = mb_strtolower($nombre);
+
+            if (isset($vistos[$clave])) {
+                $cuenta['repetidas']++;
+                $this->line("  = repetida en el listado: {$nombre}");
+
+                continue;
+            }
+
+            $vistos[$clave] = true;
+
+            $logo = $carpetaLogos ? $this->buscarLogo($carpetaLogos, $fila['logo'] ?? '') : null;
+            $anios = $this->limpiar($fila['anios'] ?? '') ?: null;
+
             /*
              * Se compara sin distinguir mayúsculas y con los espacios ya
              * normalizados. Un listado de Excel trae «  Fundación X » y
              * «Fundación  X» como si fueran dos, y crearía dos filas.
              */
             $existe = Organization::withTrashed()
-                ->whereRaw('LOWER(nombre) = ?', [mb_strtolower($nombre)])
+                ->whereRaw('LOWER(nombre) = ?', [$clave])
                 ->first();
 
-            if ($existe) {
-                $saltadas++;
-                $this->line("  · ya estaba: {$nombre}".($existe->user_id ? ' (con cuenta)' : ' (libre)'));
+            if ($existe?->trashed()) {
+                // Borrada desde el panel: alguien decidió quitarla, y el
+                // listado no la resucita.
+                $cuenta['borradas']++;
+                $this->line("  · borrada en el panel, no se toca: {$nombre}");
 
                 continue;
             }
 
-            $tipo = $this->tipoValido($fila['tipo'] ?? '');
+            if ($existe && $existe->user_id) {
+                $cuenta['con_cuenta']++;
+                $apuntar = $anios && blank($existe->anios_participacion);
+
+                if ($apuntar && ! $simular) {
+                    $existe->update(['anios_participacion' => $anios]);
+                }
+
+                $this->line("  · con cuenta, no se toca: {$nombre}".($apuntar ? '  (sólo se le apuntan las ediciones)' : ''));
+
+                continue;
+            }
+
+            if ($existe) {
+                // Libre, de una importación anterior: se completa lo vacío.
+                $enlaces = $this->enlaces($fila['web'] ?? '');
+                $faltan = array_filter([
+                    'tipo' => blank($existe->tipo) ? $this->tipo($fila) : null,
+                    'enlace_web' => blank($existe->enlace_web) ? $enlaces['enlace_web'] : null,
+                    'enlace_red_social' => blank($existe->enlace_red_social) ? $enlaces['enlace_red_social'] : null,
+                    'anios_participacion' => blank($existe->anios_participacion) ? $anios : null,
+                    'logo_path' => blank($existe->logo_path) && $logo && ! $simular ? $this->copiarLogo($logo) : null,
+                ]);
+
+                if ($faltan && ! $simular) {
+                    $existe->update($faltan);
+                }
+
+                $cuenta['libres_completadas']++;
+                $this->line("  · libre, se completa lo vacío: {$nombre}");
+
+                continue;
+            }
+
+            $tipo = $this->tipo($fila);
 
             if (! $simular) {
                 Organization::create([
@@ -106,8 +200,10 @@ class ImportarOrganizaciones extends Command
                     'tipo' => $tipo,
                     'tipo_otro' => $tipo === 'Otra' ? $this->limpiar($fila['tipo'] ?? '') ?: null : null,
                     'descripcion' => $this->limpiar($fila['descripcion'] ?? '') ?: null,
-                    'enlace_web' => $this->enlace($fila['web'] ?? ''),
+                    ...$this->enlaces($fila['web'] ?? ''),
                     'correo_contacto' => $this->limpiar($fila['correo'] ?? '') ?: null,
+                    'anios_participacion' => $anios,
+                    'logo_path' => $logo ? $this->copiarLogo($logo) : null,
                     /*
                      * Sin verificar a propósito. Estar en el listado histórico
                      * dice que participó, no que alguien haya comprobado
@@ -118,16 +214,28 @@ class ImportarOrganizaciones extends Command
                 ]);
             }
 
-            $creadas++;
-            $this->line("  + {$nombre}  [{$tipo}]");
+            $cuenta['creadas']++;
+
+            if ($logo) {
+                $cuenta['con_logo']++;
+            } else {
+                $sinLogo[] = $nombre;
+            }
+
+            $this->line("  + {$nombre}  [".($tipo ?? 'sin tipo').']'.($logo ? '' : '  (sin logo)'));
         }
 
         $this->newLine();
-        $this->info($simular
-            ? "Simulación: se crearían {$creadas} organizaciones y se saltarían {$saltadas}."
-            : "Listo: {$creadas} organizaciones nuevas, {$saltadas} que ya estaban.");
+        $this->info(($simular ? 'Simulación: se crearían' : 'Listo:')
+            ." {$cuenta['creadas']} organizaciones nuevas ({$cuenta['con_logo']} con logo)."
+            ." Ya estaban: {$cuenta['con_cuenta']} con cuenta, {$cuenta['libres_completadas']} libres,"
+            ." {$cuenta['borradas']} borradas. Repetidas en el listado: {$cuenta['repetidas']}.");
 
-        if ($creadas > 0 && ! $simular) {
+        if ($carpetaLogos !== null && $sinLogo !== []) {
+            $this->warn('Nuevas sin logo ('.count($sinLogo).'): '.implode(' · ', $sinLogo));
+        }
+
+        if ($cuenta['creadas'] > 0 && ! $simular) {
             $this->line('Cada una puede reclamarse desde el buscador del paso 3 de «Publica tu actividad».');
         }
 
@@ -298,18 +406,95 @@ class ImportarOrganizaciones extends Command
         return 'Otra';
     }
 
-    /** Un enlace con esquema, o nada. El sitio nunca pinta un href a medias. */
+    /**
+     * El tipo de la fila: el de la columna `tipo` si viene, y si no, el que
+     * se deduzca de la clasificación del cliente. Si ninguna de las dos lo
+     * dice, ninguno —ver `TIPO_POR_DETALLE`—.
+     */
+    private function tipo(array $fila): ?string
+    {
+        if ($this->limpiar($fila['tipo'] ?? '') !== '') {
+            return $this->tipoValido($fila['tipo']);
+        }
+
+        $detalle = $this->sinTildes(mb_strtolower($this->limpiar($fila['detalle'] ?? '')));
+
+        return self::TIPO_POR_DETALLE[$detalle] ?? null;
+    }
+
+    /**
+     * Un enlace con esquema, o nada. El sitio nunca pinta un href a medias.
+     *
+     * Con la misma normalización que los formularios (`Enlace`), y lo que
+     * aun así no sea una dirección web se descarta en vez de guardarse: aquí
+     * no hay un campo donde enseñar el error.
+     */
     private function enlace(string $valor): ?string
     {
-        $limpio = $this->limpiar($valor);
+        $enlace = Enlace::normalizar($this->limpiar($valor));
 
-        if ($limpio === '') {
+        return is_string($enlace) && preg_match('#^https?://[^\s/.]+\.[^\s]+#i', $enlace) ? $enlace : null;
+    }
+
+    /**
+     * El enlace en su campo: un Instagram o un Facebook escrito como «sitio
+     * web» es la red social de la organización, y la ficha la pinta con su
+     * propio botón.
+     *
+     * @return array{enlace_web: ?string, enlace_red_social: ?string}
+     */
+    private function enlaces(string $valor): array
+    {
+        $enlace = $this->enlace($valor);
+        $red = $enlace && preg_match('#^https?://([a-z0-9-]+\.)*(instagram|facebook|fb|linkedin|tiktok|twitter|x)\.com/#i', $enlace);
+
+        return [
+            'enlace_web' => $red ? null : $enlace,
+            'enlace_red_social' => $red ? $enlace : null,
+        ];
+    }
+
+    /** El archivo del logo en la carpeta, por su nombre sin extensión. */
+    private function buscarLogo(string $carpeta, string $archivo): ?string
+    {
+        $base = pathinfo($this->limpiar($archivo), PATHINFO_FILENAME);
+
+        if ($base === '') {
             return null;
         }
 
-        return str_starts_with($limpio, 'http://') || str_starts_with($limpio, 'https://')
-            ? $limpio
-            : 'https://'.$limpio;
+        foreach (self::EXTENSIONES_LOGO as $extension) {
+            $ruta = "{$carpeta}/{$base}.{$extension}";
+
+            if (is_file($ruta)) {
+                return $ruta;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Copia el logo al disco público, donde deja los suyos el wizard, y
+     * devuelve la ruta tal como la guarda `logo_path`.
+     *
+     * Con el nombre legible del listado, y un sufijo si ya hay uno igual: un
+     * nombre que choque no puede pisar el logo de otra organización.
+     */
+    private function copiarLogo(string $ruta): string
+    {
+        $disco = Storage::disk('public');
+        $base = pathinfo($ruta, PATHINFO_FILENAME);
+        $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
+        $nombre = "{$base}.{$extension}";
+
+        for ($n = 2; $disco->exists("organizaciones/{$nombre}"); $n++) {
+            $nombre = "{$base}-{$n}.{$extension}";
+        }
+
+        $disco->putFileAs('organizaciones', new File($ruta), $nombre);
+
+        return "storage/organizaciones/{$nombre}";
     }
 
     private function sinTildes(string $texto): string

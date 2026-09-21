@@ -7,7 +7,14 @@
         </div>
 
         <div class="marquee" style="position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);">
-            <div class="marquee-track" style="display:flex;gap:16px;width:max-content;">
+            {{--
+                La duración va con el número de pastillas. Los 34 s del CSS
+                eran para once: con doscientas, el mismo tiempo para una
+                pasada veinte veces más larga las hacía pasar tan rápido que no
+                se leía ninguna. Se mantiene la velocidad de antes —unos 65 px/s—,
+                que con logo son ~4,5 s por pastilla.
+            --}}
+            <div class="marquee-track" style="display:flex;gap:16px;width:max-content;animation-duration:{{ max(34, (int) round($participantes->count() * 4.5)) }}s;">
                 {{-- Dos pasadas: la animación desplaza -50%, así el bucle es continuo. --}}
                 @foreach ([false, true] as $duplicado)
                     @foreach ($participantes as $p)

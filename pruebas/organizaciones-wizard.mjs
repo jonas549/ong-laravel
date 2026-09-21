@@ -41,7 +41,12 @@ const ultima = (s) => s.split('\n').filter((l) => l.trim()).pop().trim();
  * nombre irrepetible por ejecución quita el problema de raíz.
  */
 const SELLO = Date.now();
-const LIBRE = `Fundación Prueba Libre ${SELLO}`;
+/*
+ * «Fundación Junto …» y no «Fundación Prueba …»: desde la importación del
+ * listado del cliente hay doscientas «FUNDACIÓN …», y el buscador sólo
+ * devuelve ocho. Las dos tienen que caber juntas en esa primera tanda.
+ */
+const LIBRE = `Fundación Junto Prueba Libre ${SELLO}`;
 const TOMADA = 'Fundación Junto al Barrio';
 
 tinker(
@@ -94,7 +99,7 @@ await p.type('input[name="org_nombre"]', 'F');
 await esperar(500);
 di('Con una sola letra no sugiere nada', await p.$eval('.org-sugerencias', (n) => n.getBoundingClientRect().height === 0));
 
-await p.type('input[name="org_nombre"]', 'undación');
+await p.type('input[name="org_nombre"]', 'undación Junto');
 await p.waitForFunction(() => document.querySelectorAll('.org-sugerencia').length > 0, { timeout: 5000 });
 
 const sugerencias = await p.$$eval('.org-sugerencia', (n) => n.map((b) => b.innerText.replace(/\s+/g, ' ').trim()));
@@ -224,7 +229,7 @@ di('**La organización queda a nombre de la cuenta nueva**', reclamada === 'RECL
 di('**Y NO se creó un duplicado**', Number(cuantas) === cuantasAntes, `${cuantas} con ese nombre`);
 di('La actividad cuelga de ella', Number(actividades) >= 1, `${actividades} actividades`);
 di('Ya no se ofrece como libre', ! JSON.parse(await p.evaluate(async (u) => (await fetch(u)).text(),
-  `${B}/organizaciones/buscar?q=Manos%20del`)).organizaciones.some((o) => o.libre && o.nombre === LIBRE));
+  `${B}/organizaciones/buscar?q=Prueba%20Libre%20${SELLO}`)).organizaciones.some((o) => o.libre && o.nombre === LIBRE));
 
 /* ═══════════════════ P11 — el correo repetido ════════════════════ */
 

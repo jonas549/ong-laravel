@@ -278,7 +278,17 @@ class PublishController extends Controller
                             'enlace_red_social' => $campos['enlace_red_social'],
                             'num_voluntarios' => $campos['num_voluntarios'],
                             'unidad_educativa' => $campos['unidad_educativa'],
-                        ])->save();
+                        ])->fill(
+                            /*
+                             * Salvo el tipo, si el listado no lo traía. El
+                             * del cliente llega casi entero sin tipo, y el
+                             * que se eligió en el paso 2 es el único que hay:
+                             * descartarlo la dejaba sin tipo para siempre.
+                             */
+                            blank($reclamada->tipo)
+                                ? ['tipo' => $campos['tipo'], 'tipo_otro' => $campos['tipo_otro']]
+                                : []
+                        )->save();
                     } else {
                         $organizacion = Organization::create($campos + [
                             'user_id' => $usuario->id,

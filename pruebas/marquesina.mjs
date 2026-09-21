@@ -74,11 +74,13 @@ di('**Ningún nombre se repite dentro de una pasada**', repetidos.length === 0,
 
 const esperadas = ultima(tinker(
   "echo App\\Models\\Organization::where('activo',true)"
-  + "->whereHas('activities', fn($q) => $q->where('estado','publicada'))"
+  + "->where(fn($q) => $q->whereHas('activities', fn($a) => $a->where('estado','publicada'))"
+  + "->orWhereNotNull('anios_participacion'))"
   + "->orderBy('nombre')->pluck('nombre')->unique()->implode('||');"
 )).split('||').filter(Boolean);
 
-di('Los nombres son los de las organizaciones con actividad publicada',
+// Desde la importación del 21/09, también las del listado histórico.
+di('Los nombres son los de las organizaciones con actividad publicada o del listado',
   esperadas.length > 0 && esperadas.every((n) => enPantalla.includes(igualable(n))),
   `${esperadas.length} en la base · ${primeraPasada.length} en pantalla`);
 
