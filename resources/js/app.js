@@ -9,6 +9,7 @@ import { campoFecha, campoHora, formularioGuiado } from './formularios';
 // Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
 import './campos';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
+import { marquesinaAdmin } from './marquesina';
 import { selectorMedio, subidorMedios } from './medios';
 import {
     almacenConfirmacion,
@@ -118,6 +119,7 @@ Alpine.data('editorRico', editorRico);
 Alpine.data('editorSeccion', editorSeccion);
 Alpine.data('ordenSecciones', ordenSecciones);
 Alpine.data('buscadorPanel', buscadorPanel);
+Alpine.data('marquesinaAdmin', marquesinaAdmin);
 
 // Componentes transversales del panel (bloque H).
 Alpine.store('confirmacion', almacenConfirmacion);

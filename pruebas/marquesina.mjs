@@ -39,6 +39,16 @@ const igualable = (texto) => (texto ?? '')
   .trim()
   .toLowerCase();
 
+/*
+ * Lo que se comprueba aquí es el modo AUTOMÁTICO de la marquesina (todas las
+ * organizaciones). Desde el 21/09 viene apagado por defecto y se elige en
+ * Páginas → Marquesina de organizaciones; la lista manual la prueba
+ * `marquesina-admin.mjs`. Se enciende para la prueba y se deja como estaba.
+ */
+const autoAntes = ultima(tinker("echo App\\Support\\Marquesina::automatica() ? 'SI' : 'NO';")) === 'SI';
+tinker("App\\Models\\Setting::set('marquesina_automatica', true); echo 1;");
+process.on('exit', () => tinker(`App\\Models\\Setting::set('marquesina_automatica', ${autoAntes ? 'true' : 'false'}); echo 1;`));
+
 const nav = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
 const p = await nav.newPage();
 await p.setViewport({ width: 1440, height: 1000 });

@@ -539,6 +539,10 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .fila-seccion:active { cursor: grabbing; }
 
+/* Páginas → Marquesina de organizaciones: el buscador para añadir. */
+.resultado-marquesina:hover:not(:disabled) { background: var(--naranjo-100); }
+.resultado-marquesina:disabled { cursor: default; opacity: .6; }
+
 .fila-seccion-fija:active { cursor: default; }
 
 /* ── Barra de vista previa ───────────────────────────────────

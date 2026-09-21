@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Edition;
 use App\Models\HomeSection;
-use App\Models\Organization;
 use App\Models\Partner;
 use App\Models\ParticipationCard;
 use App\Models\Post;
 use App\Models\Stat;
 use App\Models\Testimonial;
+use App\Support\Marquesina;
 use Illuminate\Support\Collection;
 
 class HomeController extends Controller
@@ -63,58 +63,9 @@ class HomeController extends Controller
                 $etiquetas->texto('label_colaboran', $borrador) => $partners->get('colaboran', collect()),
                 $etiquetas->texto('label_alianzas', $borrador) => $partners->get('alianzas', collect()),
             ]),
-            'participantes' => $this->paraLaMarquesina($partners->get('participante', collect())),
+            'participantes' => Marquesina::paraElHome($partners->get('participante', collect())),
             'somosParte' => $partners->get('somos-parte', collect()),
         ];
-    }
-
-    /**
-     * Quién sale en la marquesina de organizaciones participantes.
-     *
-     * **La fuente pasa a ser la tabla de organizaciones** (P12). Antes eran las
-     * once pastillas de texto del grupo «participante» de `partners`, que
-     * alguien había escrito a mano: una lista paralela que nadie actualizaba y
-     * que no tenía nada que ver con quién había publicado de verdad.
-     *
-     * Y ahí estaba el «repite logos» que trajo el cliente. La marquesina pinta
-     * su lista DOS VECES —lo necesita: la animación desplaza el carril un 50%
-     * y sin la segunda pasada el bucle daría un salto— así que con once
-     * elementos la vuelta se ve enseguida y parece que se repiten. No se
-     * arregla quitando la segunda pasada, que rompería la animación: se
-     * arregla trayendo la lista de verdad, que son todas las organizaciones
-     * participantes.
-     *
-     * Lo que sí era un defecto de datos se corta aquí: **se quitan los nombres
-     * repetidos**. En producción hay dos organizaciones llamadas
-     * «deltadigital.cl» —de antes de que el wizard lo impidiera— y salían las
-     * dos, una detrás de otra, que es repetición de verdad y no la del bucle.
-     *
-     * **Y también las del listado histórico del cliente** —las que traen
-     * `anios_participacion`—, aunque no hayan publicado aquí todavía: son las
-     * organizaciones participantes de ediciones anteriores, que es lo que
-     * anuncia la sección.
-     *
-     * Si no hay ninguna de las dos se cae a las pastillas de siempre: en una
-     * instalación recién sembrada el home no puede quedarse con un hueco.
-     *
-     * @param  \Illuminate\Support\Collection  $pastillas
-     * @return \Illuminate\Support\Collection
-     */
-    private function paraLaMarquesina($pastillas)
-    {
-        $organizaciones = Organization::query()
-            ->where('activo', true)
-            ->where(fn ($q) => $q
-                ->whereHas('activities', fn ($a) => $a->where('estado', 'publicada'))
-                ->orWhereNotNull('anios_participacion'))
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'logo_path'])
-            // Por nombre normalizado: «Delta  Digital» y «delta digital» son la
-            // misma, y el índice único que lo impediría no existe todavía.
-            ->unique(fn (Organization $o) => mb_strtolower(preg_replace('/\s+/u', ' ', trim($o->nombre))))
-            ->values();
-
-        return $organizaciones->isNotEmpty() ? $organizaciones : $pastillas;
     }
 
     /**

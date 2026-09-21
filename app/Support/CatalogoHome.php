@@ -205,7 +205,7 @@ class CatalogoHome
                 'campos' => [
                     'antetitulo' => ['label' => 'Título de la tira', 'tipo' => 'texto', 'defecto' => 'Organizaciones e instituciones participantes'],
                 ],
-                'crud' => ['ruta' => 'admin.content.index', 'parametros' => ['tipo' => 'partners'], 'texto' => 'Editar los logos', 'nota' => 'La marquesina muestra los logos del grupo «participante».'],
+                'crud' => ['ruta' => 'admin.marquesina.edit', 'texto' => 'Elegir las organizaciones', 'nota' => 'Qué organizaciones salen en la tira y en qué orden —o todas, automáticamente— se decide en Páginas → Marquesina de organizaciones.'],
             ],
 
             /*

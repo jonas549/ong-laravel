@@ -170,6 +170,14 @@ class SettingsSeeder extends Seeder
                 'descripcion' => 'Cuánto dura el bloqueo una vez agotados los intentos.',
             ],
 
+            // Home. Grupo propio: se administra en su pantalla
+            // (Páginas → Marquesina de organizaciones), no en Configuración.
+            [
+                'grupo' => 'home', 'clave' => 'marquesina_automatica', 'tipo' => 'bool', 'valor' => '0',
+                'label' => 'Mostrar automáticamente todas las organizaciones registradas',
+                'descripcion' => 'Encendido, la marquesina del home se llena sola con todas las organizaciones. Apagado, sale sólo la lista elegida a mano.',
+            ],
+
             // SEO
             [
                 'grupo' => 'seo', 'clave' => 'seo_titulo', 'tipo' => 'string',

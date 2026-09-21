@@ -382,6 +382,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/paginas/home/{seccion}/versiones/{version}/restaurar', [Admin\HomeSectionController::class, 'restaurar'])->name('home.restaurar');
         Route::get('/paginas/privacidad', [Admin\PaginaLegalController::class, 'privacidad'])->name('paginas.privacidad');
 
+        // Qué organizaciones salen en la marquesina del home, y el interruptor
+        // que la llena sola. Ver App\Support\Marquesina.
+        Route::get('/paginas/marquesina', [Admin\MarquesinaController::class, 'edit'])->name('marquesina.edit');
+        Route::put('/paginas/marquesina', [Admin\MarquesinaController::class, 'update'])->name('marquesina.update');
+        Route::get('/paginas/marquesina/buscar', [Admin\MarquesinaController::class, 'buscar'])->name('marquesina.buscar');
+
         // Regiones y comunas (sólo consulta)
         Route::get('/regiones', [Admin\RegionController::class, 'index'])->name('regiones.index');
         Route::get('/regiones/exportar', [Admin\RegionController::class, 'exportar'])->name('regiones.exportar');
