@@ -91,18 +91,20 @@ await esperar(400);
 const estado = await p.evaluate(() => {
   const d = Alpine.$data(document.querySelector('[x-data^="wizard"]'));
 
-  return { salta: d.saltaPaso3(), cambiado: d.tipoCambiado(), tipo: d.tipo, ficha: d.tipoDeLaFicha };
+  return { salta: d.saltaPaso3(), salta2: d.saltaPaso2(), tipo: d.tipo, ficha: d.ficha?.tipo ?? null };
 });
 di('El componente responde a saltaPaso3()', typeof estado.salta === 'boolean', String(estado.salta));
-di('Y el tipo de partida es el de su ficha, sin cambiar', estado.cambiado === false,
+// Con la ficha sin tipo (B2) el de partida es el primero de la lista.
+di('Y el tipo de partida es el de su ficha', estado.ficha === null || estado.tipo === estado.ficha,
   `${estado.tipo} / ${estado.ficha}`);
 
 const barra = await p.$$eval('.steplink', (n) => n
   .filter((b) => b.offsetParent !== null)
   .map((b) => b.innerText.replace(/\s+/g, ' ').trim()));
 
-di('La barra coincide con lo que dice el componente',
-  estado.salta ? barra.length === 4 : barra.length === 5, barra.join(' | '));
+// B1: con tipo en la ficha también sale el 2.
+const esperados = 5 - (estado.salta ? 1 : 0) - (estado.salta2 ? 1 : 0);
+di('La barra coincide con lo que dice el componente', barra.length === esperados, barra.join(' | '));
 di('«Tu organización» está si y sólo si el paso 3 se pinta',
   barra.some((x) => x.includes('Tu organización')) === ! estado.salta);
 
@@ -112,7 +114,7 @@ di('«Tu organización» está si y sólo si el paso 3 se pinta',
  * no se está viendo.
  */
 const numeros = barra.map((x) => x[0]).join('');
-di('**Sin hueco: los números van seguidos**', numeros === (estado.salta ? '1234' : '12345'), numeros);
+di('**Sin hueco: los números van seguidos**', numeros === '12345'.slice(0, esperados), numeros);
 
 const CAMPOS = ['org_nombre', 'org_tipo_otro', 'org_unidad_educativa', 'org_logo'];
 const pedidos = await p.evaluate((campos) => campos.filter((c) => {

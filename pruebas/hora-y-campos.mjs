@@ -1,5 +1,5 @@
-// P13, P15 y P17 — el selector de hora, dónde se pregunta por los voluntarios,
-// y la columna «Estado» de los inscritos.
+// B4 (antes P13), P15 y P17 — el selector de hora, dónde se pregunta por los
+// voluntarios, y la columna «Estado» de los inscritos.
 //
 //   node pruebas/hora-y-campos.mjs
 import puppeteer from 'puppeteer-core';
@@ -30,62 +30,57 @@ const alPaso = async (n) => {
   await esperar(300);
 };
 
-/* ═════════════════ P13 — el selector de hora ═════════════════════ */
+/* ═════════════════ B4 — el selector de hora ═════════════════════ */
 
-t('P13 — sólo horas en punto, y sin proponer la hora actual');
+/*
+ * B4 de la sexta tanda (sustituye a P13): un <select> nativo con las 24 horas
+ * en punto en AM/PM. El desplegable propio de antes se recortaba dentro de la
+ * tarjeta y el cliente sólo veía de 12 AM a 6 AM.
+ *
+ * «Que al abrirse quede en las 9:00 AM» sin elegirla: un <select> abre por la
+ * opción elegida, así que la vacía va justo antes de las 9:00 AM. Lo que se
+ * comprueba es eso —que la vacía es la elegida y está ahí—, porque la lista
+ * desplegada la pinta el sistema y no se puede capturar.
+ */
+const revisarHoras = async (quien) => {
+  for (const campo of ['hora_inicio', 'hora_termino']) {
+    const s = await p.$eval(`select[name="${campo}"]`, (el) => ({
+      opciones: [...el.options].map((o) => ({ v: o.value, t: o.textContent.trim() })),
+      valor: el.value,
+      alto: el.getBoundingClientRect().height,
+    }));
+    const horas = s.opciones.filter((o) => o.v !== '');
+    const vacia = s.opciones.findIndex((o) => o.v === '');
 
+    di(`${quien} · ${campo}: un select con las 24 horas`, horas.length === 24, `${horas[0]?.t} … ${horas[23]?.t}`);
+    di(`${quien} · ${campo}: en punto y en AM/PM`,
+      horas.every((o) => /^\d{2}:00$/.test(o.v) && /^\d{1,2}:00 (AM|PM)$/.test(o.t)),
+      horas.slice(8, 10).map((o) => o.t).join(' · '));
+    di(`${quien} · ${campo}: 12 AM, 12 PM y 11 PM bien escritas`,
+      horas[0].t === '12:00 AM' && horas[12].t === '12:00 PM' && horas[23].t === '11:00 PM');
+    di(`${quien} · ${campo}: **vacía y justo encima de las 9:00 AM**`,
+      s.valor === '' && s.opciones[vacia + 1]?.t === '9:00 AM', `${s.opciones[vacia - 1]?.t} · [${s.opciones[vacia]?.t}] · ${s.opciones[vacia + 1]?.t}`);
+    di(`${quien} · ${campo}: se puede bajar hasta la última`, s.opciones.at(-1).t === '11:00 PM');
+    di(`${quien} · ${campo}: se ve (no tiene alto cero)`, s.alto > 30, `${Math.round(s.alto)} px`);
+  }
+
+  await p.select('select[name="hora_inicio"]', '17:00');
+  di(`${quien} · elegir una deja «HH:MM»`, await p.$eval('select[name="hora_inicio"]', (n) => n.value) === '17:00');
+  await p.select('select[name="hora_inicio"]', '');
+  di(`${quien} · y la vacía la quita`, await p.$eval('select[name="hora_inicio"]', (n) => n.value) === '');
+};
+
+t('B4 — wizard, escritorio');
 await alPaso(4);
-
 di('**Ya no hay ningún selector nativo de hora**',
   await p.evaluate(() => document.querySelectorAll('input[type="time"]').length) === 0);
+await revisarHoras('escritorio');
 
-await p.evaluate(() => document.querySelectorAll('.campo-selector-boton')[1]?.click());
-await esperar(300);
-
-const lista = await p.evaluate(() => {
-  const caja = document.querySelector('.hora-lista');
-  const opciones = [...document.querySelectorAll('.hora-lista')][0];
-
-  return {
-    visible: !! caja && caja.getBoundingClientRect().height > 0,
-    opciones: opciones ? [...opciones.querySelectorAll('.hora-opcion')].map((o) => o.innerText.replace(/\s+/g, ' ').trim()) : [],
-  };
-});
-
-di('Se abre el desplegable', lista.visible);
-di('Con las 24 horas del día', lista.opciones.length === 24, `${lista.opciones.length} opciones`);
-di('**Todas en punto, ninguna con minutos sueltos**',
-  lista.opciones.every((o) => /^\d{2}:00\b/.test(o)),
-  lista.opciones.slice(0, 3).join(' · '));
-di('Y cada una con su AM/PM', lista.opciones.every((o) => /\d+ (AM|PM)$/.test(o)),
-  `${lista.opciones[0]} … ${lista.opciones[23]}`);
-di('La lista empieza en 00:00 y acaba en 23:00',
-  lista.opciones[0].startsWith('00:00') && lista.opciones[23].startsWith('23:00'));
-
-// «Nada de proponer la hora actual»: el campo tiene que seguir vacío.
-di('**No propone ninguna hora: el campo sigue vacío**',
-  await p.$eval('input[name="hora_inicio"]', (n) => n.value) === '');
-
-await p.evaluate(() => [...document.querySelectorAll('.hora-opcion')].find((o) => o.innerText.includes('17:00'))?.click());
-await esperar(250);
-di('Elegir una la escribe en el campo',
-  await p.$eval('input[name="hora_inicio"]', (n) => n.value) === '17:00',
-  await p.$eval('input[name="hora_inicio"]', (n) => n.value));
-di('Y cierra la lista',
-  await p.evaluate(() => (document.querySelector('.hora-lista')?.getBoundingClientRect().height ?? 0) === 0));
-
-// El campo sigue admitiendo lo que se escriba: es un atajo, no una jaula.
-await p.evaluate(() => {
-  const c = document.querySelector('input[name="hora_inicio"]');
-  c.value = '';
-  c.focus();
-});
-await p.type('input[name="hora_inicio"]', '930');
-await p.evaluate(() => document.querySelector('input[name="hora_inicio"]').blur());
-await esperar(200);
-di('Escribir una hora con minutos sigue valiendo',
-  await p.$eval('input[name="hora_inicio"]', (n) => n.value) === '09:30',
-  await p.$eval('input[name="hora_inicio"]', (n) => n.value));
+t('B4 — wizard, teléfono');
+await p.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+await alPaso(4);
+await revisarHoras('teléfono');
+await p.setViewport({ width: 1440, height: 1000 });
 
 /* ═════════════════ P15 — dónde se pregunta ═══════════════════════ */
 

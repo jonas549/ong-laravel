@@ -168,7 +168,31 @@ class PublishController extends Controller
                 'enlace_web' => $organizacion->enlace_web,
                 'enlace_red_social' => $organizacion->enlace_red_social,
             ] : null,
+            // Lo que decide qué pasos se salta desde ahora (B1/B2).
+            'ficha' => $organizacion?->fichaParaElWizard(),
         ]);
+    }
+
+    /**
+     * Cerrar la sesión sin salir del wizard (B3).
+     *
+     * Es para quien se encuentra con la sesión de otra persona abierta —un
+     * ordenador compartido en la oficina de la organización— o con la cuenta
+     * equivocada. Cerrarla desde el menú le llevaba fuera y perdía todo lo que
+     * había escrito; por `fetch`, la pantalla se queda como está.
+     *
+     * Devuelve el token nuevo por lo mismo que `entrar()`: invalidar la sesión
+     * lo rota, y el formulario se pintó con el viejo. Sin él, el siguiente
+     * envío es un 419 que se lleva lo escrito.
+     */
+    public function salir(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json(['token' => csrf_token()]);
     }
 
     /**
@@ -485,18 +509,19 @@ class PublishController extends Controller
                  */
                 'organizacionElegida' => $this->organizacionReclamada(),
                 /*
-                 * C4: qué le falta a su organización, y si por tanto hay que
-                 * pintarle el paso 3.
+                 * C4 y B1/B2: los pasos que se salta quien ya tiene ficha.
                  *
-                 * Con la ficha completa el wizard se lo salta: ese paso sólo
-                 * le pediría datos que ya tiene guardados. Si falta algo —el
-                 * logo, la unidad educativa— se pinta, pero sólo con lo que
-                 * falta.
+                 * La ficha va entera al navegador, que es quien decide: el
+                 * tipo se puede cambiar en el paso 2, se puede cambiar de
+                 * cuenta a mitad (B3) y en el teléfono el logo no se pide
+                 * (B6). Lo de aquí abajo es sólo el estado de partida, para
+                 * que la barra no parpadee al cargar.
                  *
-                 * Sin sesión siempre se pinta entero: no hay ficha que mirar.
+                 * Sin sesión no hay ficha y se pregunta todo.
                  */
-                'faltanDeLaOrganizacion' => Auth::user()?->organization?->datosQueFaltan() ?? [],
-                'saltarPaso3' => (bool) Auth::user()?->organization?->fichaCompleta(),
+                'ficha' => Auth::user()?->organization?->fichaParaElWizard(),
+                'saltarPaso2' => filled(Auth::user()?->organization?->tipo),
+                'saltarPaso3' => ($org = Auth::user()?->organization) !== null && $org->faltanEnElPaso3() === [],
             ];
     }
 }

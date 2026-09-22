@@ -243,98 +243,16 @@
                     </label>
 
                     <label class="lbl" data-campo="hora_inicio"
-                           data-etiqueta="{{ CamposDeActividad::etiqueta('hora_inicio') }}"
-                           x-data="campoHora()">Hora de inicio (opcional)
-                        <span class="campo-selector">
-                            <input class="fld @error('hora_inicio') is-invalid @enderror" name="hora_inicio"
-                                   x-ref="hora" inputmode="numeric" autocomplete="off"
-                                   placeholder="HH:MM"
-                                   x-on:input="alEscribir($event)" x-on:blur="normalizar()"
-                                   x-bind:disabled="sinFecha"
-                                   value="@viejo('hora_inicio', $hora($activity->hora_inicio))">
-                            {{--
-                        P13: el desplegable es nuestro y ofrece las horas en
-                        punto. Antes había aquí un `input[type=time]` nativo,
-                        con su rueda de 00 a 59 minutos y abriéndose por la
-                        hora actual; las actividades empiezan en punto y eso
-                        eran sesenta valores que nadie iba a elegir.
-
-                        El campo de texto de al lado sigue admitiendo
-                        cualquier hora escrita o pegada: esto es un atajo, no
-                        una jaula.
-                    --}}
-                    <button type="button" class="campo-selector-boton"
-                            x-bind:disabled="sinFecha"
-                            x-on:click="alternar()"
-                            x-bind:aria-expanded="abierto"
-                            aria-label="Elegir la hora">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
-                    </button>
-
-                    <ul class="hora-lista" x-show="abierto" x-cloak role="listbox"
-                        x-on:click.outside="abierto = false"
-                        x-on:keydown.escape.window="abierto = false">
-                        <template x-for="h in horas" x-bind:key="h.valor">
-                            <li>
-                                <button type="button" class="hora-opcion"
-                                        x-bind:class="esLaElegida(h.valor) ? 'hora-opcion-elegida' : ''"
-                                        x-on:click="elegir(h.valor)">
-                                    <span x-text="h.etiqueta"></span>
-                                    <span class="hora-opcion-ampm" x-text="h.sufijo"></span>
-                                </button>
-                            </li>
-                        </template>
-                    </ul>
-                        </span>
-                        <span class="helper">Ej. 10:00</span>
+                           data-etiqueta="{{ CamposDeActividad::etiqueta('hora_inicio') }}">Hora de inicio (opcional)
+                        <x-selector-hora name="hora_inicio" :valor="\App\Support\Formulario::viejo('hora_inicio', $hora($activity->hora_inicio))" desactivar="sinFecha"
+                            :class="$errors->has('hora_inicio') ? 'is-invalid' : ''" />
                         @error('hora_inicio') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
                     <label class="lbl" data-campo="hora_termino"
-                           data-etiqueta="{{ CamposDeActividad::etiqueta('hora_termino') }}"
-                           x-data="campoHora()">Hora de término (opcional)
-                        <span class="campo-selector">
-                            <input class="fld @error('hora_termino') is-invalid @enderror" name="hora_termino"
-                                   x-ref="hora" inputmode="numeric" autocomplete="off"
-                                   placeholder="HH:MM"
-                                   x-on:input="alEscribir($event)" x-on:blur="normalizar()"
-                                   x-bind:disabled="sinFecha"
-                                   value="@viejo('hora_termino', $hora($activity->hora_termino))">
-                            {{--
-                        P13: el desplegable es nuestro y ofrece las horas en
-                        punto. Antes había aquí un `input[type=time]` nativo,
-                        con su rueda de 00 a 59 minutos y abriéndose por la
-                        hora actual; las actividades empiezan en punto y eso
-                        eran sesenta valores que nadie iba a elegir.
-
-                        El campo de texto de al lado sigue admitiendo
-                        cualquier hora escrita o pegada: esto es un atajo, no
-                        una jaula.
-                    --}}
-                    <button type="button" class="campo-selector-boton"
-                            x-bind:disabled="sinFecha"
-                            x-on:click="alternar()"
-                            x-bind:aria-expanded="abierto"
-                            aria-label="Elegir la hora">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path></svg>
-                    </button>
-
-                    <ul class="hora-lista" x-show="abierto" x-cloak role="listbox"
-                        x-on:click.outside="abierto = false"
-                        x-on:keydown.escape.window="abierto = false">
-                        <template x-for="h in horas" x-bind:key="h.valor">
-                            <li>
-                                <button type="button" class="hora-opcion"
-                                        x-bind:class="esLaElegida(h.valor) ? 'hora-opcion-elegida' : ''"
-                                        x-on:click="elegir(h.valor)">
-                                    <span x-text="h.etiqueta"></span>
-                                    <span class="hora-opcion-ampm" x-text="h.sufijo"></span>
-                                </button>
-                            </li>
-                        </template>
-                    </ul>
-                        </span>
-                        <span class="helper">Ej. 13:30</span>
+                           data-etiqueta="{{ CamposDeActividad::etiqueta('hora_termino') }}">Hora de término (opcional)
+                        <x-selector-hora name="hora_termino" :valor="\App\Support\Formulario::viejo('hora_termino', $hora($activity->hora_termino))" desactivar="sinFecha"
+                            :class="$errors->has('hora_termino') ? 'is-invalid' : ''" />
                         @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
                 </div>

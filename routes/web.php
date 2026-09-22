@@ -119,6 +119,11 @@ Route::post('/publicar-actividad/entrar', [PublishController::class, 'entrar'])
     ->middleware('throttle:10,1')
     ->name('publish.entrar');
 
+// B3: cerrar la sesión sin salir del wizard, para entrar con otra cuenta.
+Route::post('/publicar-actividad/salir', [PublishController::class, 'salir'])
+    ->middleware('throttle:10,1')
+    ->name('publish.salir');
+
 /*
  * Sugerencias de dirección (P16).
  *
@@ -183,6 +188,10 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
         Route::post('/perfil/contrasena', [PerfilController::class, 'password'])
             ->middleware('throttle:6,1')
             ->name('perfil.password');
+        // B6: el logo de su organización, que el wizard ya no exige.
+        Route::put('/perfil/logo', [Account\OrganizacionLogoController::class, 'update'])
+            ->middleware('throttle:12,1')
+            ->name('perfil.logo');
         Route::post('/perfil/sesiones/cerrar', [PerfilController::class, 'cerrarSesion'])->name('perfil.sesiones.cerrar');
         Route::post('/perfil/sesiones/otras', [PerfilController::class, 'cerrarOtras'])->name('perfil.sesiones.otras');
 

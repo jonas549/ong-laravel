@@ -106,23 +106,12 @@ await alPaso(4);
 di('Ya no hay selector nativo de hora',
   await p.evaluate(() => document.querySelectorAll('input[type="time"]').length) === 0);
 
-await p.evaluate(() => document.querySelectorAll('.campo-selector-boton')[1]?.click());
-await esperar(400);
-/*
- * Las opciones del desplegable ABIERTO, no todas las de la página: hay un
- * campo de hora de inicio y otro de término, y cada uno monta su lista. Contar
- * `.hora-opcion` a secas da 48 y parece que sobran horas.
- */
-const horas = await p.evaluate(() => {
-  const lista = [...document.querySelectorAll('.hora-lista')]
-    .find((l) => l.getBoundingClientRect().height > 0);
-
-  return lista ? [...lista.querySelectorAll('.hora-opcion')].map((o) => o.innerText.replace(/\s+/g, ' ').trim()) : [];
-});
+// B4 (sexta tanda): el desplegable propio pasó a ser un <select> nativo.
+const horas = await p.$$eval('select[name="hora_inicio"] option', (o) => o.map((x) => x.textContent.trim()).filter((x) => /M$/.test(x)));
 di('El desplegable ofrece las 24 en punto', horas.length === 24, `${horas[0]} … ${horas[23]}`);
-di('Todas en punto y con AM/PM', horas.every((h) => /^\d{2}:00 \d+ (AM|PM)$/.test(h)));
+di('Todas en punto y con AM/PM', horas.every((h) => /^\d{1,2}:00 (AM|PM)$/.test(h)));
 di('Y el campo sigue vacío: no propone la hora actual',
-  await p.$eval('input[name="hora_inicio"]', (n) => n.value) === '');
+  await p.$eval('select[name="hora_inicio"]', (n) => n.value) === '');
 
 /* ═══════════════ P16 — las direcciones ═══════════════════════════ */
 

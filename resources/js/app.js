@@ -5,7 +5,7 @@ import { compartir } from './compartir';
 import { encuestaEvaluacion } from './evaluacion';
 import { campoImagen } from './imagenes';
 import { registroOrganizador } from './organizaciones';
-import { campoFecha, campoHora, formularioGuiado } from './formularios';
+import { campoFecha, formularioGuiado } from './formularios';
 // Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
 import './campos';
 import { buscadorPanel, editorRico, editorSeccion, ordenSecciones } from './home-editor';
@@ -145,7 +145,6 @@ Alpine.data('registroOrganizador', registroOrganizador);
 Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);
-Alpine.data('campoHora', campoHora);
 
 // La encuesta de evaluacion a la que lleva el QR. Reusa la guia de errores del
 // bloque K y ademas reduce la fotografia antes de subirla, que es lo que evita

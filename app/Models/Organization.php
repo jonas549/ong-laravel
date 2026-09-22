@@ -111,51 +111,74 @@ class Organization extends Model
     }
 
     /**
-     * Qué le falta a esta organización para no tener que volver a preguntarle
-     * nada en el paso 3 del wizard (C4).
+     * Lo que el wizard necesita saber de la ficha para decidir qué pasos se
+     * salta (C4 y B1/B2 de la sexta tanda).
      *
-     * **Incluye el logo**, y es una decisión del cliente, no un descuido: una
-     * organización sin logo sale en el sitio con sus iniciales, y el paso 3
-     * es el único sitio donde se le puede pedir sin interrumpirla después.
+     * **La decisión la toma el navegador y no el servidor**, y por eso aquí
+     * sólo van hechos, no la conclusión: el tipo se puede cambiar en el paso 2
+     * sin recargar, se puede cambiar de cuenta a mitad (B3), y en el teléfono
+     * el logo no se pide (B6). Con la conclusión cocinada aquí, cualquiera de
+     * las tres dejaba el wizard pidiendo lo que no debía. La lógica vive en
+     * `faltaEnElPaso3()` de resources/js/wizard.js, y el servidor sólo la
+     * repite para pintar el estado de partida sin parpadeo
+     * (`faltanEnElPaso3()`).
      *
-     * Los dos condicionales son los mismos que exige el formulario: «Otra»
-     * pide describirse, e «Institución educativa» pide la unidad. Si algún día
-     * se añade otro campo obligatorio al paso 3, va aquí — si no, el wizard lo
-     * saltaría dando por completo lo que no lo está.
+     * @return array{nombre: bool, tipo: ?string, tipo_otro: bool, unidad: bool, logo: bool}
+     */
+    public function fichaParaElWizard(): array
+    {
+        return [
+            'nombre' => filled($this->nombre),
+            'tipo' => filled($this->tipo) ? $this->tipo : null,
+            'tipo_otro' => filled($this->tipo_otro),
+            'unidad' => filled($this->unidad_educativa),
+            'logo' => filled($this->logo_path),
+        ];
+    }
+
+    /**
+     * Qué habría que preguntarle en el paso 3, con el tipo que tiene.
+     *
+     * **El tipo no está en la lista**: se pregunta en el paso 2, que es su
+     * sitio. Estaba, y era B2: una organización del listado histórico que se
+     * reclamaba desde `/mi-cuenta/registro` se quedaba sin tipo, así que el
+     * paso 3 se pintaba —porque faltaba algo— sin ningún campo que enseñar,
+     * porque el tipo no se pide ahí. Salía casi vacío, con «Tu cuenta» y nada
+     * más.
+     *
+     * **El logo sólo cuenta si el tipo no es «Otra»** (B5), y en el teléfono
+     * no cuenta nunca (B6), cosa que sólo sabe el navegador. Cuando cuenta es
+     * por decisión del cliente: una organización sin logo sale con sus
+     * iniciales, y el paso 3 es donde se le puede pedir sin interrumpirla.
+     *
+     * Los dos condicionales son los mismos que exige el formulario. Si algún
+     * día se añade otro campo obligatorio al paso 3, va aquí y en el wizard —
+     * si no, el wizard lo saltaría dando por completo lo que no lo está.
      *
      * @return array<int, string> las claves de los campos que faltan
      */
-    public function datosQueFaltan(): array
+    public function faltanEnElPaso3(?string $tipo = null): array
     {
+        $tipo ??= $this->tipo;
         $faltan = [];
 
         if (blank($this->nombre)) {
             $faltan[] = 'org_nombre';
         }
 
-        if (blank($this->tipo)) {
-            $faltan[] = 'org_tipo';
-        }
-
-        if ($this->tipo === 'Otra' && blank($this->tipo_otro)) {
+        if ($tipo === 'Otra' && blank($this->tipo_otro)) {
             $faltan[] = 'org_tipo_otro';
         }
 
-        if ($this->tipo === 'Institución educativa' && blank($this->unidad_educativa)) {
+        if ($tipo === 'Institución educativa' && blank($this->unidad_educativa)) {
             $faltan[] = 'org_unidad_educativa';
         }
 
-        if (blank($this->logo_path)) {
+        if ($tipo !== 'Otra' && blank($this->logo_path)) {
             $faltan[] = 'org_logo';
         }
 
         return $faltan;
-    }
-
-    /** Si no hay nada que preguntarle: el wizard puede saltarse el paso 3. */
-    public function fichaCompleta(): bool
-    {
-        return $this->datosQueFaltan() === [];
     }
 
     public static function slugUnico(string $nombre): string

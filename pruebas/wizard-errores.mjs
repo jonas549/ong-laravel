@@ -224,77 +224,25 @@ di('el calendario escribe en el campo de texto',
     await p.$eval('input[name="fecha_inicio"]', (e) => e.value) === '09 / 03 / 2027');
 
 /* ══════════════════════════════════════════════════════════════════ */
-t('Los campos de hora, con el mismo trato que la fecha');
-
-const hora = async (campo, texto) => {
-    await p.evaluate((c) => { document.querySelector(`input[name="${c}"]`).value = ''; }, campo);
-    await p.focus(`input[name="${campo}"]`);
-    await p.type(`input[name="${campo}"]`, texto);
-    await p.evaluate((c) => {
-        const el = document.querySelector(`input[name="${c}"]`);
-        el.dispatchEvent(new Event('blur', { bubbles: true }));
-    }, campo);
-    await new Promise((r) => setTimeout(r, 150));
-    return p.$eval(`input[name="${campo}"]`, (e) => e.value);
-};
-
-di('sigue siendo texto, no type=time',
-    await p.$eval('input[name="hora_inicio"]', (e) => e.type) === 'text');
-di('el hueco enseña el formato',
-    await p.$eval('input[name="hora_inicio"]', (e) => e.placeholder) === 'HH:MM');
-di('hay botón de reloj',
-    await p.$$eval('[data-campo="hora_inicio"] .campo-selector-boton', (n) => n.length) === 1);
-di('y ayuda con un ejemplo',
-    await p.$eval('[data-campo="hora_inicio"]', (e) => /Ej\. 09:00/.test(e.innerText)));
-
-di('los dos puntos se ponen solos al teclear', await hora('hora_inicio', '0930') === '09:30');
-di('«9» son las nueve en punto', await hora('hora_inicio', '9') === '09:00');
-di('«930» también se entiende', await hora('hora_inicio', '930') === '09:30');
-di('y lo escrito con punto', await hora('hora_inicio', '9.30') === '09:30');
-di('una hora imposible se deja como está, y la explica el servidor',
-    await hora('hora_inicio', '99') === '99', await hora('hora_inicio', '99'));
-
-// Pegar: el mismo camino que en la fecha, por el evento que dispara el
-// navegador al pegar.
-const pegarHora = async (texto) => {
-    await p.evaluate((v) => {
-        const campo = document.querySelector('input[name="hora_termino"]');
-        campo.value = v;
-        campo.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromPaste' }));
-    }, texto);
-    await new Promise((r) => setTimeout(r, 150));
-    return p.$eval('input[name="hora_termino"]', (e) => e.value);
-};
-
-di('pegado con dos puntos, se respeta', await pegarHora('13:45') === '13:45');
-di('pegado sin separador, se ordena solo', await pegarHora('1345') === '13:45');
-di('pegado con segundos, se recorta', await pegarHora('13:45:00') === '13:45');
+t('Los campos de hora: un <select> con las 24 en punto (B4)');
 
 /*
- * Y el desplegable escribe en el campo de texto, no lo sustituye.
- *
- * Antes esto era un `input[type=time]` nativo debajo del botón; desde P13 es
- * una lista propia de horas en punto, así que se elige una de la lista. Lo
- * que se comprueba es lo mismo: que el atajo escribe en el campo de texto y
- * que el campo sigue siendo el que manda.
+ * B4 de la sexta tanda: el desplegable propio de seis filas se recortaba
+ * dentro de la tarjeta y el cliente sólo veía de 12 AM a 6 AM. Ahora es un
+ * <select> nativo. Lo que se comprueba aquí es que sigue entrando en la guía
+ * de errores y que lo que viaja es «HH:MM»; el resto está en
+ * `sexta-hora.mjs`.
  */
-await p.evaluate(() => {
-    document.querySelector('[data-campo="hora_termino"] .campo-selector-boton').click();
-});
-await new Promise((r) => setTimeout(r, 250));
-await p.evaluate(() => {
-    const lista = document.querySelector('[data-campo="hora_termino"] .hora-lista');
-    [...lista.querySelectorAll('.hora-opcion')].find((o) => o.innerText.includes('18:00')).click();
-});
-await new Promise((r) => setTimeout(r, 150));
-di('el desplegable escribe en el campo de texto',
-    await p.$eval('input[name="hora_termino"]', (e) => e.value) === '18:00',
-    await p.$eval('input[name="hora_termino"]', (e) => e.value));
+di('es un select', await p.$eval('[name="hora_inicio"]', (e) => e.tagName) === 'SELECT');
+di('con las 24 horas y la opción vacía',
+    await p.$eval('[name="hora_termino"]', (e) => e.options.length) === 25);
 
-await p.evaluate(() => {
-    document.querySelector('input[name="hora_inicio"]').value = '';
-    document.querySelector('input[name="hora_termino"]').value = '';
-});
+await p.select('[name="hora_termino"]', '18:00');
+di('lo que viaja es «HH:MM»',
+    await p.$eval('[name="hora_termino"]', (e) => e.value) === '18:00');
+
+await p.select('[name="hora_inicio"]', '');
+await p.select('[name="hora_termino"]', '');
 
 /* ══════════════════════════════════════════════════════════════════ */
 t('«Disponible de forma permanente» no pide la fecha');
@@ -600,11 +548,13 @@ if (! editar) {
 
     di('las dos fechas tienen calendario',
         await conSelector(['fecha_inicio', 'fecha_termino']) === 2);
-    di('y las dos horas tienen reloj',
-        await conSelector(['hora_inicio', 'hora_termino']) === 2);
-    di('los cuatro siguen siendo de texto, para poder pegar',
-        await p.$$eval('input[name="fecha_inicio"], input[name="fecha_termino"], input[name="hora_inicio"], input[name="hora_termino"]',
-            (n) => n.length === 4 && n.every((e) => e.type === 'text')));
+    // B4: las horas son un <select> de 24 en punto, también aquí.
+    di('y las dos horas son un select de 24 en punto',
+        await p.$$eval('select[name="hora_inicio"], select[name="hora_termino"]',
+            (n) => n.length === 2 && n.every((e) => e.querySelectorAll('option[value$=":00"]').length === 24)));
+    di('las dos fechas siguen siendo de texto, para poder pegar',
+        await p.$$eval('input[name="fecha_inicio"], input[name="fecha_termino"]',
+            (n) => n.length === 2 && n.every((e) => e.type === 'text')));
 
     // Seleccionar todo y reescribir encima, que es lo que se hace para cambiar
     // una fecha que ya estaba puesta.

@@ -22,19 +22,23 @@ export const wizard = (inicial) => ({
     redirigir: false,
 
     /*
-     * C4: con la ficha de la organización completa, el paso 3 no se pinta y la
-     * navegación lo esquiva en los dos sentidos. El número del paso NO cambia
-     * —«Tu actividad» sigue siendo el 4— para no tener que repasar las
-     * referencias de la guía de errores, que trabaja con `data-paso`.
+     * C4 y B1/B2: lo que tiene guardado su organización —nombre, tipo, logo…—
+     * o null sin sesión. De aquí sale qué pasos se salta: el 2 si ya tiene
+     * tipo y el 3 si no le falta nada. Los números de paso NO cambian —«Tu
+     * actividad» sigue siendo el 4— para no tener que repasar la guía de
+     * errores, que trabaja con `data-paso`. Lo que renumera es la barra.
+     *
+     * Es estado del componente y no una conclusión del servidor porque cambia
+     * sin recargar: al elegir otro tipo en el paso 2, al entrar a mitad (P14)
+     * y al cambiar de cuenta (B3).
      */
-    fichaCompleta: inicial.saltarPaso3 ?? false,
+    ficha: inicial.ficha ?? null,
 
     /*
-     * El tipo que tiene guardada su organización, para saber si lo ha cambiado
-     * en el paso 2. Es null cuando no hay ficha —sin sesión—, y entonces
-     * `tipoCambiado()` da true siempre, que es el comportamiento de siempre.
+     * B6: en el teléfono el logo no se pide. Se decide por el ancho, con el
+     * mismo corte de 760 px que usa el resto del sitio para el móvil.
      */
-    tipoDeLaFicha: inicial.tipoDeLaFicha ?? null,
+    movil: false,
 
     tipo: inicial.tipo,
     formato: inicial.formato,
@@ -89,6 +93,10 @@ export const wizard = (inicial) => ({
         this.raiz = this.$el;
         this.iniciarGuia(this.$el);
 
+        const pantalla = window.matchMedia('(max-width: 760px)');
+        this.movil = pantalla.matches;
+        pantalla.addEventListener?.('change', (e) => { this.movil = e.matches; });
+
         // Marcar la casilla copia el correo de la cuenta; desmarcarla devuelve
         // el que hubiera escrito. Y mientras está marcada, escribir en el de la
         // cuenta arrastra al de contacto, que es lo que se espera de un espejo.
@@ -110,31 +118,54 @@ export const wizard = (inicial) => ({
     /* ──────────────────────────────────────── navegación de pasos ── */
 
     /**
-     * Si ha cambiado el tipo de organización respecto al que tiene guardado.
+     * Si hay que preguntarle este campo en el paso 3.
      *
-     * Importa porque el tipo decide qué campos son obligatorios en el paso 3:
-     * «Otra» pide describirse e «Institución educativa» pide la unidad. Son
-     * datos que su ficha puede no tener, así que un cambio de tipo en el paso 2
-     * vuelve a hacer falta el paso 3 aunque la ficha estuviera completa.
+     * Sin sesión, todo. Con sesión, sólo lo que su ficha no tenga, mirado con
+     * el tipo que esté elegido AHORA: «Otra» pide describirse e «Institución
+     * educativa» pide la unidad, así que cambiar el tipo en el paso 2 puede
+     * volver a hacer falta el 3 aunque la ficha estuviera completa.
+     *
+     * El logo sólo obliga a pasar por aquí si el tipo no es «Otra» (B5) y
+     * fuera del teléfono (B6). El tipo no está: se pregunta en el paso 2, y
+     * tenerlo aquí era B2 —un paso 3 pintado por algo que no se pide en él,
+     * con «Tu cuenta» y nada más—.
+     *
+     * Es la misma regla que `Organization::faltanEnElPaso3()`, que la repite
+     * para pintar el estado de partida.
      */
-    tipoCambiado() {
-        return this.tipo !== this.tipoDeLaFicha;
+    faltaEnElPaso3(campo) {
+        if (! this.conSesion || ! this.ficha) return true;
+
+        switch (campo) {
+            case 'org_nombre': return ! this.ficha.nombre;
+            case 'org_tipo_otro': return this.esOtra() && ! this.ficha.tipo_otro;
+            case 'org_unidad_educativa': return this.esEducativa() && ! this.ficha.unidad;
+            case 'org_logo': return ! this.ficha.logo && ! this.esOtra() && ! this.movil;
+            default: return true;
+        }
+    },
+
+    /** B1: con sesión y el tipo ya en su ficha, el paso 2 no pregunta nada. */
+    saltaPaso2() {
+        return this.conSesion && !! this.ficha?.tipo;
     },
 
     /** Si el paso 3 no tiene nada que preguntar y se puede pasar de largo. */
     saltaPaso3() {
-        return this.fichaCompleta && ! this.tipoCambiado();
+        return this.conSesion && !! this.ficha
+            && ['org_nombre', 'org_tipo_otro', 'org_unidad_educativa', 'org_logo']
+                .every((campo) => ! this.faltaEnElPaso3(campo));
     },
 
     /**
      * El número que se ENSEÑA en la barra para un paso.
      *
-     * Con el 3 fuera, «Tu actividad» se enseña como el 3 aunque dentro siga
-     * siendo el 4: dejar el hueco —1, 2, 4, 5— era decir que hay un paso que
-     * no se está viendo.
+     * Con pasos fuera, «Tu actividad» se enseña con su posición real aunque
+     * dentro siga siendo el 4: dejar el hueco —1, 4, 5— era decir que hay
+     * pasos que no se están viendo.
      */
     numeroEnBarra(n) {
-        return this.saltaPaso3() && n > 3 ? n - 1 : n;
+        return n - (this.saltaPaso2() && n > 2 ? 1 : 0) - (this.saltaPaso3() && n > 3 ? 1 : 0);
     },
 
     /** Cambiar de paso a secas. Lo usa la guía para llevar a un campo. */
@@ -145,17 +176,18 @@ export const wizard = (inicial) => ({
     /** Y con el salto arriba, que es lo que hace la barra de pasos. */
     irA(n) {
         /*
-         * Si el 3 está saltado, nadie debe caer en él: ni con el botón de
-         * «Continuar» del 2, ni volviendo desde el 4, ni pulsando la barra.
-         * Se deja pasar de largo en la dirección en la que se iba.
-         *
-         * Sólo se esquiva el 3: si la ficha está completa, ese paso no tendría
-         * ni un campo que enseñar y sería una pantalla vacía con un botón.
+         * En un paso saltado —el 2 o el 3— no debe caer nadie: ni con un
+         * «Continuar», ni volviendo desde el 4, ni pulsando la barra. Se pasa
+         * de largo en la dirección en la que se iba: un paso sin nada que
+         * preguntar sería una pantalla vacía con un botón.
          */
-        if (n === 3 && this.saltaPaso3()) {
-            n = this.paso > 3 ? 2 : 4;
-        }
+        const saltado = (m) => (m === 2 && this.saltaPaso2()) || (m === 3 && this.saltaPaso3());
+        const sentido = n < this.paso ? -1 : 1;
 
+        while (saltado(n)) n += sentido;
+
+        // Hacia atrás desde el 4 con el 2 y el 3 fuera se llega al 1, que
+        // nunca se salta; hacia delante, al 4. El bucle no puede pasarse.
         this.irAlPaso(n);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
@@ -360,9 +392,78 @@ export const wizard = (inicial) => ({
             this.rellenar('enlace_red_social', org.enlace_red_social);
         }
 
+        // Desde aquí decide qué pasos se salta (B1/B2). Y si el paso en el
+        // que está ya no tiene nada que preguntarle, se le lleva al siguiente.
+        this.ficha = datos.ficha ?? null;
+
+        if ((this.paso === 2 && this.saltaPaso2()) || (this.paso === 3 && this.saltaPaso3())) {
+            this.$nextTick(() => this.irA(this.paso + 1));
+        }
+
         // Lo que estuviera marcado en rojo de un intento anterior ya no aplica.
         this.errores = [];
         this.limpiarMarcas();
+    },
+
+    /* ──────────────────────────── salir y entrar con otra (B3) ── */
+
+    rutaSalir: inicial.rutaSalir ?? '/publicar-actividad/salir',
+    saliendo: false,
+    salidaError: '',
+
+    /**
+     * Cierra la sesión sin recargar y abre el acceso para entrar con otra.
+     *
+     * Lo del paso 4 se queda: es la actividad que está escribiendo, y eso es
+     * lo que no puede perder. Lo que sí se vacía es lo de la organización, que
+     * era de la cuenta que se cierra: dejarlo puesto publicaría la actividad
+     * con los datos de otra organización.
+     *
+     * Si al final no entra con ninguna, se queda sin sesión y el paso 3 pide
+     * todo, con «Crea tu acceso»: es el wizard de alguien que llega nuevo.
+     */
+    async salirYEntrarConOtra() {
+        if (this.saliendo) return;
+
+        this.saliendo = true;
+        this.salidaError = '';
+
+        try {
+            const respuesta = await fetch(this.rutaSalir, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! respuesta.ok) throw new Error(String(respuesta.status));
+
+            const datos = await respuesta.json();
+
+            // Invalidar la sesión rota el token: sin el nuevo, el envío sería
+            // un 419 que se lleva lo escrito (lo mismo que al entrar).
+            if (datos.token) this.renovarToken(datos.token);
+
+            this.conSesion = false;
+            this.ficha = null;
+            this.correoCuenta = '';
+            this.accesoCorreo = '';
+            this.soltarOrg();
+            this.buscarOrg = '';
+
+            for (const campo of ['org_nombre', 'org_tipo_otro', 'org_unidad_educativa', 'org_num_voluntarios', 'enlace_web', 'enlace_red_social']) {
+                const entrada = this.raiz?.querySelector(`[name="${campo}"]`);
+                if (entrada) entrada.value = '';
+            }
+
+            this.abrirAcceso();
+        } catch {
+            this.salidaError = 'No se pudo cerrar la sesión. Recarga la página e inténtalo de nuevo.';
+        } finally {
+            this.saliendo = false;
+        }
     },
 
     /** Pone el token nuevo en el formulario y en la etiqueta de la cabecera. */

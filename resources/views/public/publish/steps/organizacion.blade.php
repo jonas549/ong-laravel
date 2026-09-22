@@ -11,17 +11,11 @@
     use App\Support\CamposDeActividad;
 
     /*
-     * C4: qué se le pregunta y qué no.
-     *
-     * Con sesión abierta sólo se pide lo que falte en su ficha; lo demás viaja
-     * en un campo oculto con el valor que ya tiene. Hay que mandarlo —las
-     * reglas del servidor lo exigen— pero no hay por qué pedírselo otra vez.
-     *
-     * Sin sesión, `$faltan` llega vacío y se pide todo, que es lo de siempre.
+     * C4 y B1/B2/B3: qué se le pregunta y qué no lo decide el componente, con
+     * `faltaEnElPaso3()`. Todo va siempre en el HTML y Alpine enseña lo que
+     * falte: se puede cambiar de cuenta a mitad del wizard (B3), y un bloque
+     * que el servidor no hubiera pintado no podría aparecer después.
      */
-    $faltan = $faltanDeLaOrganizacion ?? [];
-    $conFicha = $organizacion !== null;
-    $pedir = fn (string $campo) => ! $conFicha || in_array($campo, $faltan, true);
 @endphp
 
 <h1 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:0 0 24px;color:var(--ink);">Sobre tu organización</h1>
@@ -37,7 +31,8 @@
 <div style="background:#fff;border:1px solid var(--linea);border-radius:24px;box-shadow:0 18px 40px -32px rgba(0,0,0,.22);overflow:hidden;">
 
     <div style="padding:30px;display:flex;flex-direction:column;gap:18px;border-bottom:1px solid var(--linea);">
-        <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"
+             x-show="faltaEnElPaso3('org_nombre')">
             {{--
                 El buscador de organizaciones (P9, P10 y P11).
 
@@ -50,18 +45,15 @@
                 pasos, y un control inválido dentro de un paso oculto hace que
                 Chrome corte el envío sin decir nada.
             --}}
-            @if ($pedir('org_nombre'))
-                <x-buscador-organizacion
-                    :valor="\App\Support\Formulario::viejo('org_nombre', $organizacion?->nombre)" />
+            {{-- Con la ficha ya con nombre, el campo viaja escondido con el
+                 suyo: se envía, pero no se pregunta (C4). --}}
+            <x-buscador-organizacion
+                :valor="\App\Support\Formulario::viejo('org_nombre', $organizacion?->nombre)" />
 
-                <label class="lbl">Tipo de organización
-                    <input class="fld" x-bind:value="tipo" readonly style="background:#f8f9fa;color:var(--gris);">
-                    <span class="helper" x-text="reclamando ? 'Viene de nuestro listado.' : 'Prellenado del paso anterior.'">Prellenado del paso anterior.</span>
-                </label>
-            @else
-                {{-- Ya lo tiene: viaja, pero no se pregunta (C4). --}}
-                <input type="hidden" name="org_nombre" value="{{ $organizacion->nombre }}">
-            @endif
+            <label class="lbl">Tipo de organización
+                <input class="fld" x-bind:value="tipo" readonly style="background:#f8f9fa;color:var(--gris);">
+                <span class="helper" x-text="reclamando ? 'Viene de nuestro listado.' : 'Prellenado del paso anterior.'">Prellenado del paso anterior.</span>
+            </label>
         </div>
 
         {{--
@@ -74,7 +66,7 @@
             Lo que sí sale de la ficha es si se enseñan: con el tipo sin tocar y
             el dato ya guardado, no hay nada que preguntar (C4).
         --}}
-        <label class="lbl" x-show="esOtra() && (tipoCambiado() || {{ Js::from($pedir('org_tipo_otro')) }})"
+        <label class="lbl" x-show="esOtra() && faltaEnElPaso3('org_tipo_otro')"
                x-cloak data-campo="org_tipo_otro" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('org_tipo_otro') }}">Describe tu organización *
             <input class="fld @error('org_tipo_otro') is-invalid @enderror" name="org_tipo_otro"
@@ -92,7 +84,7 @@
             Se sigue guardando en la organización, que es donde vive el campo.
         --}}
 
-        <label class="lbl" x-show="esEducativa() && (tipoCambiado() || {{ Js::from($pedir('org_unidad_educativa')) }})"
+        <label class="lbl" x-show="esEducativa() && faltaEnElPaso3('org_unidad_educativa')"
                x-cloak data-campo="org_unidad_educativa" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('org_unidad_educativa') }}">¿Qué unidad, grupo o comunidad educativa organiza la actividad? *
             <input class="fld @error('org_unidad_educativa') is-invalid @enderror" name="org_unidad_educativa"
@@ -110,10 +102,12 @@
             de peso llega al elegir el archivo y no después de enviar. Ver
             resources/js/imagenes.js.
         --}}
-        @if ($pedir('org_logo'))
+        {{-- B5/B6: el logo no se pide a «Otra» ni en el teléfono, pero se
+             ofrece igual cuando el paso se pinta por otra cosa: subirlo es
+             opcional, lo que cambia es si obliga a pasar por aquí. --}}
         <div data-campo="org_logo" data-etiqueta="Logo de la organización"
              x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
-             x-show="! reclamando">
+             x-show="! reclamando && ! ficha?.logo">
             <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:8px;">Logo de la organización</div>
             <div style="display:flex;align-items:center;gap:16px;">
                 <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
@@ -126,7 +120,7 @@
                         <input type="file" name="org_logo" accept="image/jpeg,image/png,image/webp" style="display:none;"
                                x-on:change="elegir($event)">
                     </label>
-                    <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 500 KB · 400×400 px recomendado. Si no subes logo, se mostrará un ícono genérico.</div>
+                    <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 500 KB · 400×400 px recomendado. Es opcional: si no lo subes ahora, se mostrarán las iniciales y puedes subirlo después desde «Mi perfil».</div>
                     <div class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
                     <div class="helper" x-show="tiene && ! error" x-cloak>
                         <span x-text="nombre"></span> · <span x-text="peso"></span>
@@ -137,7 +131,6 @@
                 </div>
             </div>
         </div>
-        @endif
     </div>
 
     {{--
@@ -163,6 +156,21 @@
             Esta actividad se sumará a tu cuenta, <strong style="color:var(--ink);" x-text="correoCuenta">{{ auth()->user()?->email }}</strong>.
             La verás en «Mis actividades» junto a las demás.
         </p>
+
+        {{--
+            B3: salir y entrar con otra cuenta sin dejar el wizard. Es para
+            quien se encuentra abierta la sesión de otra persona —un ordenador
+            compartido— o la suya equivocada: el menú de la cabecera le sacaba
+            de aquí y perdía lo escrito. Lo del paso 4 se queda donde está; lo
+            de la organización se vacía, porque era de la otra cuenta.
+        --}}
+        <p style="font-size:14px;line-height:1.6;color:var(--gris);margin:12px 0 0;">
+            ¿No es tu cuenta?
+            <button type="button" class="textlink" style="background:none;border:0;padding:0;font:inherit;cursor:pointer;"
+                    x-on:click="salirYEntrarConOtra()" x-bind:disabled="saliendo"
+                    x-text="saliendo ? 'Cerrando sesión…' : 'Cerrar sesión y entrar con otra cuenta'">Cerrar sesión y entrar con otra cuenta</button>
+        </p>
+        <p class="field-error" x-show="salidaError" x-cloak x-text="salidaError" style="margin-top:8px;"></p>
     </div>
 
     <div style="padding:30px;background:#fdfcfb;" x-show="! conSesion" x-cloak>

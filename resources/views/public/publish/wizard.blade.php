@@ -26,12 +26,9 @@
 
 <div x-data="wizard({
         paso: {{ $pasoInicial }},
-        {{-- C4: con la ficha de la organización completa no hay nada que
-             preguntar en el paso 3, así que se salta. --}}
-        saltarPaso3: {{ Js::from($saltarPaso3) }},
-        {{-- Y el tipo que tiene guardado, para saber si lo cambia en el paso 2:
-             de él dependen los campos obligatorios del 3. --}}
-        tipoDeLaFicha: {{ Js::from($organizacion?->tipo) }},
+        {{-- C4 y B1/B2: lo que tiene su ficha, para saltarse el paso 2 si
+             ya tiene tipo y el 3 si no le falta nada. Decide el componente. --}}
+        ficha: {{ Js::from($ficha) }},
         tipo: {{ Js::from(old('org_tipo', $organizacion?->tipo ?? $tiposOrg[0])) }},
         temas: {{ Js::from(old('temas', [])) }},
         caracteristicas: {{ Js::from(old('caracteristicas', [])) }},
@@ -60,6 +57,7 @@
              que hubiera elegido, o el formulario le pediría el logo otra vez. --}}
         rutaOrganizaciones: {{ Js::from(route('publish.organizaciones')) }},
         rutaEntrar: {{ Js::from(route('publish.entrar')) }},
+        rutaSalir: {{ Js::from(route('publish.salir')) }},
         {{-- P16: el buscador de direcciones y el punto que hubiera al rebotar. --}}
         rutaDirecciones: {{ Js::from(route('publish.direcciones')) }},
         latitud: {{ Js::from(old('latitud')) }},
@@ -69,7 +67,7 @@
         orgElegida: {{ Js::from($organizacionElegida) }},
      })">
 
-@include('public.publish.partials.pasos', ['saltarPaso3' => $saltarPaso3])
+@include('public.publish.partials.pasos', ['saltarPaso2' => $saltarPaso2, 'saltarPaso3' => $saltarPaso3])
 
 {{--
     ── P14: «¿Ya tienes cuenta?» ──

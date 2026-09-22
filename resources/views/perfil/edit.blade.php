@@ -80,6 +80,60 @@
         </div>
     </form>
 
+    {{--
+        ── El logo de la organización (B6) ──
+
+        En el teléfono el wizard no pide el logo, y en el escritorio es
+        opcional: hacía falta un sitio donde subirlo después, y no había
+        ninguno —el organizador no podía cambiar su logo sin publicar otra
+        actividad—. Va aquí, en «Mi perfil», porque es lo único de la ficha de
+        la organización que no se edita desde una actividad.
+
+        Con el mismo trato que en el wizard: se reduce en el navegador a 800 px
+        y se avisa del peso al elegirlo, no después de enviar.
+    --}}
+    @if (! $esAdmin && ($organizacion = $usuario->organization))
+        <form method="POST" action="{{ route('account.perfil.logo') }}" enctype="multipart/form-data"
+              class="card" style="padding:26px;" id="logo-organizacion">
+            @csrf
+            @method('PUT')
+            <h2 style="font-size:17px;font-weight:800;margin:0 0 4px;">Logo de tu organización</h2>
+            <p class="helper" style="margin:0 0 16px;">
+                Sale en tus actividades junto al nombre de «{{ $organizacion->nombre }}». Sin logo se muestran sus iniciales.
+            </p>
+
+            <div data-campo="logo" x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
+                 style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <span style="display:grid;place-items:center;width:96px;height:96px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
+                    <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:contain;">
+                    @if ($organizacion->logo_path)
+                        <img x-show="! previa" src="{{ asset($organizacion->logo_path) }}" alt="Logo actual" style="width:100%;height:100%;object-fit:contain;">
+                    @else
+                        <span x-show="! previa" style="font-size:12px;">Sin logo</span>
+                    @endif
+                </span>
+                <div>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                        <span x-text="tiene ? 'Cambiar imagen' : '{{ $organizacion->logo_path ? 'Cambiar logo' : 'Subir logo' }}'">{{ $organizacion->logo_path ? 'Cambiar logo' : 'Subir logo' }}</span>
+                        <input type="file" name="logo" accept="image/jpeg,image/png,image/webp" style="display:none;"
+                               x-on:change="elegir($event)">
+                    </label>
+                    <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 500 KB · 400×400 px recomendado.</div>
+                    <div class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
+                    <div class="helper" x-show="tiene && ! error" x-cloak>
+                        <span x-text="nombre"></span> · <span x-text="peso"></span>
+                    </div>
+                    <span class="field-error" x-show="error" x-cloak x-text="error"></span>
+                    @error('logo') <span class="field-error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
+            <div style="margin-top:18px;">
+                <button type="submit" class="btn btn-primary">Guardar logo</button>
+            </div>
+        </form>
+    @endif
+
     {{-- ── Contraseña ── --}}
     <form method="POST" action="{{ route($esAdmin ? 'admin.perfil.password' : 'account.perfil.password') }}"
           class="card" style="padding:26px;">
