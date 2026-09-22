@@ -210,6 +210,7 @@
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
                         </button>
                 </span>
+                        <x-fecha-calendario-movil desactivar="sinFecha" />
                         <span class="helper">Ej. 04 / 12 / 2026</span>
                         @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
@@ -238,6 +239,7 @@
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
                         </button>
                 </span>
+                        <x-fecha-calendario-movil desactivar="sinFecha" />
                         <span class="helper">Opcional, si dura más de un día.</span>
                         @error('fecha_termino') <span class="field-error">{{ $message }}</span> @enderror
                     </label>

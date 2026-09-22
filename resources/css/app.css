@@ -298,9 +298,11 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .fld.is-invalid { border-color: var(--rosa); }
 
-.field-error { display: block; font-size: 12.5px; color: var(--rosa); margin-top: 5px; }
+.field-error { display: block; font-size: 12.5px; font-weight: 400; color: var(--rosa); margin-top: 5px; }
 
-.helper { font-size: 12.5px; line-height: 1.55; color: var(--gris); }
+/* `font-weight` explícito: la ayuda suele ir dentro de un .lbl, que desde B7 es
+ * negrita, y sin esto la heredaba. */
+.helper { font-size: 12.5px; font-weight: 400; line-height: 1.55; color: var(--gris); }
 
 /* ── Texto escrito desde el panel ────────────────────────────
  *
@@ -1157,13 +1159,20 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .crumb a:hover { color: var(--naranjo); }
 
+/*
+ * B7 de la sexta tanda: el título del campo, más grande y oscuro que su ayuda.
+ * Estaba a 13 px en gris y la ayuda de debajo a 12,5 px en gris: se leían como
+ * la misma cosa y el cliente no distinguía «Correo de contacto público» de la
+ * frase que lo explica. El campo (.fld) y la ayuda (.helper) llevan su propio
+ * tamaño, así que esto sólo mueve el título.
+ */
 .lbl {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gris-700);
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
 }
 
 .actcard:hover { transform: translateY(-3px); box-shadow: 0 24px 48px -30px rgba(0, 0, 0, .3); }
@@ -3692,4 +3701,52 @@ img.org-logo {
 
 @media (max-width: 760px) {
     .panel-filtros-fecha input.fld { width: 138px; }
+}
+
+/* ── B8: el calendario, evidente en el teléfono ─────────────
+ *
+ * Ver resources/views/components/fecha-calendario-movil.blade.php. El campo
+ * de fecha nativo va encima del texto, transparente: tocarlo abre el
+ * calendario del sistema, que es lo que no conseguía el icono del campo en
+ * los navegadores sin `showPicker()`. `box-sizing` explícito, que aquí no hay
+ * reset global. */
+
+.fecha-calendario-movil { display: none; }
+
+@media (max-width: 760px) {
+    .fecha-calendario-movil {
+        box-sizing: border-box;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 14px;
+        border: 1.5px solid var(--naranjo);
+        border-radius: 12px;
+        background: var(--naranjo-100);
+        color: var(--naranjo-600);
+        font-size: 14.5px;
+        font-weight: 700;
+    }
+
+    .fecha-calendario-movil-nativo {
+        box-sizing: border-box;
+        position: absolute;
+        /* Hasta el borde del botón, que es por fuera de su caja de relleno. */
+        inset: -1.5px;
+        width: calc(100% + 3px);
+        height: calc(100% + 3px);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        opacity: 0;
+        cursor: pointer;
+        /* Sin esto, Safari deja el campo con su alto propio y no cubre el botón. */
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .fecha-calendario-movil:has(.fecha-calendario-movil-nativo:disabled) { opacity: .4; }
 }

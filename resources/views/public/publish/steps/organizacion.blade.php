@@ -108,7 +108,7 @@
         <div data-campo="org_logo" data-etiqueta="Logo de la organización"
              x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
              x-show="! reclamando && ! ficha?.logo">
-            <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:8px;">Logo de la organización</div>
+            <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:8px;">Logo de la organización</div>
             <div style="display:flex;align-items:center;gap:16px;">
                 <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
                     <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:cover;">

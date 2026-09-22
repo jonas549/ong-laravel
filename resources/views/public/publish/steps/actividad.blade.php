@@ -33,7 +33,7 @@
 
             <div data-campo="caracteristicas" data-obligatorio
                  data-etiqueta="{{ CamposDeActividad::etiqueta('caracteristicas') }}">
-                <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">¿Qué características tiene tu actividad? *<x-marca-obligatoria grupo="caracteristicas" /></div>
+                <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:9px;">¿Qué características tiene tu actividad? *<x-marca-obligatoria grupo="caracteristicas" /></div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
                     @foreach ($caracteristicas as $c)
                         <button type="button"
@@ -55,7 +55,7 @@
             </div>
 
             <div>
-                <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">Formato *</div>
+                <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:9px;">Formato *</div>
                 <div style="display:flex;gap:8px;">
                     @foreach ($formatos as $f)
                         <button type="button"
@@ -130,6 +130,7 @@
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
                     </button>
                 </span>
+                <x-fecha-calendario-movil desactivar="sinFecha" />
                 <span class="helper">Ej. 04 / 12 / 2026</span>
                 @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
             </label>
@@ -254,7 +255,7 @@
         <div class="seclabel" style="margin-bottom:18px;">Temas y público</div>
 
         <div data-campo="temas" data-obligatorio data-etiqueta="{{ CamposDeActividad::etiqueta('temas') }}">
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">Tema de la actividad *<x-marca-obligatoria grupo="temas" /></div>
+        <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:9px;">Tema de la actividad *<x-marca-obligatoria grupo="temas" /></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
             @foreach ($temas as $t)
                 <button type="button"
@@ -274,7 +275,7 @@
              grupo de chips, que no parece algo que haya que rellenar sino un
              filtro que se puede mirar y dejar. El asterisco solo no bastó. --}}
         <div data-campo="publicos" data-obligatorio data-etiqueta="{{ CamposDeActividad::etiqueta('publicos') }}" style="margin-top:24px;">
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin:0 0 9px;">¿Quién es el público beneficiado por esta actividad? *<x-marca-obligatoria grupo="publicos" /></div>
+        <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin:0 0 9px;">¿Quién es el público beneficiado por esta actividad? *<x-marca-obligatoria grupo="publicos" /></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
             @foreach ($publicos as $p)
                 <button type="button"
@@ -298,7 +299,7 @@
             @error('publico_otro') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin:24px 0 9px;">¿Tu actividad cuenta con alguna adecuación de accesibilidad?</div>
+        <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin:24px 0 9px;">¿Tu actividad cuenta con alguna adecuación de accesibilidad?</div>
         <div style="display:flex;gap:8px;">
             <button type="button" x-bind:class="acc ? 'chip on' : 'chip'" x-on:click="acc = true">Sí</button>
             <button type="button" x-bind:class="acc ? 'chip' : 'chip on'" x-on:click="acc = false">No</button>
@@ -339,7 +340,7 @@
             @error('org_num_voluntarios') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin:20px 0 9px;">¿Requiere inscripción previa?</div>
+        <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin:20px 0 9px;">¿Requiere inscripción previa?</div>
         <div style="display:flex;gap:8px;">
             <button type="button" x-bind:class="insc ? 'chip on' : 'chip'" x-on:click="insc = true">Sí</button>
             <button type="button" x-bind:class="insc ? 'chip' : 'chip on'" x-on:click="insc = false">No</button>
@@ -438,7 +439,7 @@
     {{-- ── Colaboración ── --}}
     <div style="padding:30px;">
         <div class="seclabel" style="margin-bottom:18px;">Colaboración</div>
-        <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">¿Esta iniciativa se realiza en colaboración con otras organizaciones o instituciones?</div>
+        <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:9px;">¿Esta iniciativa se realiza en colaboración con otras organizaciones o instituciones?</div>
 
         <div style="display:flex;gap:8px;">
             <button type="button" x-bind:class="colab ? 'chip on' : 'chip'" x-on:click="colab = true">Sí</button>
@@ -446,7 +447,7 @@
         </div>
 
         <div x-show="colab" x-cloak style="margin-top:18px;">
-            <div style="font-size:13px;font-weight:600;color:var(--gris-700);margin-bottom:9px;">Organizaciones colaboradoras</div>
+            <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:9px;">Organizaciones colaboradoras</div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1.5px solid #e4e6e8;border-radius:14px;background:#fff;padding:10px 12px;">
                 <template x-for="(nombre, i) in colabs" x-bind:key="i">
                     <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo-600);">
