@@ -204,7 +204,7 @@ class ControlDeAcceso
         AccessLog::create([
             'user_id' => $usuario?->id,
             // En minúsculas siempre: el contador busca por este campo, y con
-            // "Jonas@" y "jonas@" mezclados cada variante llevaría su cuenta.
+            // "Persona@" y "persona@" mezclados, cada variante llevaría su cuenta.
             'email' => $email ? Str::lower(Str::limit($email, 255, '')) : null,
             'panel' => $panel,
             'resultado' => $resultado,

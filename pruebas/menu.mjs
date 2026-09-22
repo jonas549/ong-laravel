@@ -1,4 +1,5 @@
 // ¿La ficha de usuario marca el nodo correcto del menú y pinta las migas?
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123'; const jar=new Map();
 const guardar=(r)=>{for(const c of (r.headers.getSetCookie?.()??[])){const[kv]=c.split(';');const i=kv.indexOf('=');jar.set(kv.slice(0,i),kv.slice(i+1));}};
 const cookies=()=>[...jar].map(([k,v])=>`${k}=${v}`).join('; ');
@@ -7,7 +8,7 @@ async function get(p,saltos=0){const r=await fetch(BASE+p,{headers:{cookie:cooki
   return r.status===200?await r.text():'';}
 let h=await get('/admin/login');
 const t=h.match(/name="_token"\s+value="([^"]+)"/)[1];
-guardar(await fetch(BASE+'/admin/login',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded',cookie:cookies()},body:new URLSearchParams({_token:t,email:'admin@ong-laravel.test',password:'admin1234'}).toString(),redirect:'manual'}));
+guardar(await fetch(BASE+'/admin/login',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded',cookie:cookies()},body:new URLSearchParams({_token:t,email:ADMIN,password:CLAVE_ADMIN}).toString(),redirect:'manual'}));
 
 for (const [etq, ruta] of [['organizador (id 2)','/admin/usuarios/2/editar?rol=organizer'],
                            ['admin (id 1)','/admin/usuarios/1/editar?rol=admin'],

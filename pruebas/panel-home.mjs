@@ -11,6 +11,7 @@
 // pantalla cambia en consecuencia. Un número correcto por casualidad deja de
 // serlo en cuanto la base se mueve.
 import { execFileSync } from 'node:child_process';
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const MYSQL = process.env.DPS_MYSQL ?? 'C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe';
@@ -39,7 +40,7 @@ const _token = await token('/admin/login');
 await pedir('/admin/login', {
   method: 'POST',
   headers: { 'content-type': 'application/x-www-form-urlencoded' },
-  body: new URLSearchParams({ _token, email: 'admin@ong-laravel.test', password: 'admin1234' }).toString(),
+  body: new URLSearchParams({ _token, email: ADMIN, password: CLAVE_ADMIN }).toString(),
 });
 
 const portada = async () => {

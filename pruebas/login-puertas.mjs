@@ -12,14 +12,15 @@
 //   node pruebas/login-puertas.mjs
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
+import { ADMIN as CUENTA_ADMIN, CLAVE_ADMIN as PASS_ADMIN, CLAVE_ORG as PASS_ORG, ORG as CUENTA_ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const MYSQL = process.env.DPS_MYSQL ?? 'C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe';
 const sql = (q) => execFileSync(MYSQL, ['-uroot', '--default-character-set=utf8mb4', 'ong_laravel', '-N', '-B', '-e', q], { encoding: 'utf8' }).trim();
 
-const ADMIN = { correo: 'admin@ong-laravel.test', clave: 'admin1234' };
-const ORG = { correo: 'organizador@ong-laravel.test', clave: 'organizador1234' };
+const ADMIN = { correo: CUENTA_ADMIN, clave: PASS_ADMIN };
+const ORG = { correo: CUENTA_ORG, clave: PASS_ORG };
 
 let ok = 0, mal = 0;
 const di = (q, bien, extra = '') => { bien ? ok++ : mal++; console.log(`  ${q.padEnd(58)} ${bien ? 'OK' : '*** MAL ***'} ${extra}`); };
@@ -184,7 +185,7 @@ sql(`DELETE FROM access_logs WHERE email='${ORG.correo}'`);
 t('Cambiar el rol con la sesión abierta');
 
 /*
- * La pregunta de Jonas: si a un organizador le suben a administrador desde el
+ * La pregunta a resolver: si a un organizador le suben a administrador desde el
  * panel, ¿entra ya, o tiene que cerrar sesión?
  *
  * Se prueba de verdad: se entra como organizador, se le cambia el rol en la

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
  * arrancaba con la URL absoluta en `ruta`, que es lo que va atado al campo
  * oculto que viaja al servidor. Así que abrir cualquier formulario con imagen y
  * guardarlo **sin tocar la imagen** escribía en la base
- * `https://ong.sandboxdelta.com/img/loquefuera.png` en vez de
+ * `https://el-dominio-del-sitio/img/loquefuera.png` en vez de
  * `img/loquefuera.png`.
  *
  * No se notaba porque `asset()` devuelve tal cual lo que ya es una URL, así que

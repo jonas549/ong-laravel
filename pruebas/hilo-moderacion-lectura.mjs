@@ -7,7 +7,7 @@
 //
 // Esto carga las mismas pantallas sin pulsar nada que cambie de estado.
 //
-//   DPS_URL=https://ong.sandboxdelta.com node pruebas/hilo-moderacion-lectura.mjs
+//   DPS_URL=https://el-sitio-en-produccion node pruebas/hilo-moderacion-lectura.mjs
 import puppeteer from 'puppeteer-core';
 import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 

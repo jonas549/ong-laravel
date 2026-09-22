@@ -16,6 +16,7 @@
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = 'http://127.0.0.1:8123';
@@ -75,8 +76,8 @@ try {
 
     t('Y se administra entera desde el panel');
     await ir(`${B}/admin/login`);
-    await p.type('input[name=email]', 'admin@ong-laravel.test');
-    await p.type('input[name=password]', 'admin1234');
+    await p.type('input[name=email]', ADMIN);
+    await p.type('input[name=password]', CLAVE_ADMIN);
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type=submit]')]);
     di('se entra al panel', p.url().includes('/admin'), p.url());
 

@@ -11,6 +11,7 @@
 // home público para ver si cambió.
 import { execFileSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const MYSQL = process.env.DPS_MYSQL ?? 'C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe';
@@ -46,7 +47,7 @@ const _t = await token('/admin/login');
 await pedir('/admin/login', {
   method: 'POST',
   headers: { 'content-type': 'application/x-www-form-urlencoded' },
-  body: new URLSearchParams({ _token: _t, email: 'admin@ong-laravel.test', password: 'admin1234' }).toString(),
+  body: new URLSearchParams({ _token: _t, email: ADMIN, password: CLAVE_ADMIN }).toString(),
 });
 
 // Los campos de una sección, para poder reenviarlos enteros: el formulario
@@ -262,7 +263,7 @@ di('la vista previa tampoco es pública', previaSinSesion.status === 302);
 /* ------------------------------------ 9) los fallos del testing en produccion */
 
 console.log('');
-console.log('=== 9) Los cinco fallos que encontro Cowork ===');
+console.log('=== 9) Los cinco fallos que salieron al probar en produccion ===');
 console.log('');
 
 // FALLO 1 - la negrita y la cursiva se perdian al publicar.

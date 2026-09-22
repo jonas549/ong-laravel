@@ -4,6 +4,7 @@
 //   node pruebas/calendario-y-aprobacion.mjs
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -108,7 +109,10 @@ di('es un calendario bien formado',
 di('trae un solo evento', (ics.match(/BEGIN:VEVENT/g) ?? []).length === 1);
 di('lleva identificador estable', /UID:actividad-\d+@/.test(ics));
 di('lleva el título de la actividad', /SUMMARY:.+/.test(ics));
-di('y el enlace a la ficha', ics.includes('/actividades/'));
+// La ficha vive en `/activity/{id}/{slug}` desde que `/actividades/{slug}`
+// pasó a ser una redirección; esta comprobación seguía esperando la vieja.
+di('y el enlace a la ficha', new RegExp(`URL:.*/activity/\\d+/${slug}`).test(ics),
+    ics.split('\n').find((l) => l.startsWith('URL:'))?.trim());
 
 // El RFC manda CRLF y 75 octetos por línea; hay lectores que se atragantan.
 di('las líneas van con CRLF', ics.includes('\r\n') && ! /[^\r]\n/.test(ics));
@@ -144,7 +148,7 @@ if (borrador) {
 /* ══════════════════════════════════════════════════════════════════ */
 t('El correo lleva los dos enlaces');
 
-await entrar(`${B}/admin/login`, 'admin@ong-laravel.test', 'admin1234');
+await entrar(`${B}/admin/login`, ADMIN, CLAVE_ADMIN);
 
 const idPlantilla = sql("SELECT id FROM email_templates WHERE clave='inscripcion_confirmada'");
 await p.goto(`${B}/admin/plantillas/${idPlantilla}`, { waitUntil: 'networkidle2' });
@@ -155,7 +159,7 @@ di('el catálogo ofrece el marcador de calendario', /bloque_calendario/.test(pan
 
 /*
  * La plantilla se sembró antes de que existiera el marcador, así que el aviso
- * de «hay marcadores nuevos» tiene que salir. Es lo que pidió Jonas: avisar,
+ * de «hay marcadores nuevos» tiene que salir. Es lo que se pidió: avisar,
  * no meterlo por la fuerza en un texto que escribió alguien.
  */
 di('avisa de que hay un marcador nuevo', /marcador nuevo|marcadores nuevos/i.test(pantalla));
@@ -197,7 +201,7 @@ sql(`UPDATE email_templates SET cuerpo_html = REPLACE(cuerpo_html, '{{ bloque_ca
 /* ══════════════════════════════════════════════════════════════════ */
 t('Aprobación automática: la primera se revisa, la segunda no');
 
-const idOrg = sql("SELECT o.id FROM organizations o JOIN users u ON u.id=o.user_id WHERE u.email='organizador@ong-laravel.test'");
+const idOrg = sql(`SELECT o.id FROM organizations o JOIN users u ON u.id=o.user_id WHERE u.email='${ORG}'`);
 const guardado = {
     publicadas: sql(`SELECT GROUP_CONCAT(id) FROM activities WHERE organization_id=${idOrg} AND published_at IS NOT NULL`),
     ajustes: sql(`SELECT GROUP_CONCAT(id) FROM activities WHERE organization_id=${idOrg} AND estado='ajustes'`),
@@ -246,7 +250,7 @@ try {
     t('Reenviar desde «Mi cuenta»');
 
     await salir();
-    await entrar(`${B}/mi-cuenta/login`, 'organizador@ong-laravel.test', 'organizador1234');
+    await entrar(`${B}/mi-cuenta/login`, ORG, CLAVE_ORG);
 
     const borradorId = sql(`SELECT id FROM activities WHERE organization_id=${idOrg} AND estado='borrador' LIMIT 1`);
 
@@ -271,11 +275,17 @@ try {
             sql(`SELECT comentario FROM activity_status_logs WHERE activity_id=${borradorId} ORDER BY id DESC LIMIT 1`)
                 .includes('automáticamente'));
 
-        // Y una que vuelve de ajustes NO se auto-aprueba, por muchas que tenga.
+        /*
+         * Y una que vuelve de ajustes NO se auto-aprueba, por muchas que tenga.
+         *
+         * Desde que la moderación dejó de ser lineal, en «necesita ajustes» no
+         * hay botón de «Enviar a revisión»: **guardar es lo que la devuelve**.
+         * Esta comprobación seguía pulsando aquel botón y se caía sin más.
+         */
         sql(`UPDATE activities SET estado='ajustes', publicada_automaticamente=0 WHERE id=${borradorId}`);
         await p.goto(`${B}/mi-cuenta/actividades/${borradorId}/editar`, { waitUntil: 'networkidle2' });
         await p.evaluate(() => [...document.querySelectorAll('button[type=submit]')]
-            .find((b) => b.textContent.includes('Enviar a revisión')).click());
+            .find((b) => b.textContent.includes('Actualizar actividad')).click());
         await p.waitForNavigation({ waitUntil: 'networkidle2' });
         await esperar(300);
 
@@ -314,7 +324,7 @@ try {
     sql(`UPDATE activities SET publicada_automaticamente=1 WHERE id=${publicadaId}`);
 
     await salir();
-    await entrar(`${B}/admin/login`, 'admin@ong-laravel.test', 'admin1234');
+    await entrar(`${B}/admin/login`, ADMIN, CLAVE_ADMIN);
     await p.goto(`${B}/admin/actividades`, { waitUntil: 'networkidle2' });
 
     const conPestania = await p.evaluate(() => document.body.innerText);

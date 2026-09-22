@@ -35,6 +35,7 @@
 //
 //   node pruebas/boton-envio.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -185,6 +186,17 @@ const rellenarWizardSalvoPublico = async ({ conSesion }) => {
         await p.type('input[name="email"]', `boton${Date.now()}@ong-laravel.test`);
         await p.type('input[name="password"]', 'clave-larga-1234');
         await p.type('input[name="password_confirmation"]', 'clave-larga-1234');
+
+        // El logo es obligatorio en escritorio salvo en «Otra»: sin subirlo, lo
+        // que falta no sería sólo el público, que es el caso que se prueba.
+        const campoLogo = await p.$('input[name="org_logo"]');
+        if (campoLogo) {
+            await campoLogo.uploadFile('public/img/logo-fundacion-trascender.png');
+            await p.waitForFunction(() => {
+                const d = Alpine.$data(document.querySelector('[data-campo="org_logo"]'));
+                return d.tiene && ! d.reduciendo;
+            }, { timeout: 8000 }).catch(() => null);
+        }
     }
 
     await paso(4);
@@ -252,12 +264,22 @@ di('y ahora sí queda marcado como ocupado', trasEnviar !== null && trasEnviar.c
 /* ══════════════════════════════════════════════════════════════════ */
 t('2 · El wizard CON sesión de organizador');
 
-await entrarComo('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrarComo('/mi-cuenta/login', ORG, CLAVE_ORG);
 di('entró como organizador', p.url().includes('/mi-cuenta'), p.url());
 
 await abrir('/publicar-actividad');
 di('el wizard se abre con la sesión puesta', await p.$$eval('[x-data^="wizard"]', (n) => n.length) === 1);
-di('y el paso 3 no pide contraseña', await p.$$eval('input[name="password"]', (n) => n.length) === 0);
+/*
+ * Con la ficha de la organización completa, el paso 3 ya no se pinta: lo que se
+ * comprueba es que no haya nada que pedirle de la cuenta, esté el paso fuera o
+ * dentro. Antes esto miraba que el campo de contraseña no existiera; ahora el
+ * bloque entero puede no existir, que es más de lo mismo.
+ */
+const pideClave = await p.evaluate(() => {
+    const campo = document.querySelector('input[name="password"]');
+    return !! campo && campo.getBoundingClientRect().height > 0;
+});
+di('y no se le pide contraseña', pideClave === false);
 
 await rellenarWizardSalvoPublico({ conSesion: true });
 await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -391,7 +413,7 @@ di('y lo dice con aria-busy', bueno !== null && bueno.aria === 'true');
 /* ══════════════════════════════════════════════════════════════════ */
 t('7 · El panel: cancelar el diálogo de una acción masiva');
 
-await entrarComo('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrarComo('/admin/login', ADMIN, CLAVE_ADMIN);
 di('entró como admin', p.url().includes('/admin'), p.url());
 
 await abrir('/admin/contenido/noticias');

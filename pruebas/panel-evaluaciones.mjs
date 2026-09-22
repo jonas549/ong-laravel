@@ -12,6 +12,7 @@ import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -46,8 +47,8 @@ const ir = async (url) => { await p.goto(url, { waitUntil: 'networkidle2' }); aw
 // ── Entrar en el panel ──────────────────────────────────────
 
 await ir(`${B}/admin/login`);
-await p.type('input[name="email"]', 'admin@ong-laravel.test');
-await p.type('input[name="password"]', 'admin1234');
+await p.type('input[name="email"]', ADMIN);
+await p.type('input[name="password"]', CLAVE_ADMIN);
 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type="submit"]')]);
 
 t('El nodo del menú');

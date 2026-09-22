@@ -27,6 +27,17 @@ yarn-error.log
 
 # Las dos pruebas de navegador necesitan `puppeteer-core`, que se instala
 # dentro de `pruebas/`. El script sí se versiona; la dependencia no.
+# Las credenciales de las pruebas: se copian de credenciales.example.mjs.
+/pruebas/credenciales.local.mjs
+
 /pruebas/node_modules
 /pruebas/package.json
 /pruebas/package-lock.json
+
+# Bitácoras y documentos de avance: se escriben en local y se quedan ahí.
+# No se versionan —cuentan el proceso, no el producto— y el repositorio se
+# entrega a terceros.
+/BITACORA*.md
+/PROGRESO.md
+/RESUMEN-*.md
+/BACKLOG-*.md

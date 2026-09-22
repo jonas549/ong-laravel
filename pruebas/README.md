@@ -54,18 +54,34 @@ pasaban también con el menú roto, y el fallo que arregla `wizard-errores.mjs`
 —un aviso correcto que quedaba fuera de la pantalla— es invisible por HTTP por
 definición. Lo que hay que medir ahí son píxeles.
 
+## Las credenciales
+
+**No hay ninguna contraseña escrita en este repositorio.** Los scripts las leen
+de `credenciales.mjs`, que a su vez las saca del entorno o de
+`credenciales.local.mjs`, que no se versiona. Antes de correr nada por primera
+vez:
+
+```bash
+cd pruebas && cp credenciales.example.mjs credenciales.local.mjs
+```
+
+El ejemplo trae las cuentas del `UserSeeder` en una base recién sembrada, así
+que **valen para local y nada más**. Contra un servidor de verdad van por el
+entorno, y conviene pensárselo dos veces: varios scripts borran filas, cambian
+contraseñas o mandan correos.
+
+```bash
+DPS_URL=https://el-sitio-en-produccion DPS_ADMIN=... DPS_CLAVE_ADMIN=...   node pruebas/loquesea.mjs
+```
+
 **`clave-admin.mjs` le cambia la contraseña al organizador y no se la devuelve.**
-Cualquier script que corra después no podrá entrar con `organizador1234`, y lo
-que se ve entonces no es «login roto» sino la mitad de las comprobaciones
-fallando por sitios raros. Para volver al punto de partida:
+Cualquier script que corra después no podrá entrar, y lo que se ve entonces no
+es «login roto» sino la mitad de las comprobaciones fallando por sitios raros.
+Para volver al punto de partida:
 
 ```bash
 php artisan db:seed --class=UserSeeder
 ```
-
-Los scripts entran con las cuentas del `UserSeeder`
-(`admin@ong-laravel.test` / `admin1234`), así que **son para local**, nunca
-contra producción: varios borran filas y cambian contraseñas.
 
 ---
 
@@ -170,10 +186,10 @@ php artisan tinker
 ```
 
 Y `clave-admin.mjs` le cambia la contraseña al organizador sembrado; para
-dejarla como estaba:
+dejarla como estaba, la del seeder:
 
 ```bash
->>> User::where('email', 'organizador@ong-laravel.test')->first()->forceFill(['password' => 'organizador1234'])->save();
+php artisan db:seed --class=UserSeeder
 ```
 
 `datos-evaluacion.php` deja cuatro actividades y unas cuantas respuestas, con

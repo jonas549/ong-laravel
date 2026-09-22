@@ -1,7 +1,7 @@
 // La marquesina del home, elegida desde el panel (2026-09-21).
 //
 // Páginas → Marquesina de organizaciones. Lo que se comprueba es lo que pidió
-// Jonas, punto por punto, mirando SIEMPRE el home y no sólo la pantalla del
+// el encargo, punto por punto, mirando SIEMPRE el home y no sólo la pantalla del
 // panel:
 //
 //   1. Añadir (buscando), quitar y ordenar, y que el home salga en ese orden.

@@ -16,7 +16,7 @@
  * además sale en el idioma del navegador y no dice qué falta. Peor todavía
  * cuando pasaba la validación: quedaba un enlace guardado sin protocolo, y un
  * `href` sin protocolo lo resuelve el navegador como una ruta RELATIVA —
- * «www.mi.cl» acaba apuntando a ong.sandboxdelta.com/www.mi.cl.
+ * «www.mi.cl» acaba apuntando al propio dominio: /www.mi.cl.
  *
  * Se completa al salir del campo y no mientras se escribe: hacerlo en cada
  * pulsación mueve el cursor y pelea con quien está pegando una dirección.

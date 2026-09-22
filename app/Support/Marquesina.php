@@ -99,9 +99,9 @@ final class Marquesina
     }
 
     /**
-     * Por nombre normalizado: «Delta  Digital» y «delta digital» son la misma,
-     * y en producción hay dos «deltadigital.cl» de antes de que el wizard lo
-     * impidiera. Salían una detrás de otra, que es repetición de verdad.
+     * Por nombre normalizado: «Mi  Fundación» y «mi fundación» son la misma.
+     * En producción hay nombres repetidos de antes de que el wizard lo
+     * impidiera, y salían una detrás de otra: repetición de verdad.
      */
     private static function sinRepetir(Collection $organizaciones): Collection
     {

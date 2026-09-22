@@ -21,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { ADMIN, CLAVE_ADMIN, CLAVE_FIXTURE, CLAVE_ORG, ORG, ORG_A } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -135,7 +136,7 @@ di('Y numeradas en orden', ordenes === '0,1', ordenes);
 
 t('P5 — el organizador ve las de SUS actividades');
 
-await entrar('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrar('/mi-cuenta/login', ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/evaluaciones`, { waitUntil: 'networkidle2' });
 
 const suyas = await texto();
@@ -168,7 +169,7 @@ const propia = await p.evaluate(async (u) => (await fetch(u, { credentials: 'sam
   `${B}/mi-cuenta/evaluaciones/fotos/${ajena}`);
 di('El organizador sí abre la foto de SU actividad', propia === 200, `HTTP ${propia}`);
 
-await entrar('/mi-cuenta/login', 'org-a@prueba.test', 'prueba1234');
+await entrar('/mi-cuenta/login', ORG_A, CLAVE_FIXTURE);
 
 const respuesta = await p.evaluate(async (u) => (await fetch(u, { credentials: 'same-origin' })).status,
   `${B}/mi-cuenta/evaluaciones/fotos/${ajena}`);
@@ -182,7 +183,7 @@ di('Y su listado tampoco enseña las respuestas ajenas',
 
 t('P7 — el Excel trae los enlaces a las fotografías');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 
 const csv = await p.evaluate(async (u) => {
   const r = await fetch(u, { credentials: 'same-origin' });

@@ -14,8 +14,8 @@ use App\Models\Setting;
  * revisar sirve para conocer a quien publica, y una vez conocido el trámite
  * sobra.
  *
- * Las cuatro decisiones de detalle se acordaron con Jonas el 2026-09-02, y cada
- * una tiene su porqué:
+ * Las cuatro decisiones de detalle están acordadas con quien encarga el
+ * proyecto, y cada una tiene su porqué:
  *
  * 1. **«Ya publicó antes» se mide por `published_at`, no por el estado.** Una
  *    actividad cancelada estuvo publicada, y lo que da confianza es que la ONG

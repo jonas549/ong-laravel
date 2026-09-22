@@ -4,6 +4,7 @@
 //   node pruebas/hora-y-campos.mjs
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
+import { CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -127,8 +128,8 @@ const actividad = ultima(tinker(
 ));
 
 await p.goto(`${B}/mi-cuenta/login`, { waitUntil: 'networkidle2' });
-await p.type('input[name="email"]', 'organizador@ong-laravel.test');
-await p.type('input[name="password"]', 'organizador1234');
+await p.type('input[name="email"]', ORG);
+await p.type('input[name="password"]', CLAVE_ORG);
 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type="submit"]')]);
 
 if (actividad === 'NO') {

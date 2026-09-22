@@ -2,12 +2,13 @@
 // requisitos: se cambia, queda en el log con el autor, avisa por correo y
 // cierra las sesiones del afectado.
 import { execFileSync } from 'node:child_process';
+import { ADMIN as CUENTA_ADMIN, CLAVE_ADMIN as PASS_ADMIN, CLAVE_ORG as PASS_ORG, ORG as CUENTA_ORG } from './credenciales.mjs';
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const MYSQL = process.env.DPS_MYSQL ?? 'C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe';
 const sql = (q) => execFileSync(MYSQL, ['-uroot', 'ong_laravel', '-e', q], { encoding: 'utf8' }).trim();
 
-const ADMIN = 'admin@ong-laravel.test', CLAVE_ADMIN = 'admin1234';
-const ORG = 'organizador@ong-laravel.test', CLAVE_ORG = 'organizador1234';
+const ADMIN = CUENTA_ADMIN, CLAVE_ADMIN = PASS_ADMIN;
+const ORG = CUENTA_ORG, CLAVE_ORG = PASS_ORG;
 const NUEVA = 'clave-puesta-por-admin-99';
 
 function sesion() {

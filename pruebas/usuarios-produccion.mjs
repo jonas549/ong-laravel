@@ -1,6 +1,6 @@
 // C6 — qué cuentas hay en producción. SÓLO MIRA: no crea, no cambia, no borra.
 //
-//   DPS_URL=https://ong.sandboxdelta.com node pruebas/usuarios-produccion.mjs
+//   DPS_URL=https://el-sitio-en-produccion node pruebas/usuarios-produccion.mjs
 import puppeteer from 'puppeteer-core';
 import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 

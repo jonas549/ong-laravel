@@ -6,6 +6,7 @@
 // formulario en vez de un 403, la fuga existe por mucho que el código parezca
 // correcto.
 import { execFileSync } from 'node:child_process';
+import { ADMIN as CUENTA_ADMIN, CLAVE_ADMIN as PASS_ADMIN, CLAVE_FIXTURE, ENTORNO_FIXTURE, ORG_A, ORG_B } from './credenciales.mjs';
 
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const RAIZ = new URL('..', import.meta.url).pathname.slice(1);
@@ -54,14 +55,17 @@ async function entrar(ruta, email, password) {
 /* ------------------------------------------------------------------- datos */
 
 console.log('Sembrando dos organizadores de distinta organización…');
-const salida = execFileSync('php', ['artisan', 'tinker', '--execute', "require base_path('pruebas/datos-permisos.php');"], { cwd: RAIZ, encoding: 'utf8' });
+// El escenario lee las cuentas del entorno: aquí se le pasan las mismas con
+// las que entra la prueba.
+const salida = execFileSync('php', ['artisan', 'tinker', '--execute', "require base_path('pruebas/datos-permisos.php');"],
+  { cwd: RAIZ, encoding: 'utf8', env: { ...process.env, ...ENTORNO_FIXTURE } });
 const D = JSON.parse(salida.match(/DATOS=(\{.*\})/)[1]);
 console.log(`  A → usuario ${D.a.usuario}, actividad ${D.a.actividad} (${D.a.slug}, en revisión)`);
 console.log(`  B → usuario ${D.b.usuario}, actividad ${D.b.actividad} (${D.b.slug}, borrador)\n`);
 
-const B = await entrar('/mi-cuenta/login', 'org-b@prueba.test', 'prueba1234');
-const A = await entrar('/mi-cuenta/login', 'org-a@prueba.test', 'prueba1234');
-const ADMIN = await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+const B = await entrar('/mi-cuenta/login', ORG_B, CLAVE_FIXTURE);
+const A = await entrar('/mi-cuenta/login', ORG_A, CLAVE_FIXTURE);
+const ADMIN = await entrar('/admin/login', CUENTA_ADMIN, PASS_ADMIN);
 const NADIE = sesion();
 
 /* ----------------------------------------- 1) B contra la actividad de A */
@@ -173,7 +177,7 @@ await ADMIN.enviar(`/admin/usuarios/${yo}/estado`, {}, ADMIN._token);
 let html = await (await ADMIN.pedir('/admin/usuarios?rol=admin')).text();
 console.log(`  desactivarse a sí mismo     → ${veredicto(/No puedes desactivar tu propia cuenta/.test(html))}`);
 
-await ADMIN.enviar(`/admin/usuarios/${yo}`, { _method: 'PUT', name: 'Admin', email: 'admin@ong-laravel.test', role: 'organizer' }, ADMIN._token);
+await ADMIN.enviar(`/admin/usuarios/${yo}`, { _method: 'PUT', name: 'Admin', email: CUENTA_ADMIN, role: 'organizer' }, ADMIN._token);
 html = await (await ADMIN.pedir(`/admin/usuarios/${yo}/editar?rol=admin`)).text();
 console.log(`  quitarse el rol de admin    → ${veredicto(/te quedarías fuera del panel/.test(html))}`);
 

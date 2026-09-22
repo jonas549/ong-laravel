@@ -1,12 +1,13 @@
 // El bloqueo, ahora sobre access_logs. La prueba clave: vaciar la caché a
 // media tanda no debe reiniciar el contador, que es lo que lo rompía.
 import { execFileSync } from 'node:child_process';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG as CUENTA_ORG } from './credenciales.mjs';
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const MYSQL = process.env.DPS_MYSQL ?? 'C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysql.exe';
 const sql = (q) => execFileSync(MYSQL, ['-uroot', 'ong_laravel', '-e', q], { encoding: 'utf8' });
 
-const EMAIL = 'admin@ong-laravel.test';
-const CLAVE = 'admin1234';
+const EMAIL = ADMIN;
+const CLAVE = CLAVE_ADMIN;
 
 // Cada intento con su propia tanda de cookies: sin esto, una entrada correcta
 // deja la sesión abierta y los intentos siguientes ya no pasan por el login.
@@ -69,7 +70,7 @@ console.log(`  4 fallos + éxito + 4 fallos → entró: ${r.entro}   ${veredicto
 console.log('\n=== E) levantar el bloqueo desde el panel lo libera ===');
 // Se bloquea al organizador y lo levanta el admin desde su panel: es el caso
 // real, porque quien se queda fuera no puede desbloquearse a sí mismo.
-const ORG = 'organizador@ong-laravel.test';
+const ORG = CUENTA_ORG;
 const limpiarOrg = () => sql(`DELETE FROM access_logs WHERE email='${ORG}';`);
 limpiarOrg();
 
@@ -90,7 +91,7 @@ async function intentoOrg(password) {
 }
 
 for (let i = 1; i <= 5; i++) await intentoOrg('mala-' + i);
-const antes = await intentoOrg('organizador1234');
+const antes = await intentoOrg(CLAVE_ORG);
 console.log(`  organizador tras 5 fallos: bloqueado=${antes.bloqueado}`);
 
 // El admin entra y pulsa "Levantar bloqueo".
@@ -113,7 +114,7 @@ guardarA(await fetch(`${BASE}/admin/accesos/desbloquear`, { method: 'POST',
   body: new URLSearchParams({ _token: tk, email: ORG, panel: 'organizador', ip: '127.0.0.1' }).toString(),
   redirect: 'manual' }));
 
-const despues = await intentoOrg('organizador1234');
+const despues = await intentoOrg(CLAVE_ORG);
 const entro = despues.destino.includes('/mi-cuenta/actividades');
 console.log(`  tras levantar el bloqueo: entró=${entro}`);
 console.log(`  ${veredicto(antes.bloqueado && entro)}`);

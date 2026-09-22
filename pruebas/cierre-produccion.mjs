@@ -7,7 +7,7 @@
 //
 // Lo único que escribe es la sesión: hay que entrar para ver el panel.
 //
-//   DPS_URL=https://ong.sandboxdelta.com node pruebas/cierre-produccion.mjs
+//   DPS_URL=https://el-sitio-en-produccion node pruebas/cierre-produccion.mjs
 import puppeteer from 'puppeteer-core';
 import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 

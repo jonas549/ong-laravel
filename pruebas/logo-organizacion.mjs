@@ -8,7 +8,7 @@
 //
 // Sólo mira: no envía ningún formulario.
 //
-//   DPS_URL=https://ong.sandboxdelta.com node pruebas/logo-organizacion.mjs
+//   DPS_URL=https://el-sitio-en-produccion node pruebas/logo-organizacion.mjs
 import puppeteer from 'puppeteer-core';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';

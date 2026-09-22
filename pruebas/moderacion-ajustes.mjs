@@ -9,6 +9,7 @@
 //   node pruebas/moderacion-ajustes.mjs
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -45,7 +46,7 @@ const salir = async () => {
 const id = sql(`SELECT a.id FROM activities a
     JOIN organizations o ON o.id = a.organization_id
     JOIN users u ON u.id = o.user_id
-    WHERE u.email = 'organizador@ong-laravel.test' AND a.deleted_at IS NULL
+    WHERE u.email = '${ORG}' AND a.deleted_at IS NULL
     ORDER BY a.id LIMIT 1`);
 
 if (! id) {
@@ -64,7 +65,7 @@ try {
 
     sql(`UPDATE activities SET estado='revision' WHERE id=${id}`);
 
-    await entrar(`${B}/admin/login`, 'admin@ong-laravel.test', 'admin1234');
+    await entrar(`${B}/admin/login`, ADMIN, CLAVE_ADMIN);
     await p.goto(`${B}/admin/actividades/${id}`, { waitUntil: 'networkidle2' });
 
     const hayFormulario = await p.evaluate(() => !! document.querySelector('form[action*="/ajustes"]'));
@@ -86,7 +87,7 @@ try {
     /* ══════════════════════════════════════════════════════════════ */
     t('El organizador corrige y guarda');
 
-    await entrar(`${B}/mi-cuenta/login`, 'organizador@ong-laravel.test', 'organizador1234');
+    await entrar(`${B}/mi-cuenta/login`, ORG, CLAVE_ORG);
     await p.goto(`${B}/mi-cuenta/actividades/${id}/editar`, { waitUntil: 'networkidle2' });
     await p.waitForFunction(() => window.Alpine !== undefined);
 

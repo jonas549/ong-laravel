@@ -24,9 +24,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * No estaba en el encargo y hace falta igual: sin esta pantalla se recogen
  * datos que no puede mirar nadie, que es la peor versión de recoger datos.
  *
- * **Sólo administrador.** Lo decidió Jonas: el organizador ve su actividad, no
- * las opiniones que dejaron sobre ella. Eso lo garantiza el `role:admin` del
- * grupo de rutas, no este controlador.
+ * **Sólo administrador**, por decisión de producto: el organizador ve su
+ * actividad, no las opiniones que dejaron sobre ella. Eso lo garantiza el
+ * `role:admin` del grupo de rutas, no este controlador.
  */
 class EvaluationController extends Controller
 {
@@ -284,8 +284,8 @@ class EvaluationController extends Controller
                     /*
                      * La fecha va como objeto y no como texto ISO: así Excel la
                      * reconoce como fecha y se puede ordenar y filtrar por ella.
-                     * Era uno de los dos defectos que el testing de Cowork dejó
-                     * anotados sobre la exportación de contenidos.
+                     * Era uno de los dos defectos que salieron al probar la
+                     * exportación de contenidos.
                      */
                     $e->created_at,
                     $e->activity?->titulo ?? '(actividad borrada)',
@@ -296,8 +296,8 @@ class EvaluationController extends Controller
                     $e->motivacion,
                     $e->significado,
                     $e->origen_label,
-                    // El otro defecto de Cowork: «Si» sin tilde. Ahora además
-                    // dice cuántas son, que con varias por respuesta importa.
+                    // El otro defecto de aquella prueba: «Si» sin tilde. Ahora
+                    // además dice cuántas son, que con varias por respuesta importa.
                     $e->fotos->count() ?: 'No',
                     $e->fotos->isNotEmpty() ? ($e->foto_autorizada ? 'Sí' : 'No') : '',
                     /*

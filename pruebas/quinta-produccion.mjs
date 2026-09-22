@@ -6,7 +6,7 @@
 // se pinta y no habría nada que mirar. Ese guardado sirve además para probar
 // Q3 sobre el propio ajuste: se escribe sin `https://` a propósito.
 //
-//   DPS_URL=https://ong.sandboxdelta.com DPS_ADMIN=... DPS_CLAVE_ADMIN=... \
+//   DPS_URL=https://el-sitio-en-produccion DPS_ADMIN=... DPS_CLAVE_ADMIN=... \
 //   DPS_ORG=... DPS_CLAVE_ORG=... node pruebas/quinta-produccion.mjs
 import puppeteer from 'puppeteer-core';
 import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';

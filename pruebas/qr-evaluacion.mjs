@@ -22,6 +22,7 @@ import { PNG } from 'pngjs';
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -105,7 +106,7 @@ const entrar = async (url, correo, clave) => {
 };
 
 t('El organizador ve el QR en su actividad');
-await entrar(`${B}/mi-cuenta/login`, 'organizador@ong-laravel.test', 'organizador1234');
+await entrar(`${B}/mi-cuenta/login`, ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/actividades/${ID}/editar`, { waitUntil: 'networkidle2' });
 
 const caja = await p.$('.qr-caja');
@@ -174,7 +175,7 @@ if (ajena && ajena !== '0') {
 t('El administrador tiene la misma descarga');
 await p.goto(`${B}/mi-cuenta/logout`, { waitUntil: 'networkidle2' }).catch(() => {});
 await p.evaluate(() => document.querySelector('form[action*="logout"]')?.submit()).catch(() => {});
-await entrar(`${B}/admin/login`, 'admin@ong-laravel.test', 'admin1234');
+await entrar(`${B}/admin/login`, ADMIN, CLAVE_ADMIN);
 await p.goto(`${B}/admin/actividades/${ID}`, { waitUntil: 'networkidle2' });
 
 const cajaAdmin = await p.$('.qr-caja');

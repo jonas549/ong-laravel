@@ -350,9 +350,9 @@
                     `obliga` sale de las reglas de UpdateActivityRequest, no del
                     asterisco de la etiqueta. Los dos no coinciden en
                     «características»: lleva asterisco en el HTML fuente y su regla
-                    dice `nullable`, y hay cuatro actividades sembradas sin ninguna,
-                    que dejarían de poder guardarse. Está anotado en el backlog para
-                    que Jonas lo decida, como se decidió el de «Dirección».
+                    dice `nullable`, y hay actividades guardadas sin ninguna, que
+                    dejarían de poder guardarse. Queda pendiente de decidir, como se
+                    decidió el de «Dirección».
                 --}}
                 @foreach ([
                     ['grupo' => 'temas', 'items' => $temas, 'label' => 'Temas de la actividad (hasta 3) *', 'obliga' => true, 'ayuda' => null, 'margen' => '0 0 9px'],

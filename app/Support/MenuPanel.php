@@ -95,9 +95,8 @@ class MenuPanel
                 self::nodo('Registro de correos', 'admin.emails.index', [], [], 'admin.emails.*'),
                 self::nodo('SEO', 'admin.settings.seo'),
 
-                // Estos dos no están en el árbol del backlog, pero son pantallas
-                // que ya existen de los bloques A y B y sin un enlace aquí no
-                // habría forma de llegar a ellas.
+                // Estas dos pantallas no estaban en el encargo original, pero
+                // existen y sin un enlace aquí no habría forma de llegar a ellas.
                 self::nodo('Plantillas de correo', 'admin.templates.index', [], [], 'admin.templates.*'),
                 self::nodo('Registro de accesos', 'admin.accesos.index', [], [], 'admin.accesos.*'),
             ]),

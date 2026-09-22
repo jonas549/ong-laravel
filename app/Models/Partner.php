@@ -19,8 +19,8 @@ class Partner extends Model
      * de— sale de combinar los dos sitios.
      *
      * `sponsor` es el único que **no pinta nadie**: quedó de la siembra
-     * original y `HomeController` no lo pasa a ninguna vista. Está anotado en
-     * el backlog.
+     * original y `HomeController` no lo pasa a ninguna vista. Queda pendiente
+     * de decidir si se borra o se usa.
      */
     public const GRUPOS = [
         'auspician' => 'Auspician',

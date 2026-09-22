@@ -7,7 +7,7 @@
 //
 // Aquí sólo se cargan pantallas y se consulta.
 //
-//   DPS_URL=https://ong.sandboxdelta.com node pruebas/tanda-produccion.mjs
+//   DPS_URL=https://el-sitio-en-produccion node pruebas/tanda-produccion.mjs
 import puppeteer from 'puppeteer-core';
 import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 

@@ -11,6 +11,7 @@
 // Contra producción NO: publica una actividad y manda correos.
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -145,8 +146,8 @@ try {
   const ctx = await nav.createBrowserContext();
   const a = await ctx.newPage();
   await a.goto(`${B}/admin/login`, { waitUntil: 'networkidle2' });
-  await a.type('input[name="email"]', 'admin@ong-laravel.test');
-  await a.type('input[name="password"]', 'admin1234');
+  await a.type('input[name="email"]', ADMIN);
+  await a.type('input[name="password"]', CLAVE_ADMIN);
   await Promise.all([a.waitForNavigation({ waitUntil: 'networkidle2' }), a.click('button[type="submit"]')]);
   await a.goto(`${B}/admin/configuracion`, { waitUntil: 'networkidle2' });
   di('Configuración → General enseña el campo', await a.evaluate(() =>

@@ -4,7 +4,7 @@
 // respuestas y reclama organizaciones: en producción eso deja datos de verdad.
 // Esto sólo carga pantallas y descarga lo que ya hay.
 //
-//   DPS_URL=https://ong.sandboxdelta.com node pruebas/evaluaciones-fotos-lectura.mjs
+//   DPS_URL=https://el-sitio-en-produccion node pruebas/evaluaciones-fotos-lectura.mjs
 import puppeteer from 'puppeteer-core';
 import { ADMIN, CLAVE_ADMIN, ORG, CLAVE_ORG } from './credenciales.mjs';
 

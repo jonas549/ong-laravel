@@ -67,10 +67,10 @@ class PublishActivityRequest extends FormRequest
      * comparten este formulario y el de crear cuenta de organizador.
      *
      * Dos decisiones que hay que conocer y que no estan alli por brevedad:
-     * la unicidad va en el formulario y NO como indice unico en la base —lo
-     * decidio Jonas el 18/09: mientras existan los duplicados de hoy, una
-     * migracion que anada el indice se caeria al aplicarse, y queda anotado
-     * en BACKLOG-BACKEND.md—; y se ignora la organizacion propia.
+     * la unicidad va en el formulario y NO como indice unico en la base
+     * —mientras existan los duplicados que ya hay en produccion, una
+     * migracion que anada el indice se caeria al aplicarse—; y se ignora la
+     * organizacion propia.
      */
 
     /**

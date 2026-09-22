@@ -76,7 +76,7 @@ di('La copia está oculta a los lectores de pantalla',
 
 /*
  * Lo que de verdad pedía el punto: dentro de una pasada, ningún nombre dos
- * veces. Antes salían los dos «deltadigital.cl» de producción, seguidos.
+ * veces. Antes salían dos organizaciones con el mismo nombre, seguidas.
  */
 const repetidos = primeraPasada.filter((n, i) => primeraPasada.indexOf(n) !== i);
 di('**Ningún nombre se repite dentro de una pasada**', repetidos.length === 0,

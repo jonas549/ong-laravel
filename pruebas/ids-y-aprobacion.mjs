@@ -2,6 +2,7 @@
 //
 //   node pruebas/ids-y-aprobacion.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -28,7 +29,7 @@ const entrarComo = async (puerta, correo, clave) => {
 
 t('Punto 36 — la ID de la actividad y la de la organización, en el admin');
 
-await entrarComo('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrarComo('/admin/login', ADMIN, CLAVE_ADMIN);
 
 // La primera actividad del listado, sea cual sea.
 await p.goto(`${B}/admin/actividades`, { waitUntil: 'networkidle2' });
@@ -74,7 +75,7 @@ t('Punto 36 — la ID en el panel del organizador');
 // Cerrar sesión limpiando las cookies: `/salir` es POST y navegar a él da 404.
 await p.browserContext().clearPermissionOverrides();
 await (await p.createCDPSession()).send('Network.clearBrowserCookies');
-await entrarComo('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrarComo('/mi-cuenta/login', ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/actividades`, { waitUntil: 'networkidle2' });
 
 const tarjetas = await p.$$eval('.actcard', (ns) => ns.map((n) => n.innerText.replace(/\s+/g, ' ')));

@@ -3,7 +3,7 @@
 /**
  * El correo de «actividad publicada», por los DOS caminos.
  *
- * Esto es lo que pidió Jonas expresamente: **la aprobación automática publica
+ * Esto es lo que se pidió expresamente: **la aprobación automática publica
  * sin pasar por revisión, y el QR tiene que salir igual por ahí.** No hay dos
  * ramas que mantener —los dos caminos acaban en
  * `ActivityModerationService::cambiar($actividad, 'publicada')`— pero eso hay

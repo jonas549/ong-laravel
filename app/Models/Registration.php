@@ -67,7 +67,7 @@ class Registration extends Model
 
     /**
      * El estado tal como se le enseña al ORGANIZADOR, o null si no hay nada
-     * que decir (decisión de Jonas del 18/09, punto 23 de la tanda del 11/09).
+     * que decir.
      *
      * El cliente reportó que ver «Pendiente» junto a cada inscrito confundía,
      * y tenía razón por un motivo peor del que suponía: **nada en la

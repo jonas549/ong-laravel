@@ -103,7 +103,7 @@ Hace falta PHP 8.4, MySQL, Composer y Node 22. En Windows, Laragon lo trae casi
 todo.
 
 ```bash
-git clone git@github.com:jonas549/ong-laravel.git
+git clone <url-del-repositorio> ong-laravel
 cd ong-laravel
 
 composer install
@@ -258,7 +258,7 @@ php artisan dps:qr --actividad=mi-actividad
 ```
 
 Comprueba lo que la encuesta de evaluación necesita **del entorno y no del
-código**, que es lo único de ese bloque que no se puede arreglar después:
+código**, que es lo único que no se puede arreglar después:
 
 - **`APP_URL`**, que es lo que va codificado en cada QR. Si está mal en el
   servidor, todos los carteles impresos apuntan a un sitio equivocado y no hay
@@ -495,9 +495,10 @@ En `pruebas/` hay pruebas **de sistema**, en Node, que conducen la aplicación
 como lo haría una persona. No son tests unitarios y no prueban el código:
 prueban el sistema. Su README explica cada una.
 
-La distinción no es teórica. Un bloque entero pasó tres revisiones automáticas
-de código mientras en el servidor no salía un solo correo, porque el fallo era
-de entorno y ningún análisis de código lo ve.
+La distinción no es teórica: el correo transaccional pasó tres revisiones de
+código sin un solo defecto pendiente mientras en el servidor no salía un solo
+mensaje. El fallo era de entorno —la cola parada y las plantillas sin sembrar—
+y ninguna revisión de código lo ve.
 
 **Las que llevan «necesita Chrome» conducen un navegador de verdad**, y eso
 tampoco es capricho: un script que lee el HTML que vuelve encuentra cualquier
@@ -532,10 +533,17 @@ Los registros de la aplicación están en `storage/logs/laravel.log`.
 
 ---
 
-## 10. Bitácoras
+## 10. Dónde está explicado el porqué
 
-En la raíz del repositorio hay un archivo `BITACORA-*.md` por jornada de
-trabajo. No son documentación de referencia —esto lo es— pero cuentan **por
-qué** se hizo cada cosa, con los fallos que salieron por el camino y cómo se
-diagnosticaron. Cuando algo del código parezca arbitrario, suele estar
-explicado ahí.
+Cuando algo del código parezca arbitrario, casi siempre lo está por un motivo
+que se descubrió por las malas. Ese motivo se escribe en tres sitios, y en este
+orden:
+
+1. **El apartado 7 de este documento**, para lo que condiciona el proyecto
+   entero: el reset de `box-sizing`, la caché que el despliegue vacía cada cinco
+   minutos, los correos en cola, el `APP_URL` de los códigos QR.
+2. **Los comentarios del código**, para lo que sólo afecta a un archivo. Están
+   escritos para eso: explican la decisión y qué se rompe al revertirla, no lo
+   que la línea de al lado ya dice.
+3. **El README de `pruebas/`**, para saber qué comprueba cada script y cuáles no
+   se pueden correr contra el servidor porque escriben o mandan correos.

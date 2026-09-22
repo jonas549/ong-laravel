@@ -16,7 +16,7 @@
 // la organizacion nace con su logo— solo corre con DPS_CREA_DATOS=1.
 //
 //   node pruebas/archivo-retenido.mjs
-//   DPS_URL=https://ong.sandboxdelta.com DPS_ORG_EXISTENTE=deltadigital.cl node pruebas/archivo-retenido.mjs
+//   DPS_URL=https://el-sitio-en-produccion DPS_ORG_EXISTENTE=una-organizacion.cl node pruebas/archivo-retenido.mjs
 //   DPS_CREA_DATOS=1 node pruebas/archivo-retenido.mjs      (solo en local)
 import puppeteer from 'puppeteer-core';
 import { PNG } from 'pngjs';

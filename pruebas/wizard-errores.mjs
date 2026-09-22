@@ -9,6 +9,7 @@
 //
 //   node pruebas/wizard-errores.mjs
 import puppeteer from 'puppeteer-core';
+import { CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -429,8 +430,8 @@ t('Con la sesión abierta no pide el correo ni la contraseña');
  * su peor versión.
  */
 await p.goto(`${B}/mi-cuenta/login`, { waitUntil: 'networkidle2' });
-await p.type('input[name="email"]', 'organizador@ong-laravel.test');
-await p.type('input[name="password"]', 'organizador1234');
+await p.type('input[name="email"]', ORG);
+await p.type('input[name="password"]', CLAVE_ORG);
 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type="submit"]')]);
 
 await abrirWizard();
@@ -463,7 +464,7 @@ di('«Continuar» deja pasar al 4', await paso() === 4);
 t('La dirección ahora es obligatoria de verdad');
 
 /*
- * Decidido por Jonas el 2026-09-02: el asterisco del HTML fuente manda, y la
+ * Decidido el 2026-09-02: el asterisco del HTML fuente manda, y la
  * regla pasa a `required_without:sin_fecha_definida` como las de región y
  * comuna. Lo que se comprueba aquí es que las dos puntas dicen lo mismo: la
  * revisión previa la exige, y el servidor también.
@@ -509,8 +510,8 @@ t('El editor de actividades de «Mi cuenta»');
 
 await p.goto(`${B}/mi-cuenta/login`, { waitUntil: 'networkidle2' });
 if (p.url().includes('/login')) {
-    await p.type('input[name="email"]', 'organizador@ong-laravel.test');
-    await p.type('input[name="password"]', 'organizador1234');
+    await p.type('input[name="email"]', ORG);
+    await p.type('input[name="password"]', CLAVE_ORG);
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type="submit"]')]);
 }
 
@@ -540,7 +541,7 @@ if (! editar) {
      * «Características» lleva asterisco en el HTML fuente y su regla dice
      * `nullable`, y hay actividades sembradas sin ninguna. Hasta que se decida,
      * la revisión previa sigue a la REGLA, igual que se hizo con «Dirección»
-     * antes de que Jonas la decidiera.
+     * antes de que se decidiera.
      */
     di('«características» sigue a la regla y no al asterisco',
         ! cajasAqui.includes('caracteristicas'));

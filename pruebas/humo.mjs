@@ -1,4 +1,5 @@
 // Comprobación de humo: que nada de lo tocado haya roto una pantalla.
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 const BASE = process.env.DPS_URL ?? 'http://127.0.0.1:8123'; const jar=new Map();
 const guardar=(r)=>{for(const c of (r.headers.getSetCookie?.()??[])){const[kv]=c.split(';');const i=kv.indexOf('=');jar.set(kv.slice(0,i),kv.slice(i+1));}};
 const cookies=()=>[...jar].map(([k,v])=>`${k}=${v}`).join('; ');
@@ -9,7 +10,7 @@ async function get(p){let r=await crudo(p);let saltos=0;
 
 let {html} = await get('/admin/login');
 const t = html.match(/name="_token"\s+value="([^"]+)"/)[1];
-guardar(await fetch(BASE+'/admin/login',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded',cookie:cookies()},body:new URLSearchParams({_token:t,email:'admin@ong-laravel.test',password:'admin1234'}).toString(),redirect:'manual'}));
+guardar(await fetch(BASE+'/admin/login',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded',cookie:cookies()},body:new URLSearchParams({_token:t,email:ADMIN,password:CLAVE_ADMIN}).toString(),redirect:'manual'}));
 
 const rutas = [
   '/', '/actividades', '/noticias', '/publicar-actividad', '/mi-cuenta/login',

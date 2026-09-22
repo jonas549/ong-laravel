@@ -152,7 +152,7 @@
                     máximo, que es la mitad de la información.
 
                     Nunca baja de cero. El del panel se iba a negativo tras un
-                    rebote del servidor y quedó anotado en el testing de Cowork.
+                    rebote del servidor, y así salió al probarlo.
                 --}}
                 <span class="helper evaluacion-contador">
                     <span x-text="restantes">{{ ActivityEvaluation::MAX_SIGNIFICADO }}</span>

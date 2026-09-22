@@ -7,6 +7,7 @@ import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { readFileSync, existsSync, rmSync, mkdirSync, readdirSync } from 'node:fs';
+import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = 'http://127.0.0.1:8123';
@@ -40,8 +41,8 @@ const cliente = await p.createCDPSession();
 await cliente.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: BAJADAS });
 
 await p.goto(`${B}/admin/login`, { waitUntil: 'networkidle0' });
-await p.type('input[name=email]', 'admin@ong-laravel.test');
-await p.type('input[name=password]', 'admin1234');
+await p.type('input[name=email]', ADMIN);
+await p.type('input[name=password]', CLAVE_ADMIN);
 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.click('button[type=submit]')]);
 
 const filas = () => p.evaluate(() => [...document.querySelectorAll('tbody tr')].filter((f) => f.querySelector('td')).length);

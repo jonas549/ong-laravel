@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * Estaban en las dos tablas y cada pantalla escribía en una: el wizard en las
  * dos a la vez, el editor de mi-cuenta sólo en la actividad y la ficha del
  * panel sólo en la organización. Podían decir cosas distintas del mismo
- * organizador y la ficha pública tenía que elegir. Decisión de Jonas el
+ * organizador y la ficha pública tenía que elegir. Decisión de producto el
  * 2026-09-04: **es el dato de la entidad, no de cada actividad**, así que se
  * queda en `organizations` y se va de `activities`.
  *

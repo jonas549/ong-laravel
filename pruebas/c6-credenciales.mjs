@@ -14,7 +14,7 @@
 // en un archivo del repositorio es exactamente el problema que esto viene a
 // cerrar.
 //
-//   DPS_URL=https://ong.sandboxdelta.com \
+//   DPS_URL=https://el-sitio-en-produccion \
 //   DPS_CLAVE_ADMIN=... DPS_CLAVE_NUEVA_ADMIN=... \
 //   DPS_CLAVE_NUEVA_ORG=... DPS_CORREO_NUEVO=... DPS_CLAVE_NUEVA=... \
 //   node pruebas/c6-credenciales.mjs
@@ -28,7 +28,7 @@ const ORG = 'organizador@ong-laravel.test';
 const CLAVE_ADMIN = process.env.DPS_CLAVE_ADMIN ?? '';
 
 const NUEVO = process.env.DPS_CORREO_NUEVO ?? '';
-const NUEVO_NOMBRE = process.env.DPS_NOMBRE_NUEVO ?? 'Jonas — Delta Digital';
+const NUEVO_NOMBRE = process.env.DPS_NOMBRE_NUEVO ?? 'Cuenta de administración';
 const CLAVE_NUEVA = process.env.DPS_CLAVE_NUEVA ?? '';
 const CLAVE_NUEVA_ADMIN = process.env.DPS_CLAVE_NUEVA_ADMIN ?? '';
 const CLAVE_NUEVA_ORG = process.env.DPS_CLAVE_NUEVA_ORG ?? '';

@@ -7,13 +7,14 @@
 //   node pruebas/acceso-wizard.mjs
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
+import { CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
 const PHP = process.env.DPS_PHP ?? 'php';
 
-const CUENTA = 'organizador@ong-laravel.test';
-const CLAVE = 'organizador1234';
+const CUENTA = ORG;
+const CLAVE = CLAVE_ORG;
 
 let ok = 0, mal = 0;
 const di = (q, bien, extra = '') => { bien ? ok++ : mal++; console.log(`  ${q.padEnd(64)} ${bien ? 'OK' : '*** MAL ***'} ${extra}`); };

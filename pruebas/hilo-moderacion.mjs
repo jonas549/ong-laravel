@@ -8,6 +8,7 @@
 //   php artisan tinker --execute="require base_path('pruebas/datos-hilo.php');"
 //   node pruebas/hilo-moderacion.mjs
 import puppeteer from 'puppeteer-core';
+import { ADMIN, CLAVE_ADMIN, CLAVE_ORG, ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -36,7 +37,7 @@ const texto = () => p.evaluate(() => document.body.innerText.replace(/\s+/g, ' '
 
 t('La ONG pide ajustes (punto de partida)');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 await p.goto(`${B}/admin/actividades/${ID}`, { waitUntil: 'networkidle2' });
 
 di('El hilo arranca vacío', (await texto()).includes('Aún no se ha escrito nada sobre esta actividad'));
@@ -50,7 +51,7 @@ di('Tras pedirlos, el mensaje está en el hilo del panel', (await texto()).inclu
 
 t('P3 — la organización ve el hilo y puede responder');
 
-await entrar('/mi-cuenta/login', 'organizador@ong-laravel.test', 'organizador1234');
+await entrar('/mi-cuenta/login', ORG, CLAVE_ORG);
 await p.goto(`${B}/mi-cuenta/actividades/${ID}/editar`, { waitUntil: 'networkidle2' });
 
 const edicion = await texto();
@@ -96,7 +97,7 @@ di('Ya no se le pide responder otra vez', (await p.$('#mensaje_ajustes')) === nu
 
 t('P4 — la ONG se entera sin tener que ir a buscarlo');
 
-await entrar('/admin/login', 'admin@ong-laravel.test', 'admin1234');
+await entrar('/admin/login', ADMIN, CLAVE_ADMIN);
 
 const escritorio = await texto();
 di('El escritorio avisa de que volvió corregida',

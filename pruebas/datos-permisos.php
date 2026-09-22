@@ -15,12 +15,31 @@ use App\Models\Activity;
 use App\Models\Organization;
 use App\Models\User;
 
-$hacer = function (string $letra, string $estado): array {
+/*
+ * Las cuentas y la contraseña salen del entorno: este archivo se versiona y
+ * ahí no va ninguna contraseña, ni de desarrollo. Las pruebas se las pasan
+ * solas (ver `credenciales.mjs`); a mano, van delante del comando.
+ */
+$correos = [
+    'a' => getenv('DPS_ORG_A') ?: null,
+    'b' => getenv('DPS_ORG_B') ?: null,
+];
+$clave = getenv('DPS_CLAVE_FIXTURE') ?: null;
+
+if (! $correos['a'] || ! $correos['b'] || ! $clave) {
+    throw new RuntimeException(
+        'Faltan DPS_ORG_A, DPS_ORG_B o DPS_CLAVE_FIXTURE. Copia '
+        .'pruebas/credenciales.example.mjs a pruebas/credenciales.local.mjs y corre la '
+        .'prueba, o pásalas por el entorno.',
+    );
+}
+
+$hacer = function (string $letra, string $estado) use ($correos, $clave): array {
     $usuario = User::updateOrCreate(
-        ['email' => "org-{$letra}@prueba.test"],
+        ['email' => $correos[$letra]],
         [
             'name' => "Organizador {$letra}",
-            'password' => 'prueba1234',
+            'password' => $clave,
             'role' => User::ROL_ORGANIZER,
             'is_active' => true,
             'email_verified_at' => now(),

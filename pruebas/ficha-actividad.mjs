@@ -1,6 +1,6 @@
 // La ficha pública de una actividad: quién organiza, sus enlaces y compartir.
 //
-// Los tres puntos que trajo Jonas de la reunión del 2026-09-01:
+// Los tres puntos que salieron de la revisión del 2026-09-01:
 //   - el organizador bajo el título, con logo y con peso (antes iba apagado
 //     en la ficha lateral);
 //   - su sitio web y su red social, que se capturaban y no se pintaban, y que
@@ -16,6 +16,7 @@
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
+import { CLAVE_ORG as PASS_ORG, ORG as CUENTA_ORG } from './credenciales.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = 'http://127.0.0.1:8123';
@@ -115,8 +116,8 @@ try {
     // pantallas podían decir cosas distintas del mismo organizador.
     const ID = sql(`SELECT id FROM activities WHERE slug='${SLUG}'`);
     await p.goto(`${B}/mi-cuenta/login`, { waitUntil: 'networkidle2' });
-    await p.type('input[name=email]', 'organizador@ong-laravel.test');
-    await p.type('input[name=password]', 'organizador1234');
+    await p.type('input[name=email]', CUENTA_ORG);
+    await p.type('input[name=password]', PASS_ORG);
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.click('button[type=submit]')]);
     await p.goto(`${B}/mi-cuenta/actividades/${ID}/editar`, { waitUntil: 'networkidle2' });
     await esperar(400);

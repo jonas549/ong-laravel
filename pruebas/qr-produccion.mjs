@@ -11,7 +11,7 @@ import jsQR from 'jsqr';
 import { PNG } from 'pngjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const B = process.env.DPS_URL ?? 'https://ong.sandboxdelta.com';
+const B = process.env.DPS_URL ?? 'https://el-sitio-en-produccion';
 // Los nombres de las variables de entorno los fija `credenciales.mjs`, que es
 // el que usan todas. Aqui se llamaba DPS_ADMIN_CLAVE y nadie mas lo sabia.
 import { ADMIN, CLAVE_ADMIN as CLAVE } from './credenciales.mjs';
