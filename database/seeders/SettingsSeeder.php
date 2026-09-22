@@ -125,6 +125,17 @@ class SettingsSeeder extends Seeder
                     .'Vacío no pinta ningún botón: es preferible a uno que no lleve a nada.',
             ],
             [
+                // El desvío del paso 1 del wizard: quien necesita convocar
+                // voluntarios va a Voluntariados Chile. El prototipo anunciaba
+                // la redirección y no la hacía; ahora se hace, y el destino se
+                // cambia aquí. Vacío, el aviso no promete ninguna redirección.
+                'grupo' => 'general', 'clave' => 'voluntariado_url', 'tipo' => 'texto',
+                'valor' => 'https://voluntariadoschile.cl/oportunidades',
+                'label' => 'Enlace a Voluntariados Chile',
+                'descripcion' => 'A dónde lleva «Sí, necesito voluntarios» en el primer paso de publicar actividad. '
+                    .'Vacío, el aviso deja de anunciar la redirección y sólo ofrece volver.',
+            ],
+            [
                 // D1 de la sexta tanda. Se siembra con el diseño de Canva que
                 // mandó el cliente; la ONG lo cambia aquí sin tocar el correo.
                 'grupo' => 'general', 'clave' => 'guia_organizador_url', 'tipo' => 'texto',

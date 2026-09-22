@@ -120,15 +120,23 @@ class RegistroController extends Controller
                  * de contacto: el nombre y el tipo son los de la ONG y no se
                  * pisan con lo que venga.
                  */
+                // B5: el logo, si lo subió. Al reclamar una del listado no se
+                // pide —ya lo tiene la ONG— y por eso no va en `alReclamar`.
+                $campos = [
+                    'nombre' => $datos['org_nombre'],
+                    'tipo' => $datos['org_tipo'],
+                    'tipo_otro' => $datos['org_tipo_otro'],
+                    'unidad_educativa' => $datos['org_unidad_educativa'],
+                    'correo_contacto' => $datos['email'],
+                ];
+
+                if ($logo = $request->file('org_logo')) {
+                    $campos['logo_path'] = 'storage/'.$logo->store('organizaciones', 'public');
+                }
+
                 $request->reclamarOCrear(
                     $usuario,
-                    campos: [
-                        'nombre' => $datos['org_nombre'],
-                        'tipo' => $datos['org_tipo'],
-                        'tipo_otro' => $datos['org_tipo_otro'],
-                        'unidad_educativa' => $datos['org_unidad_educativa'],
-                        'correo_contacto' => $datos['email'],
-                    ],
+                    campos: $campos,
                     alReclamar: ['correo_contacto' => $datos['email']],
                 );
 

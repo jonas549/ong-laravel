@@ -33,13 +33,13 @@
             al leer el atributo y Alpine acababa evaluando lo que mandara quien
             enviara el formulario.
         --}}
-        <form method="POST" action="{{ route('account.registro.store') }}" style="display:flex;flex-direction:column;gap:18px;"
+        <form method="POST" action="{{ route('account.registro.store') }}" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:18px;"
               x-data="registroOrganizador({
                   rutaOrganizaciones: {{ \Illuminate\Support\Js::from(route('publish.organizaciones')) }},
                   buscarOrg: {{ \Illuminate\Support\Js::from(\App\Support\Formulario::viejo('org_nombre')) }},
                   orgElegida: {{ \Illuminate\Support\Js::from($organizacionElegida) }},
                   tipo: {{ \Illuminate\Support\Js::from(\App\Support\Formulario::viejo('org_tipo', $tiposOrg[0])) }},
-              })">
+              })" x-on:submit="revisarLogo($event)">
             @csrf
 
             <x-buscador-organizacion
@@ -70,6 +70,50 @@
                     <input class="fld @error('org_unidad_educativa') is-invalid @enderror" name="org_unidad_educativa" value="@viejo('org_unidad_educativa')">
                     @error('org_unidad_educativa') <span class="field-error">{{ $message }}</span> @enderror
                 </label>
+            </div>
+
+            {{--
+                B5/B6 de la sexta tanda: el logo, también aquí.
+
+                Esta pantalla es la otra puerta por la que nace una
+                organización (C1), así que pide lo mismo que el paso 3 del
+                wizard: obligatorio salvo en «Otra», nunca en el teléfono —allí
+                se sube después desde «Mi perfil»— y nunca al reclamar una del
+                listado, que ya lo trae.
+
+                La regla del servidor se queda en `nullable` por lo mismo que
+                en el wizard: exigirlo allí rebotaría a quien se registra desde
+                el teléfono pidiéndole algo que no se le ha pedido.
+            --}}
+            <div data-campo="org_logo" data-etiqueta="Logo de la organización"
+                 x-bind:data-obligatorio="logoObligatorio() ? '' : null"
+                 x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
+                 x-show="! reclamando" x-cloak>
+                <div class="lbl" style="display:block;margin-bottom:8px;">Logo de la organización<span x-show="logoObligatorio()" x-cloak> *</span></div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
+                        <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:contain;">
+                        <svg x-show="!previa" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                    </span>
+                    <div>
+                        <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                            <span x-text="tiene ? 'Cambiar imagen' : 'Subir imagen'">Subir imagen</span>
+                            <input type="file" name="org_logo" accept="image/jpeg,image/png,image/webp" style="display:none;"
+                                   x-on:change="elegir($event)">
+                        </label>
+                        <div class="helper" style="margin-top:7px;">
+                            PNG o JPG · máx. 500 KB · 400×400 px recomendado.
+                            <span x-show="! logoObligatorio()" x-cloak>Es opcional: puedes subirlo después desde «Mi perfil».</span>
+                        </div>
+                        <div class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
+                        <div class="helper" x-show="tiene && ! error" x-cloak>
+                            <span x-text="nombre"></span> · <span x-text="peso"></span>
+                        </div>
+                        <span class="field-error" x-show="error" x-cloak x-text="error"></span>
+                        <span class="field-error" x-show="logoError" x-cloak x-text="logoError"></span>
+                        @error('org_logo') <span class="field-error">{{ $message }}</span> @enderror
+                    </div>
+                </div>
             </div>
 
             <label class="lbl">Tu nombre *

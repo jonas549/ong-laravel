@@ -58,6 +58,8 @@
         rutaOrganizaciones: {{ Js::from(route('publish.organizaciones')) }},
         rutaEntrar: {{ Js::from(route('publish.entrar')) }},
         rutaSalir: {{ Js::from(route('publish.salir')) }},
+        {{-- El desvío del paso 1, que ahora redirige de verdad. --}}
+        urlVoluntariado: {{ Js::from($urlVoluntariado) }},
         {{-- P16: el buscador de direcciones y el punto que hubiera al rebotar. --}}
         rutaDirecciones: {{ Js::from(route('publish.direcciones')) }},
         latitud: {{ Js::from(old('latitud')) }},
@@ -156,7 +158,7 @@
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:58ch;text-wrap:pretty;">Con esta respuesta sabremos si tu actividad necesita una convocatoria de voluntariado o solo difusión en el calendario.</p>
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-            <button type="button" class="bigopt" x-on:click="redirigir = true">
+            <button type="button" class="bigopt" x-on:click="irAVoluntariado()">
                 <span style="display:grid;place-items:center;width:52px;height:52px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo);margin-bottom:16px;">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M19 8v6M22 11h-6"></path></svg>
                 </span>
@@ -243,10 +245,22 @@
         </span>
         <h2 id="mv-t" style="font-size:26px;font-weight:800;line-height:1.2;margin:0 0 10px;color:var(--ink);">Ahora vas a Voluntariados Chile</h2>
         <p style="font-size:15.5px;line-height:1.65;color:var(--gris);margin:0 0 8px;text-wrap:pretty;">Ahí podrás completar tu convocatoria. Al terminar, tu actividad se suma al calendario del Día del Patrimonio Social.</p>
-        <p style="font-size:13.5px;color:#b7babe;margin:0 0 24px;">Redirigiendo en 5 segundos…</p>
+        {{--
+            El prototipo anunciaba «Redirigiendo en 5 segundos…» y su botón
+            sólo cerraba el aviso: no llevaba a ninguna parte, porque allí no
+            había a dónde llevar. Aquí se cumple lo que dice, con la cuenta
+            atrás a la vista, y el botón va al mismo sitio sin esperar.
+
+            Sin enlace configurado (Configuración → General) no se promete
+            ninguna redirección: queda sólo «Volver».
+        --}}
+        <p style="font-size:13.5px;color:#b7babe;margin:0 0 24px;" x-show="urlVoluntariado" x-cloak>
+            Redirigiendo en <span x-text="segundosParaIr"></span> segundo<span x-show="segundosParaIr !== 1">s</span>…
+        </p>
         <div style="display:flex;gap:10px;">
             <button type="button" class="btn btn-outline" style="flex:1;justify-content:center;" x-on:click="cerrarRedirigir()">Volver</button>
-            <button type="button" class="btn btn-primary" style="flex:1.4;justify-content:center;" x-on:click="cerrarRedirigir()">Ir a Voluntariados Chile →</button>
+            <button type="button" class="btn btn-primary" style="flex:1.4;justify-content:center;" x-show="urlVoluntariado" x-cloak
+                    x-on:click="irAhoraAVoluntariado()">Ir a Voluntariados Chile →</button>
         </div>
     </div>
 </div>

@@ -169,7 +169,48 @@ export const registroOrganizador = (inicial = {}) => ({
     tipo: inicial.tipo ?? '',
     raiz: null,
 
+    /*
+     * B6: en el teléfono no se pide el logo. Mismo corte de 760 px que el
+     * resto del sitio y que el wizard.
+     */
+    movil: false,
+
     init() {
         this.raiz = this.$el;
+
+        const pantalla = window.matchMedia('(max-width: 760px)');
+        this.movil = pantalla.matches;
+        pantalla.addEventListener?.('change', (e) => { this.movil = e.matches; });
+    },
+
+    /**
+     * Si hay que exigirle el logo (B5), con la misma regla que el wizard:
+     * obligatorio salvo en «Otra», y nunca en el teléfono. Reclamando una
+     * organización del listado tampoco: su logo ya lo tiene la ONG.
+     */
+    logoObligatorio() {
+        return ! this.movil && ! this.reclamando && this.tipo !== 'Otra';
+    },
+
+    logoError: '',
+
+    /**
+     * Corta el envío si falta el logo cuando hace falta.
+     *
+     * No se usa el `required` del navegador: el `<input type=file>` va oculto
+     * —se pulsa la etiqueta— y Chrome no puede enseñar su aviso sobre un
+     * control que no se ve, así que cortaría el envío sin decir nada. Es la
+     * misma trampa del bloque K, y aquí se ataja con un mensaje propio.
+     */
+    revisarLogo(evento) {
+        const entrada = this.raiz?.querySelector('input[name="org_logo"]');
+
+        this.logoError = '';
+
+        if (! this.logoObligatorio() || (entrada?.files?.length ?? 0) > 0) return;
+
+        evento.preventDefault();
+        this.logoError = 'Sube el logo de tu organización.';
+        entrada?.closest('[data-campo]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     },
 });

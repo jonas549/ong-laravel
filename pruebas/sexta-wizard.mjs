@@ -180,8 +180,12 @@ try {
   await esperar(200);
   const pideEscritorio = await pideEnPaso3();
   di('Y pide sólo el logo', pideEscritorio.join(',') === 'org_logo', pideEscritorio.join(', '));
-  di('Diciendo que es opcional y que se sube después en «Mi perfil»', await p.evaluate(() =>
-    /opcional.*Mi perfil/s.test(document.querySelector('[data-campo="org_logo"]').innerText)));
+  // B5: en escritorio y con un tipo que no es «Otra», se pide de verdad.
+  di('Y lo pide como obligatorio, sin llamarlo opcional', await p.evaluate(() => {
+    const caja = document.querySelector('[data-campo="org_logo"]');
+    return caja.hasAttribute('data-obligatorio') && /\*/.test(caja.querySelector('div').innerText)
+      && ! /opcional/i.test(caja.innerText);
+  }));
 
   await p.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
   await abrirWizard();
@@ -191,6 +195,16 @@ try {
   await pulsar('No, solo quiero difundir');
   e = await estado();
   di('Y «Solo difundir» lleva a «Tu actividad»', e.paso === 4, `paso ${e.paso}`);
+
+  // Si el 3 se mira a mano en el teléfono, el logo sale como opcional y
+  // diciendo dónde subirlo después (B6).
+  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(3));
+  await esperar(250);
+  di('En el teléfono se ofrece como opcional, con «Mi perfil»', await p.evaluate(() => {
+    const caja = document.querySelector('[data-campo="org_logo"]');
+    return ! caja.hasAttribute('data-obligatorio') && /opcional.*Mi perfil/s.test(caja.innerText);
+  }));
+
   await p.setViewport({ width: 1440, height: 1000 });
 
   t('B6 — y el logo se sube después desde «Mi perfil»');

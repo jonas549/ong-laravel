@@ -96,6 +96,17 @@ await p.type('input[name="email"]', `prueba${Date.now()}@ong-laravel.test`);
 await p.type('input[name="password"]', 'clave-larga-1234');
 await p.type('input[name="password_confirmation"]', 'clave-larga-1234');
 
+/*
+ * B5 (sexta tanda): el logo es obligatorio en escritorio salvo en «Otra», así
+ * que aquí se sube uno. Sin esto, lo que faltaría no sería sólo el público
+ * beneficiado, que es lo que este bloque viene a probar.
+ */
+await (await p.$('input[name="org_logo"]')).uploadFile('public/img/logo-fundacion-trascender.png');
+await p.waitForFunction(() => {
+    const d = Alpine.$data(document.querySelector('[data-campo="org_logo"]'));
+    return d.tiene && ! d.reduciendo;
+}, { timeout: 8000 });
+
 await irAPaso(4);
 await p.type('input[name="titulo"]', 'Jornada comunitaria de prueba');
 await p.type('textarea[name="descripcion"]', 'Una descripción cualquiera para la prueba.');
@@ -306,6 +317,18 @@ await p.type('input[name="org_nombre"]', 'Fundación de Prueba');
 await p.type('input[name="email"]', `prueba${Date.now()}@ong-laravel.test`);
 await p.type('input[name="password"]', 'clave-larga-1234');
 await p.type('input[name="password_confirmation"]', 'clave-larga-1234');
+
+// B5: el logo también lo pide este «Continuar», que es de lo que se trata.
+await continuar();
+await new Promise((r) => setTimeout(r, 400));
+di('y sin el logo tampoco pasa', await paso() === 3 && /Logo de la organización/.test(await textoResumen() ?? ''));
+
+await (await p.$('input[name="org_logo"]')).uploadFile('public/img/logo-fundacion-trascender.png');
+await p.waitForFunction(() => {
+    const d = Alpine.$data(document.querySelector('[data-campo="org_logo"]'));
+    return d.tiene && ! d.reduciendo;
+}, { timeout: 8000 });
+
 await continuar();
 await new Promise((r) => setTimeout(r, 500));
 di('con los datos puestos sí pasa al 4', await paso() === 4);

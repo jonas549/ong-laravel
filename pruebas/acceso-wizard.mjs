@@ -250,6 +250,23 @@ await p.evaluate(() => {
 });
 await esperar(300);
 
+/*
+ * B5 (sexta tanda): el logo es obligatorio en escritorio salvo en «Otra», así
+ * que hay que subirlo, igual que haría una persona.
+ */
+await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(3));
+await esperar(250);
+const campoLogo = await p.$('input[name="org_logo"]');
+if (campoLogo) {
+  await campoLogo.uploadFile('public/img/logo-fundacion-trascender.png');
+  await p.waitForFunction(() => {
+    const d = Alpine.$data(document.querySelector('[data-campo="org_logo"]'));
+    return d.tiene && ! d.reduciendo;
+  }, { timeout: 8000 }).catch(() => null);
+}
+await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(4));
+await esperar(250);
+
 const faltan = await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]'))
   .camposQueFaltan().map((e) => e.campo));
 di('El formulario queda completo antes de enviar', faltan.length === 0, faltan.join(' · '));

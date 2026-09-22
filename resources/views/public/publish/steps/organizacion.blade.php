@@ -106,9 +106,13 @@
              ofrece igual cuando el paso se pinta por otra cosa: subirlo es
              opcional, lo que cambia es si obliga a pasar por aquí. --}}
         <div data-campo="org_logo" data-etiqueta="Logo de la organización"
+             x-bind:data-obligatorio="logoObligatorio() ? '' : null"
              x-data="campoImagen({ maxKb: 500, ladoMaximo: 800, que: 'El logo' })"
              x-show="! reclamando && ! ficha?.logo">
-            <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:8px;">Logo de la organización</div>
+            {{-- B5: el asterisco y la marca de obligatorio los pone Alpine,
+                 porque dependen del tipo elegido y del ancho de la pantalla.
+                 `data-obligatorio` es lo que lee la guía de errores. --}}
+            <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:8px;">Logo de la organización<span x-show="logoObligatorio()" x-cloak> *</span></div>
             <div style="display:flex;align-items:center;gap:16px;">
                 <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
                     <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:cover;">
@@ -120,7 +124,11 @@
                         <input type="file" name="org_logo" accept="image/jpeg,image/png,image/webp" style="display:none;"
                                x-on:change="elegir($event)">
                     </label>
-                    <div class="helper" style="margin-top:7px;">PNG o JPG · máx. 500 KB · 400×400 px recomendado. Es opcional: si no lo subes ahora, se mostrarán las iniciales y puedes subirlo después desde «Mi perfil».</div>
+                    {{-- La ayuda dice «opcional» sólo cuando de verdad lo es. --}}
+                    <div class="helper" style="margin-top:7px;">
+                        PNG o JPG · máx. 500 KB · 400×400 px recomendado.
+                        <span x-show="! logoObligatorio()" x-cloak>Es opcional: si no lo subes ahora, se mostrarán las iniciales y puedes subirlo después desde «Mi perfil».</span>
+                    </div>
                     <div class="helper" x-show="reduciendo" x-cloak>Preparando la imagen…</div>
                     <div class="helper" x-show="tiene && ! error" x-cloak>
                         <span x-text="nombre"></span> · <span x-text="peso"></span>

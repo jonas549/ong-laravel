@@ -10,10 +10,22 @@
 <section id="voluntariado" style="scroll-margin-top:180px;position:relative;z-index:4;max-width:1180px;margin:-96px auto 0;padding:0 40px 88px;">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;align-items:stretch;">
         @foreach ($tarjetas as $w)
-            {{-- C5: un enlace a otro sitio —Voluntariados Chile— se abre en otra
-                 pestaña, para no sacar a nadie del nuestro. --}}
-            @php $fuera = str_starts_with((string) $w->href, 'http') && ! str_starts_with((string) $w->href, url('/')); @endphp
-            <a href="{{ $w->href }}" @if ($fuera) target="_blank" rel="noopener" @endif class="part-card reveal"
+            {{--
+                C5: un enlace a otro sitio —Voluntariados Chile— se abre en
+                otra pestaña, para no sacar a nadie del nuestro.
+
+                Y una tarjeta cuyo enlace esté vacío o en `#` **no se pinta
+                como enlace**: se ve igual, pero no se puede pulsar. Un enlace
+                que no lleva a ninguna parte es peor que ninguno, porque quien
+                lo pulsa cree que el sitio está roto. El panel enseña el campo
+                vacío, que es donde se arregla.
+            --}}
+            @php
+                $destino = trim((string) $w->href);
+                $destino = ($destino === '' || $destino === '#') ? null : $destino;
+                $fuera = $destino && str_starts_with($destino, 'http') && ! str_starts_with($destino, url('/'));
+            @endphp
+            <{{ $destino ? 'a' : 'div' }} @if ($destino) href="{{ $destino }}" @endif @if ($fuera) target="_blank" rel="noopener" @endif class="part-card reveal"
                style="position:relative;overflow:hidden;background:#fff;border:1px solid #eef0f1;border-top:4px solid {{ $w->color }};border-radius:18px;padding:18px 18px 16px;display:flex;flex-direction:column;height:100%;box-shadow:0 22px 44px -26px rgba(0,0,0,.34);">
 
                 @if ($w->art_path)
@@ -39,7 +51,7 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </span>
                 </span>
-            </a>
+            </{{ $destino ? 'a' : 'div' }}>
         @endforeach
     </div>
 </section>

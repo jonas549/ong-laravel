@@ -47,7 +47,20 @@
         </div>
 
         <p class="dato-editable" style="font-size:15px;margin:44px 0 18px;color:var(--gris);">{{ $seccion->texto('pregunta', $b) }}</p>
-        <a href="{{ $seccion->enlace('cta_enlace', $b) ?: '#kit' }}" class="btn btn-primary boton-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+        {{--
+            C5, de paso: `#kit` es el ancla del prototipo y aquí no existe
+            ninguna sección con ese id, así que el botón no llevaba a ninguna
+            parte. Con el kit de difusión configurado (Configuración → General)
+            lleva ahí; sin él y sin enlace propio, el botón no se pinta.
+        --}}
+        @php
+            $destinoKit = $seccion->enlace('cta_enlace', $b);
+            $destinoKit = ($destinoKit === '' || $destinoKit === '#kit') ? \App\Models\Setting::get('kit_difusion_url') : $destinoKit;
+        @endphp
+        @if (filled($destinoKit))
+        <a href="{{ $destinoKit }}" @if (str_starts_with($destinoKit, 'http')) target="_blank" rel="noopener" @endif
+           class="btn btn-primary boton-editable">{{ $seccion->texto('cta_texto', $b) }}</a>
+        @endif
         <p class="dato-editable" style="font-size:13px;margin:16px 0 0;color:#9a9ca0;">{{ $seccion->texto('nota', $b) }}</p>
     </div>
 </section>

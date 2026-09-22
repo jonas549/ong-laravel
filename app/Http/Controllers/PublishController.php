@@ -524,6 +524,8 @@ class PublishController extends Controller
                  *
                  * Sin sesión no hay ficha y se pregunta todo.
                  */
+                // El desvío del paso 1, configurable (Configuración → General).
+                'urlVoluntariado' => trim((string) Setting::get('voluntariado_url')),
                 'ficha' => Auth::user()?->organization?->fichaParaElWizard(),
                 'saltarPaso2' => filled(Auth::user()?->organization?->tipo),
                 'saltarPaso3' => ($org = Auth::user()?->organization) !== null && $org->faltanEnElPaso3() === [],

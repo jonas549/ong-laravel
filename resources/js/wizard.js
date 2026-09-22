@@ -140,9 +140,23 @@ export const wizard = (inicial) => ({
             case 'org_nombre': return ! this.ficha.nombre;
             case 'org_tipo_otro': return this.esOtra() && ! this.ficha.tipo_otro;
             case 'org_unidad_educativa': return this.esEducativa() && ! this.ficha.unidad;
-            case 'org_logo': return ! this.ficha.logo && ! this.esOtra() && ! this.movil;
+            case 'org_logo': return ! this.ficha.logo && this.logoObligatorio();
             default: return true;
         }
+    },
+
+    /**
+     * Si a este tipo, en esta pantalla, hay que exigirle el logo.
+     *
+     * Decisión del cliente (B5/B6): obligatorio en todos los tipos menos
+     * «Otra», y en el teléfono nunca —allí se sube después desde «Mi
+     * perfil»—. Lo decide el navegador porque depende del ancho, así que la
+     * regla del servidor se queda en `nullable`: exigirlo allí rebotaría a
+     * quien publica desde el teléfono pidiéndole un campo que no se le pide,
+     * que es el peor error del bloque K.
+     */
+    logoObligatorio() {
+        return ! this.movil && ! this.esOtra();
     },
 
     /** B1: con sesión y el tipo ya en su ficha, el paso 2 no pregunta nada. */
@@ -205,9 +219,45 @@ export const wizard = (inicial) => ({
         this.irA(hasta);
     },
 
-    // Las dos opciones del modal hacen lo mismo que en el prototipo:
-    // cerrar y seguir al paso 2.
+    /* ─────────────────── el desvío a Voluntariados Chile (paso 1) ── */
+
+    /*
+     * El prototipo decía «Redirigiendo en 5 segundos…» y no redirigía: su
+     * botón sólo cerraba el aviso. Se replica lo que el aviso promete —la
+     * cuenta atrás a la vista y la redirección— porque la regla del proyecto
+     * es replicar los botones del prototipo con el backend de verdad.
+     *
+     * El destino sale de Configuración → General; vacío, no se promete nada y
+     * el aviso se queda en «Volver».
+     */
+    urlVoluntariado: inicial.urlVoluntariado ?? '',
+    segundosParaIr: 5,
+    cuentaAtras: null,
+
+    irAVoluntariado() {
+        this.redirigir = true;
+
+        if (! this.urlVoluntariado) return;
+
+        this.segundosParaIr = 5;
+        clearInterval(this.cuentaAtras);
+
+        this.cuentaAtras = setInterval(() => {
+            this.segundosParaIr--;
+
+            if (this.segundosParaIr <= 0) this.irAhoraAVoluntariado();
+        }, 1000);
+    },
+
+    irAhoraAVoluntariado() {
+        clearInterval(this.cuentaAtras);
+
+        if (this.urlVoluntariado) window.location.assign(this.urlVoluntariado);
+    },
+
+    // «Volver» cancela la cuenta atrás y sigue al paso 2, como el prototipo.
     cerrarRedirigir() {
+        clearInterval(this.cuentaAtras);
         this.redirigir = false;
         this.irA(2);
     },

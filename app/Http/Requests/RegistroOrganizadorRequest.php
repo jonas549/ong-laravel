@@ -67,6 +67,14 @@ class RegistroOrganizadorRequest extends FormRequest
             'org_tipo_otro' => ['nullable', 'required_if:org_tipo,Otra', 'string', 'max:255'],
             'org_unidad_educativa' => ['nullable', 'required_if:org_tipo,Institución educativa', 'string', 'max:255'],
 
+            /*
+             * B5/B6: el logo se exige en la pantalla —salvo en «Otra» y salvo
+             * en el teléfono— y aquí se queda `nullable`. El servidor no sabe
+             * desde qué pantalla se envía, y exigirlo rebotaría a quien se
+             * registra desde el móvil pidiéndole un campo que no se le pidió.
+             */
+            'org_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:500'],
+
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', new CorreoEnviable, Rule::unique('users', 'email')],
             /*
@@ -90,6 +98,7 @@ class RegistroOrganizadorRequest extends FormRequest
             'password.max' => 'La contraseña no puede pasar de 72 caracteres.',
             'org_tipo_otro.required_if' => 'Especifica qué tipo de organización es.',
             'org_unidad_educativa.required_if' => 'Indica el nombre de la unidad educativa.',
+            'org_logo.max' => 'El logo no puede pesar más de 500 KB.',
             'org_nombre.unique' => 'Ya hay una organización registrada con ese nombre. '
                 .'Si es la tuya, inicia sesión con la cuenta que la creó. '
                 .'Si es otra distinta, escribe un nombre que la diferencie.',
@@ -104,6 +113,7 @@ class RegistroOrganizadorRequest extends FormRequest
         return [
             'org_nombre' => 'el nombre de la organización',
             'org_tipo' => 'el tipo de organización',
+            'org_logo' => 'el logo de la organización',
             'name' => 'el nombre',
             'email' => 'el correo',
             'password' => 'la contraseña',
