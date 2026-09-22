@@ -1,145 +1,94 @@
-# Progreso — cuarta y quinta tanda
+# Progreso — sexta tanda
 
-**Fecha:** 20/09/2026
+**Fecha:** 22/09/2026
 **Producción:** https://ong.sandboxdelta.com
-**Avance:** la cuarta cerrada entera (C1–C6) y la quinta con Q1, Q2 y Q3
-cerrados; Q4 está hecho pero falta comprobarlo en el servidor. Con la cuarta
-queda cerrada también la tercera, cuyo único cabo suelto era P21.
+**Estado:** B1–B8, C1–C6 y D1 hechos y verificados **en local**, en Chrome.
+Sin subir: la tanda lleva una migración que corrige un dato (C5) y la regla es
+avisar antes. A1 sigue sin causa: en local no se reproduce y hace falta el log
+de producción.
 
-El día entero, con el porqué de cada decisión, está en
-`BITACORA-2026-09-20.md`.
+Lo de la quinta tanda y la importación de organizaciones (21/09) está en
+`BITACORA-2026-09-20.md` y en los commits `1f2ecc0`, `0cb4d2b` y `0f240ee`.
 
 ---
 
 ## LO QUE SE HIZO
 
-Verificado en Chrome de verdad. «(prod)» = comprobado además contra el
-servidor, después de desplegar.
-
-| # | Qué | Verificación |
+| # | Qué | Verificación (local) |
 |---|---|---|
-| C1 | El buscador de organizaciones, también al crear cuenta de organizador; y un solo sitio del que sale para las dos pantallas | `registro-organizacion.mjs` (34), `organizaciones-wizard.mjs` (27) · **(prod)** |
-| C2 | El desplegable de direcciones ya no se reabre al elegir una sugerencia | contando peticiones a Photon: cero de más |
-| C3 | Fuera la columna «Estado» de inscripciones —tabla, filtro, exportar y dashboard—, con las bajas marcadas en su fila | `ids-panel.mjs` (53), `ids-exportaciones.mjs` (7) · **(prod)** |
-| C4 | El paso 3 se salta si la ficha está completa, y si no, pide sólo lo que falta; la barra renumera sin dejar hueco | `paso3-salto.mjs` (28) · **(prod)** |
-| C5 | Cómo se verificó P12, la marquesina | `marquesina.mjs` (8) · **(prod)** 5 organizaciones, ninguna repetida |
-| C6 | Las credenciales de producción, fuera del repositorio | `c6-credenciales.mjs`: 12 en el ensayo local, 12 en producción |
-| Q1 | Qué pasa al cancelar una actividad, y qué haría falta para republicarla | Respuesta, sin tocar nada. Ver la bitácora |
-| Q2 | El logo de la organización se lee en la ficha: alto fijo y ancho según su forma | `ficha-actividad.mjs` (45) · **(prod)** 11 de 12 fichas |
-| Q3 | Un enlace sin `https://` no rebota, en los cinco sitios donde se escribe uno | `quinta-tanda.mjs` (33) · **(prod)** |
-| Q4 | El kit de difusión, en la barra de las seis pantallas de mi-cuenta | `quinta-tanda.mjs` (33) · **falta en prod**: no hay cuenta de organizador |
-
-Repaso contra el servidor: `cierre-produccion.mjs` 27 de 27 y
-`quinta-produccion.mjs` para Q2 y Q3.
-
----
-
-## LAS DECISIONES QUE HUBO QUE TOMAR
-
-**C1 — los sitios donde nace una organización eran dos, no uno.** El paso 3
-del wizard y `/mi-cuenta/registro`. Aquél tenía buscador y éste un campo de
-texto suelto, así que quien llegaba por ahí creaba un duplicado de su propia
-organización y se quedaba sin su historial. No se ha copiado el buscador: se
-ha sacado a `resources/js/organizaciones.js`, a `<x-buscador-organizacion>` y
-al trait `App\Support\ReclamarOrganizacion`, y lo usan los dos. El panel de
-administración no crea organizaciones: edita las que hay.
-
-Una consecuencia buscada: registrarse ya no puede duplicar un nombre de
-organización. Era la única puerta que se saltaba la regla de P19 del 11/09.
-
-**C2 — no era el `$el` de Alpine.** Elegir una sugerencia escribe la dirección
-en el campo y dispara un `input` para que Alpine se entere; ese `input` volvía
-a entrar en el buscador, que pedía a Photon la etiqueta entera y abría el
-desplegable con lo que devolviera. Sólo se veía cuando esa segunda consulta
-traía resultados, de ahí que pareciera aleatorio. El mismo fallo estaba
-copiado en el editor de `/mi-cuenta`.
-
-**C3 — el filtro no se quita, se cambia.** Ofrecía los tres estados del
-esquema y dos no separaban nada: «pendiente» devolvía todo y «confirmado»,
-nada, porque el doble opt-in nunca se construyó. Se queda uno que sí separa:
-todas / sin las canceladas / sólo las canceladas. La columna sí desaparece, y
-la baja se marca en la propia fila.
-
-**C4 — el tipo de organización se puede cambiar después de decidir el salto.**
-Se elige en el paso 2, y de él dependen dos campos obligatorios del 3:
-«Otra» pide describirse e «Institución educativa» pide la unidad. Con el salto
-decidido sólo en el servidor, cambiar el tipo dejaba el 3 saltado pidiendo un
-dato que la ficha no tiene: un campo obligatorio fuera de pantalla, que es el
-peor error de todos. El salto se recalcula en el navegador y el paso 3 vuelve,
-barra incluida.
-
-El paso 3 se esconde de la barra desde `estiloPaso` y no con `x-show`: esa
-función devuelve el style entero, y Alpine con un `:style` de texto reemplaza
-el atributo. Las dos reglas escriben en `display` y se peleaban.
-
-**C6 — se desactivan, no se borran.** Borrar `organizador@ong-laravel.test` se
-llevaría por delante su organización y sus actividades. Quedan en el panel,
-inactivas, y con contraseña nueva por si alguien las reactivara.
-
-**Q2 — el logo no faltaba: no se leía.** Cuatro de las cinco organizaciones de
-producción tienen logo, el `<img>` se pintaba y la imagen cargaba. Son logos
-de palabras —uno de 668×100 px— y en un cuadrado de 54 salían a 54×8. Ahora
-el alto manda y el ancho sale de la proporción, hasta 170 px.
-
-**Q3 — lo decide el servidor, no el navegador.** El completado del `https://`
-existía desde el punto 31, pero sólo en dos campos y sólo al salir del campo:
-enviando con Enter el `blur` no siempre llega. `App\Support\Enlace` completa
-antes de validar y lo usan los cinco sitios. De paso, `url` a secas aceptaba
-`javascript:`, que acababa en un `href` público: la regla es `url:http,https`.
-
-**Q4 — la barra se saca a un componente.** Estaba escrita dentro de «Mis
-actividades» y sólo se veía allí. Usa el ajuste `kit_difusion_url` que ya
-existía (punto 25) y no uno nuevo; vacío no pinta el botón.
+| A1 | El 500 de `/admin/paginas/home` **no se reproduce en local**. El circuito entero de duplicar funciona | `duplicar-circuito.mjs` (30), `duplicar-seccion.mjs` (21), y 35 secciones con copias de copias, orden al revés y copias escondidas |
+| B1 | Con sesión y tipo en la ficha, el paso 2 no se pinta; la barra renumera | `sexta-wizard.mjs` (39) |
+| B2 | El paso 3 casi vacío era una ficha sin tipo (reclamada desde el registro). El tipo se pregunta en el 2 y el 3 se salta | `sexta-wizard.mjs` |
+| B3 | «Cerrar sesión y entrar con otra cuenta» junto a «Tu cuenta», sin salir ni perder lo escrito | `sexta-wizard.mjs` |
+| B4 | La hora es un `<select>` con las 24 en punto en AM/PM, abre en las 9:00 AM | `hora-y-campos.mjs` (43), escritorio y 390 px |
+| B5 | «Otra» sin logo no pasa por el paso 3 | `sexta-wizard.mjs` |
+| B6 | En el teléfono el logo no obliga a nadie; se sube después en «Mi perfil» | `sexta-wizard.mjs` |
+| B7 | Títulos de campo a 14,5 px en negrita; la ayuda, 12,5 px gris | `sexta-formulario.mjs` (20) |
+| B8 | En el teléfono, botón «Elegir en el calendario» que es un campo de fecha nativo | `sexta-formulario.mjs` |
+| C1 | «¿Cómo quieres participar hoy?» ya no se recorta en el teléfono | `sexta-home.mjs` (29), de 320 a 1440 px |
+| C2 | El logo del pie salía achatado en Safari del iPhone | WebKit de Playwright: 310×288 → 310×229 |
+| C3 | YouTube del pie, al canal de la Comunidad | `sexta-home.mjs` |
+| C4 | El logo de la Comunidad enlaza a comunidad-org.cl en cabecera y pies | `sexta-home.mjs` |
+| C5 | «Quiero ser voluntario» a voluntariadoschile.cl/oportunidades | `sexta-home.mjs`, `home-tarjetas-y-logos.mjs` (58) |
+| C6 | «Ver actividad» con relleno naranja; la imagen abre la ficha | `sexta-home.mjs` |
+| D1 | Correo «Guía para organizadores» al registrar una actividad | `guia-organizador.mjs` (14), leído en Mailpit |
 
 ---
 
-## LO QUE HAY QUE SABER PARA SEGUIR
+## LAS DECISIONES
 
-**Las credenciales de producción ya no están en el repositorio.** Salen de
-`pruebas/credenciales.mjs`, cuyos valores por defecto sólo valen en una base
-local recién sembrada. Para correr contra el servidor van por el entorno:
+**B1/B2 — decide el navegador, con la ficha entera.** Qué pasos se saltan
+cambia sin recargar: al elegir tipo, al entrar a mitad (P14) y al cambiar de
+cuenta (B3). El servidor manda los hechos (`Organization::fichaParaElWizard()`)
+y pinta el estado de partida; el paso 3 lleva siempre todos sus campos y Alpine
+enseña los que falten (`faltaEnElPaso3()` en `wizard.js`). Con el tipo en la
+ficha **ya no se puede cambiar desde el wizard**: es lo que pide B1.
 
-    DPS_URL=https://ong.sandboxdelta.com DPS_ADMIN=... DPS_CLAVE_ADMIN=... \
-      node pruebas/ids-panel.mjs
+**B4 — la opción vacía va entre las 8:00 y las 9:00 AM.** Un `<select>` nativo
+abre por la opción elegida; poner las 9:00 de oficio enviaría una hora que nadie
+eligió. Así abre ahí sin dejar nada puesto, y sirve para quitar la hora. Las
+horas que no son en punto (fichas antiguas) se conservan como una opción más.
 
-**Y ya no hay cuenta de organizador de pruebas en producción.** Las
-comprobaciones que necesitan esa sesión —`hilo-moderacion-lectura.mjs`,
-`evaluaciones-fotos-lectura.mjs`, la parte de C4 de `cierre-produccion.mjs`—
-no se pueden correr allí hasta que haya otra.
+**B6 — «móvil» es menos de 760 px de ancho**, el mismo corte del resto del sitio.
 
-**Las suites que escriben no se corren contra el servidor.** Devolver una
-actividad a revisión avisa por correo a todos los administradores activos, y
-allí dos son personas de verdad. Para eso están las gemelas `*-lectura.mjs`,
-`tanda-produccion.mjs` y `cierre-produccion.mjs`.
+**C2 — era de WebKit, y el HTML fuente también lo tiene.** Una imagen hija
+directa de un flex en columna con `max-width:100%`: Safari encoge el ancho y no
+el alto. Chrome no lo hace, por eso no se veía desde aquí. Se envuelve en una
+caja de bloque.
 
-**El `UserSeeder` ya no pisa contraseñas.** `cuenta()` sólo la escribe al
-crear, así que un `db:seed --force` en el servidor refresca nombre y rol pero
-no devuelve la clave a la del repositorio. Era lo grave de P21.
+**C5 — el enlace ya se editaba** en Contenido → Tarjetas de «¿cómo
+participar?». En producción ponía `voluntariadochile.cl`, sin la «s». La
+migración `2025_02_02_000001` lo corrige sólo si la fila tiene uno de los
+enlaces conocidos.
+
+**D1 — correo aparte, no dentro del de «recibimos tu actividad».** Aquél es una
+vista fija que la ONG no puede editar, y con aprobación automática no se envía.
+Llega a producción por `dps:instalar` (crea la plantilla y el ajuste que falten).
+
+---
+
+## LO QUE HAY QUE HACER EN PRODUCCIÓN
+
+1. **Subir**, avisando antes por la migración de C5.
+2. **A1**: leer `~/ong-laravel/storage/logs/laravel.log` y buscar la entrada de
+   `paginas/home`. En local no hay forma de reproducirlo.
+3. Repasar en producción con una cuenta de administración y otra de organizador:
+   `sexta-home.mjs`, `sexta-formulario.mjs` y la parte de sólo lectura de
+   `sexta-wizard.mjs`. `duplicar-circuito.mjs` y `guia-organizador.mjs`
+   **escriben**: no se corren allí.
 
 ---
 
 ## LO QUE SIGUE PENDIENTE
 
-1. **Q4 sin comprobar en el servidor.** La barra vive detrás de
-   `role:organizer` y desde C6 no queda ninguna cuenta con ese rol activa en
-   producción. Hace falta reactivar la sembrada un rato o crear una de
-   pruebas; lo decide Jonas.
-2. **Los tres agujeros de cancelar y republicar** que sacó Q1:
-   `inscripcion_habilitada` no se vuelve a encender, se reenvía el correo de
-   publicación con QR, y a los inscritos nadie les avisa de la vuelta. En
-   torno a un día, más la decisión de si republicar reabre inscripciones.
-3. El Excel de organizaciones del cliente. `dps:importar-organizaciones` está
-   listo y probado; falta el archivo.
-4. Las tres plantillas de moderación —recibida, necesita ajustes, cancelada—
-   siguen siendo vistas Blade fijas y no editables.
-5. `activity_evaluations.foto_path` quedó sin uso; quitarlo es una migración
-   destructiva sobre datos de producción y el único motivo sería la limpieza.
-6. Duplicar «Cifras» o «Voces» copia los textos y no la lista: las dos copias
-   enseñan los mismos elementos.
-7. El ingreso con código al correo no se construyó; se hizo «recuperar
-   contraseña», que era la otra mitad del encargo.
-8. **El filtro de inscripciones de C3**, por si se quería fuera del todo y no
-   sustituido por el de las bajas.
-
-El detalle de la tercera tanda está en el historial de git: los commits de
-P1–P20 llevan escrito el porqué de cada decisión.
+1. **A1** sin causa (ver arriba).
+2. **B2 con la cuenta real** (carolinamileon@gmail.com): la causa es la
+   probable —una organización del listado sin tipo—, pero no se ha podido mirar
+   su ficha sin acceso a producción.
+3. **D2 y D3**: sólo respuesta, esperando las piezas de Canva.
+4. Lo de antes: Q4 sin verificar en producción, los tres agujeros de
+   cancelar/republicar, las tres plantillas de moderación fijas, `foto_path`,
+   duplicar «Cifras»/«Voces», el ingreso con código, el filtro de C3.
+5. El enlace de LinkedIn del pie sigue en `#`: no llegó dirección.
+6. El modal «Ahora vas a Voluntariados Chile» del paso 1 dice «Redirigiendo en
+   5 segundos…» y no redirige: su botón lleva al paso 2, como en el prototipo.
