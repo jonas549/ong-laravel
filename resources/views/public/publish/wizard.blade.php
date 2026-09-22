@@ -87,6 +87,26 @@
     </button>
 </div>
 
+{{--
+    ── B3: con la sesión abierta, con qué cuenta se publica ──
+
+    La misma franja, arriba del todo y en todos los pasos. Estaba dentro del
+    bloque «Tu cuenta» del paso 3, y ahí no se llega nunca: con la ficha
+    completa ese paso se salta (B1/B2), así que el botón no aparecía. Es para
+    quien se encuentra abierta la sesión de otra persona —un ordenador
+    compartido en la oficina— o la suya equivocada.
+
+    Cerrar sesión va por `fetch`: lo escrito en «Tu actividad» se queda donde
+    está. Ése es el punto, no el botón.
+--}}
+<div class="acceso-aviso" x-show="conSesion" x-cloak>
+    <span>Publicas como <strong style="color:var(--ink);" x-text="correoCuenta">{{ auth()->user()?->email }}</strong></span>
+    <button type="button" class="btn btn-outline btn-sm"
+            x-on:click="salirYEntrarConOtra()" x-bind:disabled="saliendo"
+            x-text="saliendo ? 'Cerrando sesión…' : 'Cerrar sesión y entrar con otra cuenta'">Cerrar sesión y entrar con otra cuenta</button>
+    <span class="field-error" x-show="salidaError" x-cloak x-text="salidaError" style="flex:1 1 100%;text-align:center;"></span>
+</div>
+
 {{-- El diálogo de acceso. --}}
 <div class="acceso-fondo" x-show="accesoAbierto" x-cloak
      x-on:click.self="cerrarAcceso()" x-on:keydown.escape.window="cerrarAcceso()">

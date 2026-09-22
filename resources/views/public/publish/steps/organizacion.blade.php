@@ -157,20 +157,9 @@
             La verás en «Mis actividades» junto a las demás.
         </p>
 
-        {{--
-            B3: salir y entrar con otra cuenta sin dejar el wizard. Es para
-            quien se encuentra abierta la sesión de otra persona —un ordenador
-            compartido— o la suya equivocada: el menú de la cabecera le sacaba
-            de aquí y perdía lo escrito. Lo del paso 4 se queda donde está; lo
-            de la organización se vacía, porque era de la otra cuenta.
-        --}}
-        <p style="font-size:14px;line-height:1.6;color:var(--gris);margin:12px 0 0;">
-            ¿No es tu cuenta?
-            <button type="button" class="textlink" style="background:none;border:0;padding:0;font:inherit;cursor:pointer;"
-                    x-on:click="salirYEntrarConOtra()" x-bind:disabled="saliendo"
-                    x-text="saliendo ? 'Cerrando sesión…' : 'Cerrar sesión y entrar con otra cuenta'">Cerrar sesión y entrar con otra cuenta</button>
-        </p>
-        <p class="field-error" x-show="salidaError" x-cloak x-text="salidaError" style="margin-top:8px;"></p>
+        {{-- B3 —«¿no es tu cuenta?»— vive en la franja de arriba del wizard,
+             que se ve en todos los pasos: éste se salta con la ficha completa
+             (B1/B2) y ahí el botón no llegaba a aparecer nunca. --}}
     </div>
 
     <div style="padding:30px;background:#fdfcfb;" x-show="! conSesion" x-cloak>

@@ -226,25 +226,50 @@ try {
 
   /* ═══════════════ B3 ═══════════════════════════════════════════ */
 
+  t('B3 — la franja de arriba dice con qué cuenta se publica');
+
+  // La ficha de A quedó sin logo (B6), así que el 3 se pinta; da igual: la
+  // franja va arriba del wizard y se ve en todos los pasos. Eso es lo que se
+  // comprueba, porque el botón vivía dentro del 3 y ahí no se llega nunca con
+  // la ficha completa.
+  await abrirWizard();
+
+  const franja = () => p.evaluate(() => {
+    const f = [...document.querySelectorAll('.acceso-aviso')].find((x) => x.getBoundingClientRect().height > 0);
+    if (! f) return null;
+    const b = [...f.querySelectorAll('button')].find((x) => x.getBoundingClientRect().width > 0);
+    return { texto: f.innerText.replace(/\s+/g, ' ').trim(), boton: b?.innerText.trim() ?? '', arriba: f.getBoundingClientRect().top };
+  });
+
+  for (const paso of [1, 2, 3, 4]) {
+    await p.evaluate((n) => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(n), paso);
+    await esperar(200);
+    const f = await franja();
+    di(`Paso ${paso}: la franja dice con qué cuenta se publica`, !! f && f.texto.includes(A.correo), f?.texto.slice(0, 60));
+    di(`Paso ${paso}: y lleva el botón de cambiar de cuenta`, f?.boton === 'Cerrar sesión y entrar con otra cuenta', f?.boton);
+  }
+
+  di('Va arriba del todo, antes del formulario', await p.evaluate(() => {
+    const f = [...document.querySelectorAll('.acceso-aviso')].find((x) => x.getBoundingClientRect().height > 0);
+    return f.getBoundingClientRect().top < document.querySelector('form').getBoundingClientRect().top;
+  }));
+  di('Sin sesión no se pinta ésta, sino la de «¿Ya tienes cuenta?»', await p.evaluate(() =>
+    document.querySelectorAll('.acceso-aviso').length === 2
+    && [...document.querySelectorAll('.acceso-aviso')].filter((x) => x.getBoundingClientRect().height > 0).length === 1));
+
   t('B3 — cerrar sesión y entrar con otra cuenta sin salir');
 
-  await abrirWizard();
-  // Escribe en «Tu actividad» y vuelve al 3, que es donde está el botón.
-  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irA(4));
+  // Se escribe en «Tu actividad» y se cambia de cuenta desde el paso 4, que es
+  // donde está quien ya tiene ficha completa.
+  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(4));
   await esperar(200);
   await p.type('[name="titulo"]', `Actividad escrita antes de cambiar ${SELLO}`);
   await p.type('[name="descripcion"]', 'Descripción que no se puede perder.');
-  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irA(3));
-  await esperar(200);
-
-  di('En el 3, junto a «Tu cuenta», está la opción', await p.evaluate(() =>
-    [...document.querySelectorAll('button')].some((x) => x.getBoundingClientRect().width > 0
-      && x.innerText.includes('Cerrar sesión y entrar con otra cuenta'))));
 
   await pulsar('Cerrar sesión y entrar con otra cuenta');
-  await esperar(600);
+  await esperar(700);
   e = await estado();
-  di('Cierra la sesión sin recargar', e.sesion === false && e.paso === 3, `paso ${e.paso}`);
+  di('Cierra la sesión sin recargar ni cambiar de paso', e.sesion === false && e.paso === 4, `paso ${e.paso}`);
   di('Y abre el acceso', await p.evaluate(() => document.querySelector('.acceso-caja').getBoundingClientRect().height > 0));
   const cookieSinSesion = await p.evaluate(async () => (await fetch('/mi-cuenta/actividades', { redirect: 'manual' })).type);
   di('El servidor ya no la tiene abierta', cookieSinSesion === 'opaqueredirect');
@@ -255,12 +280,12 @@ try {
   await esperar(900);
   e = await estado();
   di('**Entra con la otra cuenta**', e.sesion === true && e.correo === Bc.correo, e.correo);
+  di('**Y la franja lo dice**', (await franja())?.texto.includes(Bc.correo), (await franja())?.texto.slice(0, 60));
   di('Con su organización en el formulario', await p.evaluate((org) =>
     document.querySelector('[name="org_nombre"]').value === org, Bc.org));
   di('**Y lo escrito en «Tu actividad» sigue ahí**', await p.evaluate((s) =>
     document.querySelector('[name="titulo"]').value.includes(s)
     && document.querySelector('[name="descripcion"]').value === 'Descripción que no se puede perder.', String(SELLO)));
-  di('Su ficha está completa: pasa al 4', e.paso === 4, `paso ${e.paso}`);
 
   // El token nuevo está puesto: un POST con el del formulario no da 419.
   const conToken = await p.evaluate(async () => {
@@ -276,16 +301,14 @@ try {
 
   t('B3 — y si al final no entra con ninguna');
 
-  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irA(3));
-  await esperar(200);
-  // Con la ficha de B completa el 3 se salta; se fuerza a mirar el botón.
-  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(3));
-  await esperar(200);
   await pulsar('Cerrar sesión y entrar con otra cuenta');
   await esperar(600);
   await pulsar('Cancelar');
   e = await estado();
-  di('Queda sin sesión, en el 3', e.sesion === false && e.paso === 3);
+  di('Queda sin sesión', e.sesion === false);
+  di('Y la franja vuelve a ofrecer iniciar sesión', (await franja())?.texto.includes('¿Ya tienes cuenta?'), (await franja())?.texto.slice(0, 40));
+  await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).irAlPaso(3));
+  await esperar(200);
   const sinCuenta = await pideEnPaso3();
   di('Y el 3 pide la organización entera, vacía', sinCuenta.includes('org_nombre') && await p.evaluate(() =>
     document.querySelector('[name="org_nombre"]').value === ''), sinCuenta.join(', '));
