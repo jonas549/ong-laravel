@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\PlantillaMail;
 use App\Models\Activity;
 use App\Models\EmailTemplate;
+use App\Models\Setting;
 use App\Models\Registration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -163,6 +164,32 @@ class CorreoTransaccional
         ], $actividad, incrustadas: $qr === '' ? [] : [
             'qr' => ['datos' => $qr, 'nombre' => 'qr-evaluacion.png', 'mime' => 'image/png'],
         ]);
+    }
+
+    /**
+     * La guía para organizadores (D1 de la sexta tanda), a la organización que
+     * acaba de registrar una actividad.
+     *
+     * Sin enlace configurado no sale: un correo cuyo botón no lleva a ninguna
+     * parte es peor que ninguno.
+     */
+    public function guiaOrganizador(Activity $actividad): bool
+    {
+        $destino = $actividad->organization?->user?->email;
+        $guia = trim((string) Setting::get('guia_organizador_url'));
+
+        if (blank($destino) || $guia === '') {
+            return false;
+        }
+
+        return $this->enviar('guia_organizador', $destino, [
+            'nombre' => $actividad->organization?->user?->name ?? '',
+            'organizacion' => $actividad->organization?->nombre ?? '',
+            'actividad' => $actividad->titulo,
+            'enlace_guia' => $guia,
+            'enlace_cuenta' => route('account.activities.index'),
+            'sitio' => config('app.name'),
+        ], $actividad);
     }
 
     /**

@@ -120,6 +120,18 @@ class EmailTemplateSeeder extends Seeder
                     '{{ enlace_actividades }}',
                 ),
             ],
+
+            'guia_organizador' => [
+                'asunto' => 'La guía para organizar {{ actividad }}',
+                'cuerpo_html' => $this->cuerpo(
+                    'Tu guía para organizar',
+                    '<p style="margin:0 0 14px;">Hola {{ nombre }}, gracias por sumar <strong>{{ actividad }}</strong> al Día del Patrimonio Social.</p>
+                     <p style="margin:0 0 14px;">Preparamos una guía para organizadores con lo que conviene tener en cuenta antes, durante y después de la actividad: cómo difundirla, cómo recibir a quienes se inscriben y cómo contar lo que pasó.</p>
+                     <p style="margin:0 0 14px;">Tu actividad sigue su curso: te avisaremos por correo cuando esté publicada, y mientras tanto puedes revisarla desde <a href="{{ enlace_cuenta }}" style="color:#cc6600;">tu cuenta</a>.</p>',
+                    'Abrir la guía para organizadores',
+                    '{{ enlace_guia }}',
+                ),
+            ],
         ];
     }
 

@@ -125,6 +125,15 @@ class SettingsSeeder extends Seeder
                     .'Vacío no pinta ningún botón: es preferible a uno que no lleve a nada.',
             ],
             [
+                // D1 de la sexta tanda. Se siembra con el diseño de Canva que
+                // mandó el cliente; la ONG lo cambia aquí sin tocar el correo.
+                'grupo' => 'general', 'clave' => 'guia_organizador_url', 'tipo' => 'texto',
+                'valor' => 'https://www.canva.com/design/DAHGZdhU2ZE/daWOTMwxbN7B8xjFdDXANQ/view',
+                'label' => 'Enlace a la guía para organizadores',
+                'descripcion' => 'Se manda por correo a cada organización cuando registra una actividad (plantilla «Guía para organizadores»). '
+                    .'Vacío, ese correo no sale.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica_desde', 'tipo' => 'int', 'valor' => '1',
                 'label' => 'Actividades que se revisan antes de publicar sin revisión',
                 'descripcion' => 'Cuántas actividades de cada organización se revisan a mano antes de que las siguientes se publiquen solas. 1 revisa sólo la primera (lo de antes), 2 las dos primeras, 0 ninguna. Cuentan las que llegaron a publicarse, aunque se cancelaran.',

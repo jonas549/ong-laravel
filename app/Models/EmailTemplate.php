@@ -62,6 +62,24 @@ class EmailTemplate extends Model
             'descripcion' => 'Se envía a las personas inscritas cuando la actividad se cancela.',
             'variables' => ['nombre', 'actividad', 'fecha', 'organizacion', 'enlace_actividades', 'sitio'],
         ],
+
+        /*
+         * D1 de la sexta tanda. Va a la organización en cuanto registra una
+         * actividad, con el enlace a la guía para organizadores (el diseño de
+         * Canva), que se cambia en Configuración → General.
+         *
+         * Es un correo aparte y no un párrafo del de «recibimos tu actividad»:
+         * aquél es una vista fija que la ONG no puede editar, y con aprobación
+         * automática ni siquiera se envía —la actividad pasa directa a
+         * publicada—. Así llega igual por los dos caminos y en el momento, no
+         * días después con la revisión.
+         */
+        'guia_organizador' => [
+            'nombre' => 'Guía para organizadores',
+            'descripcion' => 'Se envía a la organización cada vez que registra una actividad, con el enlace a la guía para organizadores. '
+                .'El enlace se cambia en Configuración → General; si está vacío, este correo no sale.',
+            'variables' => ['nombre', 'organizacion', 'actividad', 'enlace_guia', 'enlace_cuenta', 'sitio'],
+        ],
     ];
 
     protected $fillable = ['clave', 'nombre', 'descripcion', 'asunto', 'cuerpo_html', 'variables', 'activo'];

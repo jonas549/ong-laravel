@@ -403,6 +403,11 @@ class PublishController extends Controller
 
         $moderacion->cambiar($actividad, $estado, null, $motivo, automatica: $estado === 'publicada');
 
+        // D1: la guía para organizadores, por los dos caminos —revisión y
+        // aprobación automática— y en el momento. Un fallo aquí no toca la
+        // actividad: `CorreoTransaccional` lo apunta y sigue.
+        app(CorreoTransaccional::class)->guiaOrganizador($actividad);
+
         /*
          * Quien ya tenía la sesión abierta no estrena cuenta: ni se le vuelve a
          * iniciar sesión —regenerar la sesión aquí le cambiaría la que ya tiene
