@@ -23,7 +23,7 @@
                          style="height:46px;width:auto;object-fit:contain;">
                 </a>
                 <span class="nav-sep" aria-hidden="true" style="width:1px;height:44px;background:#e4e5e7;"></span>
-                <a class="nav-cos" href="https://comunidad-org.cl" target="_blank" rel="noopener" style="display:inline-flex;">
+                <a class="nav-cos" href="https://comunidad-org.cl/" target="_blank" rel="noopener" style="display:inline-flex;">
                     <img decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
                          style="height:58px;width:auto;object-fit:contain;">
                 </a>

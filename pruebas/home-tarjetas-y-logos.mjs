@@ -65,7 +65,11 @@ try {
     di('«Quiero ser voluntario» va la primera', tarjetas[0]?.titulo === 'Quiero ser voluntario');
     di('con su ilustración y su arte de fondo', tarjetas[0]?.icono && tarjetas[0]?.arte);
     di('su enlace ya no es el ancla muerta del fuente', tarjetas[0]?.href !== '#voluntario', tarjetas[0]?.href);
-    di('y ese destino existe', await p.evaluate(async (h) => (await fetch(h)).ok, tarjetas[0].href), tarjetas[0]?.href);
+    // Desde C5 (sexta tanda) lleva a Voluntariados Chile, otro dominio: un
+    // fetch desde la página no puede leerlo, así que se comprueba desde Node.
+    di('y ese destino existe', tarjetas[0].href.startsWith(B)
+      ? await p.evaluate(async (h) => (await fetch(h)).ok, tarjetas[0].href)
+      : (await fetch(tarjetas[0].href, { redirect: 'follow' })).ok, tarjetas[0]?.href);
     di('las tres miden lo mismo de alto', new Set(tarjetas.map((x) => x.alto)).size === 1, `${tarjetas.map((x) => x.alto).join('/')} px`);
     di('van en una sola fila', new Set(tarjetas.map((x) => x.x)).size === 3);
 

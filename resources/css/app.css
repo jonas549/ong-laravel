@@ -403,6 +403,38 @@ a.textlink:hover { color: var(--naranjo-600); }
     white-space: nowrap;
     max-width: 90%;
     text-align: center;
+    /*
+     * C1 de la sexta tanda: el tamaño y el relleno vivían en el `style` del
+     * enlace, y desde ahí ninguna regla de pantalla estrecha los podía tocar.
+     * En el teléfono el texto medía 314 px en una caja de 279 y el final se
+     * cortaba contra el borde naranja, que es lo que reportó el cliente.
+     */
+    font-size: 17px;
+    line-height: 1.3;
+    padding: 13px 34px;
+    bottom: 64px;
+}
+
+/*
+ * En pantalla estrecha el botón se parte en dos líneas en vez de recortarse,
+ * y con el relleno suficiente para que el texto no toque el borde. El
+ * `text-wrap: balance` reparte las palabras entre las dos líneas: sin él
+ * quedaba «¿Cómo quieres participar» arriba y «hoy?» sola abajo.
+ */
+@media (max-width: 560px) {
+    .hero-cta {
+        white-space: normal;
+        text-wrap: balance;
+        width: max-content;
+        max-width: 84%;
+        font-size: 16px;
+        padding: 12px 26px;
+        border-radius: 26px;
+        /* En dos líneas es más alto y crece hacia arriba: a 64 px del pie
+         * tapaba «Patrimonio Social» del logo. Más abajo cae en la punta
+         * del corazón, que está vacía. */
+        bottom: 4%;
+    }
 }
 
 .texto-editable > :first-child { margin-top: 0; }

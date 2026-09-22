@@ -1,18 +1,30 @@
 <section style="position:relative;background:url('{{ asset('img/fondo-03.png') }}') center/cover no-repeat;overflow:hidden;">
     <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.1) 45%,rgba(255,255,255,.4) 100%);"></div>
     <div class="reveal" style="position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:40px 40px 44px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;">
-        <img loading="lazy" decoding="async" class="floaty" width="482" height="356" src="{{ asset('img/dia-del-patrimonio-footer.png') }}"
-             alt="Día del Patrimonio Social — 4 y 5 de diciembre"
-             style="display:block;width:420px;max-width:100%;height:auto;filter:drop-shadow(0 16px 28px rgba(0,0,0,.16));">
+        {{--
+            C2 de la sexta tanda: la imagen va dentro de una caja de bloque y
+            no suelta dentro del flex. En Safari del iPhone salía achatada
+            —310×288 px donde tocan 310×229—: WebKit, con una imagen hija
+            directa de un flex en columna, encoge el ancho por el
+            `max-width:100%` y el alto lo saca de otra cuenta. Dentro de un
+            bloque, el alto sale del ancho como en cualquier imagen. El HTML
+            fuente tiene el mismo fallo, y en Chrome no se ve.
+        --}}
+        <div style="width:420px;max-width:100%;">
+            <img loading="lazy" decoding="async" class="floaty" width="482" height="356" src="{{ asset('img/dia-del-patrimonio-footer.png') }}"
+                 alt="Día del Patrimonio Social — 4 y 5 de diciembre"
+                 style="display:block;width:100%;height:auto;filter:drop-shadow(0 16px 28px rgba(0,0,0,.16));">
+        </div>
     </div>
 </section>
 
 <footer style="background:#fff;color:var(--gris-700);border-top:1px solid #eef0f1;">
     <div style="max-width:1180px;margin:0 auto;padding:30px 40px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
-        <span style="flex:none;display:inline-flex;">
+        {{-- C4: el logo de la Comunidad lleva a su sitio, igual que en la cabecera. --}}
+        <a href="https://comunidad-org.cl/" target="_blank" rel="noopener" style="flex:none;display:inline-flex;">
             <img loading="lazy" decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
                  style="height:68px;width:auto;object-fit:contain;">
-        </span>
+        </a>
 
         <a class="textlink" href="{{ url('/privacidad') }}" style="font-size:14px;">Política de privacidad</a>
 
@@ -37,7 +49,8 @@
                         <circle cx="4" cy="4" r="2"></circle>
                     </svg>
                 </a>
-                <a href="#" class="icon-btn" aria-label="YouTube"
+                {{-- C3: el canal de la Comunidad. --}}
+                <a href="https://www.youtube.com/@comunidaddeorganizacioness1361" target="_blank" rel="noopener" class="icon-btn" aria-label="YouTube"
                    style="width:40px;height:40px;background:var(--naranjo-100);border-color:#eef0f1;color:var(--naranjo-600);">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"></path>

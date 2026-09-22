@@ -10,7 +10,10 @@
 <section id="voluntariado" style="scroll-margin-top:180px;position:relative;z-index:4;max-width:1180px;margin:-96px auto 0;padding:0 40px 88px;">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;align-items:stretch;">
         @foreach ($tarjetas as $w)
-            <a href="{{ $w->href }}" class="part-card reveal"
+            {{-- C5: un enlace a otro sitio —Voluntariados Chile— se abre en otra
+                 pestaña, para no sacar a nadie del nuestro. --}}
+            @php $fuera = str_starts_with((string) $w->href, 'http') && ! str_starts_with((string) $w->href, url('/')); @endphp
+            <a href="{{ $w->href }}" @if ($fuera) target="_blank" rel="noopener" @endif class="part-card reveal"
                style="position:relative;overflow:hidden;background:#fff;border:1px solid #eef0f1;border-top:4px solid {{ $w->color }};border-radius:18px;padding:18px 18px 16px;display:flex;flex-direction:column;height:100%;box-shadow:0 22px 44px -26px rgba(0,0,0,.34);">
 
                 @if ($w->art_path)

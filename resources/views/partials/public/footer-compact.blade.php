@@ -8,8 +8,11 @@
 --}}
 <footer style="background:#fff;border-top:1px solid var(--linea);margin-top:auto;">
     <div style="max-width:1240px;margin:0 auto;padding:22px 32px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;">
-        <img loading="lazy" decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
-             style="height:44px;width:auto;object-fit:contain;">
+        {{-- C4: el logo de la Comunidad lleva a su sitio, como en los otros dos. --}}
+        <a href="https://comunidad-org.cl/" target="_blank" rel="noopener" style="display:inline-flex;">
+            <img loading="lazy" decoding="async" width="400" height="313" src="{{ asset('img/logo-cos-color.png') }}" alt="Comunidad de Organizaciones Solidarias"
+                 style="height:44px;width:auto;object-fit:contain;">
+        </a>
 
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--gris);">
             <a class="textlink" href="{{ url('/privacidad') }}">Política de privacidad</a>

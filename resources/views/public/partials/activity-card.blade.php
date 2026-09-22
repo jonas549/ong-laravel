@@ -6,10 +6,17 @@
 @endphp
 
 <div class="act-card reveal tarjeta-carrusel" style="flex:0 0 calc((100% - 52px) / 3);min-width:288px;background:#fff;border:1px solid #eef0f1;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 30px -22px rgba(0,0,0,.2);">
-    <div style="aspect-ratio:16/10;overflow:hidden;background:var(--gris-100);">
+    {{--
+        C6 de la sexta tanda: la imagen también lleva a la ficha, que es donde
+        pulsa casi todo el mundo. Fuera del orden de tabulación y oculta a los
+        lectores de pantalla: el enlace de la tarjeta para ellos es «Ver
+        actividad», y dos enlaces seguidos al mismo sitio sólo son ruido.
+    --}}
+    <a href="{{ route('activities.show', $act) }}" tabindex="-1" aria-hidden="true"
+       style="display:block;aspect-ratio:16/10;overflow:hidden;background:var(--gris-100);">
         <img loading="lazy" decoding="async" class="act-img" src="{{ $act->imagen_url }}" alt="{{ $act->titulo }}"
              style="width:100%;height:100%;object-fit:cover;display:block;">
-    </div>
+    </a>
 
     <div style="padding:20px 22px 22px;display:flex;flex-direction:column;gap:10px;flex:1;">
         @if ($temas->isNotEmpty())
@@ -41,7 +48,12 @@
             </div>
         @endif
 
-        <a href="{{ route('activities.show', $act) }}" class="btn btn-outline"
-           style="align-self:flex-start;margin-top:auto;padding:10px 20px;font-size:14px;">Ver actividad</a>
+        {{-- C6: relleno naranja y no de contorno, para que se vea como EL botón
+             de la tarjeta y no como una etiqueta más. --}}
+        <a href="{{ route('activities.show', $act) }}" class="btn btn-primary"
+           style="align-self:flex-start;margin-top:auto;padding:11px 22px;font-size:14.5px;">
+            Ver actividad
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+        </a>
     </div>
 </div>

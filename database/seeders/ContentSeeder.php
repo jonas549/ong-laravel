@@ -36,9 +36,9 @@ class ContentSeeder extends Seeder
                 'descripcion' => 'Encuentra actividades solidarias cerca de ti e inscríbete para ser voluntario.',
                 'cta' => 'Inscríbete',
                 // El prototipo traía '#voluntario', que no existe como ancla ni
-                // aquí ni en el fuente. Mismo caso que '#panorama' de la
-                // siguiente tarjeta: se cambia por el destino de verdad.
-                'href' => '/actividades',
+                // aquí ni en el fuente. Desde la sexta tanda (C5) lleva a las
+                // oportunidades de Voluntariados Chile, que pidió el cliente.
+                'href' => 'https://voluntariadoschile.cl/oportunidades',
                 'color' => 'var(--naranjo)',
                 'icono' => 'user',
                 'mask_path' => 'img/tarjeta-01-crop.png',
