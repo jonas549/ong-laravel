@@ -2,10 +2,12 @@
 
 **Fecha:** 22/09/2026
 **Producción:** https://ong.sandboxdelta.com
-**Estado:** B1–B8, C1–C6 y D1 hechos y verificados **en local**, en Chrome.
-Sin subir: la tanda lleva una migración que corrige un dato (C5) y la regla es
-avisar antes. A1 sigue sin causa: en local no se reproduce y hace falta el log
-de producción.
+**Estado:** B1–B8, C1–C6 y D1 hechos, verificados en local y **desplegados**
+(`9435e79`, el 22/09). En producción se repasó lo que se puede sin sesión:
+`sexta-home` 29/29 y `sexta-formulario` 20/20 contra el servidor, las seis
+pantallas públicas a 1440 y 390 px sin errores de consola ni desborde, y el
+logo del pie medido con WebKit (310×229, correcto). A1 sigue sin causa: en
+local no se reproduce y hace falta el log de producción.
 
 Lo de la quinta tanda y la importación de organizaciones (21/09) está en
 `BITACORA-2026-09-20.md` y en los commits `1f2ecc0`, `0cb4d2b` y `0f240ee`.
@@ -69,13 +71,15 @@ Llega a producción por `dps:instalar` (crea la plantilla y el ajuste que falten
 
 ## LO QUE HAY QUE HACER EN PRODUCCIÓN
 
-1. **Subir**, avisando antes por la migración de C5.
+1. ~~Subir~~ hecho: `9435e79`. La migración de C5 corrió (la tarjeta del home
+   ya apunta a voluntariadoschile.cl) y el build servido es el de este commit.
+   **Falta confirmar en el panel** que `dps:instalar` sembró el ajuste y la
+   plantilla de D1: Configuración → General y Plantillas de correo.
 2. **A1**: leer `~/ong-laravel/storage/logs/laravel.log` y buscar la entrada de
    `paginas/home`. En local no hay forma de reproducirlo.
-3. Repasar en producción con una cuenta de administración y otra de organizador:
-   `sexta-home.mjs`, `sexta-formulario.mjs` y la parte de sólo lectura de
-   `sexta-wizard.mjs`. `duplicar-circuito.mjs` y `guia-organizador.mjs`
-   **escriben**: no se corren allí.
+3. Con una cuenta de organizador activa, repasar allí B1–B6, que necesitan
+   sesión. `duplicar-circuito.mjs` y `guia-organizador.mjs` **escriben**: no se
+   corren contra el servidor.
 
 ---
 
