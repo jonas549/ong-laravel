@@ -46,12 +46,14 @@ const alPaso = async (n) => {
 const revisarHoras = async (quien) => {
   for (const campo of ['hora_inicio', 'hora_termino']) {
     const s = await p.$eval(`select[name="${campo}"]`, (el) => ({
-      opciones: [...el.options].map((o) => ({ v: o.value, t: o.textContent.trim() })),
+      opciones: [...el.options].map((o) => ({ v: o.value, t: o.textContent.trim(), oculta: o.hidden })),
       valor: el.value,
+      elegida: el.selectedIndex,
       alto: el.getBoundingClientRect().height,
     }));
     const horas = s.opciones.filter((o) => o.v !== '');
-    const vacia = s.opciones.findIndex((o) => o.v === '');
+    // Lo que ve quien abre la lista: sin la opción oculta que sirve de ancla.
+    const visibles = s.opciones.filter((o) => ! o.oculta);
 
     di(`${quien} · ${campo}: un select con las 24 horas`, horas.length === 24, `${horas[0]?.t} … ${horas[23]?.t}`);
     di(`${quien} · ${campo}: en punto y en AM/PM`,
@@ -59,8 +61,21 @@ const revisarHoras = async (quien) => {
       horas.slice(8, 10).map((o) => o.t).join(' · '));
     di(`${quien} · ${campo}: 12 AM, 12 PM y 11 PM bien escritas`,
       horas[0].t === '12:00 AM' && horas[12].t === '12:00 PM' && horas[23].t === '11:00 PM');
-    di(`${quien} · ${campo}: **vacía y justo encima de las 9:00 AM**`,
-      s.valor === '' && s.opciones[vacia + 1]?.t === '9:00 AM', `${s.opciones[vacia - 1]?.t} · [${s.opciones[vacia]?.t}] · ${s.opciones[vacia + 1]?.t}`);
+    /*
+     * Revisión del 23/09: «Elegir hora» sale en medio de la lista y no tiene
+     * sentido para quien la abre. Ahora va la primera, y después las 24 horas
+     * seguidas. Para que el desplegable siga abriendo cerca de las 9:00 AM,
+     * lo que queda elegido sin hora es una segunda opción vacía, OCULTA,
+     * justo antes de las 9:00: no se ve en la lista.
+     */
+    di(`${quien} · ${campo}: **«Elegir hora» es la primera**`,
+      visibles[0]?.v === '' && visibles[0]?.t === 'Elegir hora', visibles[0]?.t);
+    di(`${quien} · ${campo}: **y después las 24 horas seguidas**`,
+      visibles.slice(1).map((o) => o.v).join(',') === horas.map((o) => o.v).join(',') && visibles.length === 25,
+      visibles.slice(0, 3).map((o) => o.t).join(' · ') + ' …');
+    di(`${quien} · ${campo}: sin hora, queda elegida el ancla oculta de antes de las 9:00 AM`,
+      s.valor === '' && s.opciones[s.elegida]?.oculta && s.opciones[s.elegida + 1]?.t === '9:00 AM',
+      `[${s.opciones[s.elegida]?.t}${s.opciones[s.elegida]?.oculta ? ', oculta' : ''}] · ${s.opciones[s.elegida + 1]?.t}`);
     di(`${quien} · ${campo}: se puede bajar hasta la última`, s.opciones.at(-1).t === '11:00 PM');
     di(`${quien} · ${campo}: se ve (no tiene alto cero)`, s.alto > 30, `${Math.round(s.alto)} px`);
   }

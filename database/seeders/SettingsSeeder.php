@@ -158,6 +158,18 @@ class SettingsSeeder extends Seeder
                     .'Es el único correo que va de la plataforma hacia el equipo: los demás van a las organizaciones o a los inscritos.',
             ],
             [
+                // Se siembra vacío a propósito: vacío es «el de siempre», que
+                // vive en `MensajeCompartir::POR_DEFECTO`. Así un cambio del
+                // texto por defecto llega a todas las bases sin migración.
+                'grupo' => 'general', 'clave' => 'compartir_mensaje', 'tipo' => 'texto', 'valor' => '',
+                'label' => 'Mensaje al compartir una actividad',
+                // La columna es de 255: la explicación larga no cabe y rompía
+                // `dps:instalar`, que es parte del despliegue.
+                'descripcion' => 'Texto propuesto al compartir por WhatsApp. {nombre} = nombre de la actividad; '
+                    .'{enlace} = dirección de su ficha (si falta, se añade al final). Vacío: «Súmate a esta actividad de '
+                    .'celebración del Día del Patrimonio Social: {nombre} {enlace}».',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica_desde', 'tipo' => 'int', 'valor' => '1',
                 'label' => 'Actividades que se revisan antes de publicar sin revisión',
                 'descripcion' => 'Cuántas actividades de cada organización se revisan a mano antes de que las siguientes se publiquen solas. 1 revisa sólo la primera (lo de antes), 2 las dos primeras, 0 ninguna. Cuentan las que llegaron a publicarse, aunque se cancelaran.',

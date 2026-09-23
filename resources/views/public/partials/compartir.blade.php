@@ -11,15 +11,15 @@
     filtros o el `?utm_` con que haya llegado quien comparte.
 --}}
 {{--
-    El mensaje es el que pidió el cliente (punto 10 del 23/09), con el nombre
-    y el enlace de la actividad donde el ticket ponía «(Nombre y link)».
+    El mensaje lo escribe la ONG en Configuración → General, con `{nombre}` y
+    `{enlace}`; vacío, sale el de siempre. Ver `MensajeCompartir`.
 
     Facebook no deja proponer texto: su `sharer` sólo recibe la URL y pinta la
     vista previa de la ficha. El mensaje llega por WhatsApp.
 --}}
 @php
     $enlace = route('activities.show', $activity);
-    $texto = 'Súmate a esta actividad de celebración del Día del Patrimonio Social: '.$activity->titulo.' '.$enlace;
+    $texto = \App\Support\MensajeCompartir::para($activity);
 @endphp
 
 <div class="compartir" x-data="compartir(@js($enlace))">

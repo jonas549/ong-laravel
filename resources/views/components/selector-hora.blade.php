@@ -15,12 +15,15 @@
     teléfono se recortaba. El desplegable nativo no tiene ese problema en
     ningún sitio: lo pinta el sistema, fuera de la página.
 
-    **La opción vacía va entre las 8:00 AM y las 9:00 AM, y es a propósito.**
-    Un <select> nativo se abre por la opción elegida, y el encargo pide que
-    abra en las 9:00 AM *sin* elegirla: una hora puesta de oficio se enviaría
-    aunque nadie la hubiera tocado. Con la vacía ahí, el desplegable abre justo
-    encima de las 9:00 AM, se puede subir a la madrugada y bajar hasta las
-    11:00 PM, y además sirve para quitar una hora ya puesta.
+    **Hay dos opciones vacías, y es a propósito** (revisión del 23/09).
+    «Elegir hora» va la primera, visible, y después las 24 horas seguidas: así
+    lo pidió el cliente, porque en medio de la lista no tenía sentido. Pero un
+    <select> nativo se abre por la opción elegida, y con ésa elegida abriría
+    en medianoche. Por eso lo que queda elegido sin hora es la segunda, OCULTA
+    (`hidden`) justo antes de las 9:00 AM: no sale en la lista y el
+    desplegable abre por ahí. No se elige ninguna hora de oficio, que se
+    enviaría aunque nadie la hubiera tocado. La primera sirve además para
+    quitar una hora ya puesta.
 
     No mira la hora actual, a propósito también.
 
@@ -48,9 +51,10 @@
 
 <select {{ $attributes->merge(['class' => 'fld selector-hora']) }} name="{{ $name }}"
         @if ($desactivar) x-bind:disabled="{{ $desactivar }}" @endif>
+    <option value="">Elegir hora</option>
     @foreach ($horas as $h)
         @if ($h === '09:00')
-            <option value="" @selected($valor === '')>Elegir hora</option>
+            <option value="" hidden data-ancla-nueve @selected($valor === '')>Elegir hora</option>
         @endif
         <option value="{{ $h }}" @selected($valor === $h)>{{ $etiqueta($h) }}</option>
     @endforeach

@@ -55,6 +55,8 @@ class SettingController extends Controller
                     Rule::in(array_keys(CatalogoAjustes::opciones($ajuste->clave))),
                 ],
                 $ajuste->tipo === 'int' => ['required', 'integer', 'min:0', 'max:365'],
+                // Vacío vale: significa «el mensaje de siempre» (MensajeCompartir).
+                $ajuste->clave === 'compartir_mensaje' => ['nullable', 'string', 'max:300'],
                 str_contains($ajuste->clave, 'email') => ['required', 'email', 'max:255'],
                 /*
                  * Q3: los ajustes que son un enlace —hoy solo el del kit de
