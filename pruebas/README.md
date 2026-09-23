@@ -142,6 +142,7 @@ php artisan db:seed --class=UserSeeder
 | `evaluaciones-preguntas.mjs` | que en el panel del admin y en el del organizador **cada respuesta vaya bajo su pregunta**, con el mismo texto del formulario. Siembra `datos-evaluacion.php` y **lo limpia al terminar** (**necesita Chrome**; desde la raíz del repo) |
 | `avisos-destinatario.php` | a quién llega el aviso de «actividad corregida»: al buzón `avisos_email`, al que se ponga en el panel, y a los administradores sólo si está vacío. Con el correo falseado y dentro de una transacción que se deshace: no deja nada. `php artisan tinker --execute="require base_path('pruebas/avisos-destinatario.php');"` |
 | `avisos-panel.mjs` | que ese buzón se cambie desde Configuración → General, que rechace lo que no es un correo **diciéndolo junto al campo**, y que quede como estaba (**necesita Chrome**) |
+| `difusion.mjs` | la imagen de difusión de cada actividad (1080×1350): la genera en Chrome y mira **lo que se dibujó** —cada texto dentro de su columna—, los casos límite (sin foto, titular y descripción al máximo, región larga, cupos agotados, en línea, sin fecha), las **iniciales sin logo**, el pie editable, que en revisión y la de otra organización no se pueda, los botones y el teléfono. Siembra y **limpia** `datos-difusion.php` (**necesita Chrome**; desde la raíz del repo) |
 | `mensaje-compartir.mjs` | el mensaje de WhatsApp editable en Configuración → General: con `{nombre}` y `{enlace}` los cambia, sin `{enlace}` lo añade al final y vacío usa el de siempre. Deja el ajuste como estaba (**necesita Chrome**) |
 | `correo-existente.mjs` | el aviso de «este usuario ya existe» del paso 3: que sale **al salir del campo** y no al enviar, que su «Inicia sesión» abre el acceso del wizard y **conserva lo escrito**, que el rebote del servidor tampoco manda a otra página, y que la consulta tiene **freno propio** y no gasta el de entrar. Vacía la caché de los frenos al empezar y al terminar (**necesita Chrome**; se corre desde la raíz del repo, llama a `artisan`) |
 | `direcciones-photon.mjs` | las sugerencias de dirección contra el Photon real: que las coordenadas no vengan cambiadas de orden, que caigan dentro de Chile, que **el campo siga admitiendo una dirección que no es una calle**, y que el enlace del mapa use el punto y no la cadena. Deja la actividad que toca como estaba (**necesita Chrome**) |
@@ -305,7 +306,7 @@ Tres suites escriben de verdad y por eso tienen su gemela de sólo lectura:
 |---|---|
 | `hilo-moderacion.mjs` | `hilo-moderacion-lectura.mjs` |
 | `evaluaciones-fotos.mjs` | `evaluaciones-fotos-lectura.mjs` |
-| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs` | `tanda-produccion.mjs` |
+| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs`, `difusion.mjs`, `mensaje-compartir.mjs` | `tanda-produccion.mjs` |
 
 El motivo no es la prudencia genérica: devolver una actividad a revisión avisa
 **por correo al buzón del equipo** (`avisos_email`, Configuración → General;

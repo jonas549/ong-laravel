@@ -222,6 +222,9 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
         Route::get('/actividades', [Account\MyActivityController::class, 'index'])->name('activities.index');
         Route::get('/actividades/{activity}/editar', [Account\MyActivityController::class, 'edit'])
             ->name('activities.edit');
+        // La imagen de difusión para Instagram; se dibuja en el navegador.
+        Route::get('/actividades/{activity}/difusion', [Account\DifusionController::class, 'show'])
+            ->name('activities.difusion');
         Route::put('/actividades/{activity}', [Account\MyActivityController::class, 'update'])
             ->name('activities.update');
         Route::get('/actividades/{activity}/guardado', [Account\MyActivityController::class, 'saved'])

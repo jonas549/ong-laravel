@@ -170,6 +170,20 @@ class SettingsSeeder extends Seeder
                     .'celebración del Día del Patrimonio Social: {nombre} {enlace}».',
             ],
             [
+                // El pie de la imagen de difusión de cada actividad. Cambia
+                // cada edición, así que se edita aquí y no en el código.
+                'grupo' => 'general', 'clave' => 'difusion_fechas', 'tipo' => 'texto',
+                'valor' => '4 y 5 de diciembre',
+                'label' => 'Fechas de la edición (imagen de difusión)',
+                'descripcion' => 'Sale en el pie de la imagen de difusión: «Día del Patrimonio Social - …». Cámbialas cada año.',
+            ],
+            [
+                'grupo' => 'general', 'clave' => 'difusion_hashtag', 'tipo' => 'texto',
+                'valor' => '#DarEstaEnNuestraNaturaleza',
+                'label' => 'Hashtag de la edición (imagen de difusión)',
+                'descripcion' => 'La última línea del pie de la imagen de difusión.',
+            ],
+            [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica_desde', 'tipo' => 'int', 'valor' => '1',
                 'label' => 'Actividades que se revisan antes de publicar sin revisión',
                 'descripcion' => 'Cuántas actividades de cada organización se revisan a mano antes de que las siguientes se publiquen solas. 1 revisa sólo la primera (lo de antes), 2 las dos primeras, 0 ninguna. Cuentan las que llegaron a publicarse, aunque se cancelaran.',
