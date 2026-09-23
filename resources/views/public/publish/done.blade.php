@@ -45,7 +45,7 @@
                  revisión no: la ficha pública todavía no se enseña. --}}
             @if ($activity->estado === 'publicada')
                 <a href="{{ route('activities.show', $activity) }}" class="btn btn-primary" style="flex:none;" data-ver-actividad>Ver mi actividad</a>
-                <a href="{{ route('account.activities.difusion', $activity) }}" class="btn btn-outline" style="flex:none;" data-difusion>Imagen para redes</a>
+                <a href="{{ route('account.activities.difusion', $activity) }}" class="btn btn-outline" style="flex:none;" data-difusion>Imagen de difusión</a>
             @endif
         </div>
 

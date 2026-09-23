@@ -27,7 +27,7 @@
 
         <div class="difusion-texto">
             <h1 style="font-family:var(--font-title);font-size:32px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px;color:var(--ink);">
-                Imagen para difundir tu actividad
+                Imagen de difusión
             </h1>
             <p style="font-size:15.5px;line-height:1.6;color:var(--gris);margin:0 0 20px;max-width:46ch;">
                 Una imagen lista para publicar en Instagram y otras redes con los datos de

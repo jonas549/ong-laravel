@@ -152,14 +152,26 @@ try {
             b.closest('article, .card, li, div[style]')?.innerHTML.includes(`/actividades/${id}/editar`));
         const pub = de(ids['sin-foto']);
         const rev = de(ids.revision);
-        return { pub: pub?.tagName === 'A' && pub.getAttribute('href').endsWith(`/actividades/${ids['sin-foto']}/difusion`), rev: rev?.getAttribute('aria-disabled') === 'true' };
+        return {
+            pub: pub?.tagName === 'A' && pub.getAttribute('href').endsWith(`/actividades/${ids['sin-foto']}/difusion`),
+            rev: rev?.getAttribute('aria-disabled') === 'true',
+            textos: [pub?.textContent.trim(), rev?.textContent.trim()],
+        };
     }, ids);
     di('en Mis actividades, junto a Editar y Duplicar', botones.pub);
     di('desactivado mientras no esté publicada', botones.rev);
+    // Se llama igual en todo el sitio.
+    di('y dice «Imagen de difusión»', botones.textos.every((x) => x === 'Imagen de difusión'), botones.textos.join(' | '));
     const slug = sql(`select slug from activities where id = ${ids['sin-foto']}`);
     await p.goto(`${B}/publicar-actividad/${slug}/listo`, { waitUntil: 'networkidle2' });
-    di('y en la pantalla final de publicar', await p.evaluate((id) =>
-        document.querySelector('[data-difusion]')?.getAttribute('href').endsWith(`/actividades/${id}/difusion`), ids['sin-foto']));
+    const final = await p.evaluate(() => {
+        const a = document.querySelector('[data-difusion]');
+        return { href: a?.getAttribute('href') ?? '', texto: a?.textContent.trim() };
+    });
+    di('y en la pantalla final de publicar', final.href.endsWith(`/actividades/${ids['sin-foto']}/difusion`));
+    di('con el mismo nombre', final.texto === 'Imagen de difusión', final.texto);
+    await p.goto(`${B}/mi-cuenta/actividades/${ids['sin-foto']}/difusion`, { waitUntil: 'networkidle2' });
+    di('y la pantalla se titula igual', await p.$eval('h1', (h) => h.textContent.trim()) === 'Imagen de difusión');
 
     t('9 · En el teléfono');
     await p.setViewport({ width: 390, height: 844 });

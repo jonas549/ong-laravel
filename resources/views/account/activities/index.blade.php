@@ -137,20 +137,20 @@
                                 </button>
                             </form>
 
-                            {{-- La imagen para difundirla en redes. Sólo publicada:
+                            {{-- La imagen de difusión. Sólo publicada:
                                  antes todavía puede cambiar o no salir. --}}
                             @if ($a->estado === 'publicada')
                                 <a href="{{ route('account.activities.difusion', $a) }}" class="sqbtn" data-difusion
-                                   style="width:auto;padding:0 16px;gap:8px;font-size:14px;font-weight:600;" title="Imagen para difundir en redes">
+                                   style="width:auto;padding:0 16px;gap:8px;font-size:14px;font-weight:600;" title="Imagen de difusión">
                                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-4.5-4.5L5 21"></path></svg>
-                                    Imagen
+                                    Imagen de difusión
                                 </a>
                             @elseif ($a->estado !== 'cancelada')
                                 <span class="sqbtn" data-difusion aria-disabled="true"
                                       style="width:auto;padding:0 16px;gap:8px;font-size:14px;font-weight:600;opacity:.45;cursor:not-allowed;"
-                                      title="Disponible cuando la actividad se publique">
+                                      title="Imagen de difusión: disponible cuando la actividad se publique">
                                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-4.5-4.5L5 21"></path></svg>
-                                    Imagen
+                                    Imagen de difusión
                                 </span>
                             @endif
 
