@@ -109,7 +109,7 @@
         <th>Actividad</th>
         <x-panel.columna campo="nombre">Persona</x-panel.columna>
         <x-panel.columna campo="experiencia">Notas</x-panel.columna>
-        <th>Qué significa para ti el Patrimonio Social</th>
+        <th>Respuestas</th>
         <th></th>
     </x-slot:cabecera>
 
@@ -124,17 +124,17 @@
             <td>
                 <span style="display:block;font-weight:600;">{{ $e->nombre }}</span>
                 <span class="helper">{{ $e->correo }}</span>
-                @if ($e->como_se_entero)
-                    <span class="helper" style="display:block;">Se enteró por: {{ $e->origen_label }}</span>
-                @endif
             </td>
 
+            {{-- Las notas se quedan en su columna para ojearlas y ordenar por
+                 ellas; con su pregunta van en «Respuestas». --}}
             <td style="white-space:nowrap;">
-                <span class="eval-nota" title="Experiencia">{{ $e->experiencia }}</span>
-                <span class="eval-nota eval-nota-motivacion" title="Motivación">{{ $e->motivacion }}</span>
+                <span class="eval-nota" title="{{ \App\Models\ActivityEvaluation::ESCALAS['experiencia']['pregunta'] }}">{{ $e->experiencia }}</span>
+                <span class="eval-nota eval-nota-motivacion" title="{{ \App\Models\ActivityEvaluation::ESCALAS['motivacion']['pregunta'] }}">{{ $e->motivacion }}</span>
             </td>
 
-            <td class="eval-texto">{{ $e->significado }}</td>
+            {{-- Punto 8 del 23/09: cada respuesta bajo su pregunta. --}}
+            <td class="eval-texto">@include('partials.evaluacion-respuestas', ['evaluacion' => $e, 'compacta' => true])</td>
 
             <td style="white-space:nowrap;text-align:right;">
                 {{-- Una respuesta puede traer varias fotos: se enlaza la

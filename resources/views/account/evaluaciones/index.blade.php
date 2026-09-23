@@ -102,13 +102,8 @@
                             {{ Str::limit($e->activity?->titulo ?? '(actividad borrada)', 60) }}
                         </p>
 
-                        @if (filled($e->significado))
-                            <p style="font-size:15px;line-height:1.6;color:var(--gris-700);margin:0 0 12px;">{{ $e->significado }}</p>
-                        @endif
-
-                        @if ($e->como_se_entero)
-                            <p class="helper" style="margin:0 0 12px;">Se enteró por: {{ $e->origen_label }}</p>
-                        @endif
+                        {{-- Punto 8 del 23/09: cada respuesta bajo su pregunta. --}}
+                        @include('partials.evaluacion-respuestas', ['evaluacion' => $e])
 
                         @if ($e->fotos->isNotEmpty())
                             {{--

@@ -26,9 +26,15 @@
                     </label>
                 @else
                     <label class="helper" for="s-{{ $a->clave }}" style="display:block;margin-bottom:6px;font-weight:600;">{{ $a->label }}</label>
-                    <input class="fld" type="{{ $a->tipo === 'int' ? 'number' : 'text' }}" id="s-{{ $a->clave }}"
-                           name="{{ $a->clave }}" value="{{ $valores[$a->clave] ?? '' }}">
+                    {{-- Tras un rebote, lo que se escribió y no lo guardado:
+                         si no, el error hablaría de un valor que ya no se ve. --}}
+                    <input @class(['fld', 'is-invalid' => $errors->has($a->clave)]) type="{{ $a->tipo === 'int' ? 'number' : 'text' }}" id="s-{{ $a->clave }}"
+                           name="{{ $a->clave }}" value="{{ old($a->clave, $valores[$a->clave] ?? '') }}">
                 @endif
+
+                {{-- Esta pantalla no enseñaba ningún error: un valor inválido
+                     recargaba la página y no se guardaba, sin decir nada. --}}
+                @error($a->clave) <span class="field-error">{{ $message }}</span> @enderror
 
                 @if ($a->descripcion)
                     <span class="helper" style="display:block;margin-top:5px;">{{ $a->descripcion }}</span>

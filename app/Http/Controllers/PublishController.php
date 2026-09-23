@@ -196,6 +196,34 @@ class PublishController extends Controller
     }
 
     /**
+     * Si el correo del paso 3 ya tiene cuenta (punto 2 del 23/09).
+     *
+     * Antes se sabía sólo al enviar el formulario entero, y el enlace del
+     * aviso llevaba a la página de acceso: lo escrito se perdía. Ahora el
+     * wizard pregunta al salir del campo y ofrece el acceso del propio
+     * wizard, que no recarga.
+     *
+     * La consulta es la misma que la regla `unique` de
+     * `PublishActivityRequest`: cualquier usuario con ese correo, sea cual
+     * sea su rol o estado. Si aquí dijera «libre» algo que el envío después
+     * rechaza, el aviso volvería a llegar tarde.
+     *
+     * No revela más que el propio formulario, que ya lo dice al enviar; el
+     * freno de la ruta es lo que impide usarlo para repasar una lista.
+     */
+    public function correo(Request $request)
+    {
+        $correo = Filtro::texto($request, 'email');
+
+        // Sin comprobar el formato aparte: `FILTER_VALIDATE_EMAIL` rechaza
+        // correos con tilde que la regla `email` de Laravel sí deja registrar.
+        $existe = $correo !== '' && mb_strlen($correo) <= 255
+            && User::where('email', $correo)->exists();
+
+        return response()->json(['existe' => $existe]);
+    }
+
+    /**
      * Sugerencias de dirección, con su punto en el mapa (P16).
      *
      * **Ayuda, no obliga.** El campo sigue siendo texto libre y el envío no
@@ -350,8 +378,11 @@ class PublishController extends Controller
                     'latitud' => $datos['latitud'] ?? null,
                     'longitud' => $datos['longitud'] ?? null,
                     'participantes_estimados' => $datos['participantes_estimados'] ?? null,
-                    'cupos_totales' => $datos['cupos_totales'] ?? null,
-                    'cupos_disponibles' => $datos['cupos_totales'] ?? null,
+                    // Sin inscripción previa no hay cupos que contar: lo que
+                    // llegue en el campo es el 80 de ejemplo de un campo que
+                    // la persona ni vio.
+                    'cupos_totales' => $request->boolean('inscripcion_habilitada') ? ($datos['cupos_totales'] ?? null) : null,
+                    'cupos_disponibles' => $request->boolean('inscripcion_habilitada') ? ($datos['cupos_totales'] ?? null) : null,
                     // El paso 4 no lo pregunta: si pide inscripción, es abierta.
                     'abierta_publico' => true,
                     'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
@@ -401,12 +432,9 @@ class PublishController extends Controller
         [$estado, $motivo] = app(AprobacionAutomatica::class)
             ->estadoAlEnviar($actividad->organization);
 
+        // La guía para organizadores ya no sale de aquí sino al publicarse la
+        // actividad (punto 11 del 23/09): la manda `cambiar()`.
         $moderacion->cambiar($actividad, $estado, null, $motivo, automatica: $estado === 'publicada');
-
-        // D1: la guía para organizadores, por los dos caminos —revisión y
-        // aprobación automática— y en el momento. Un fallo aquí no toca la
-        // actividad: `CorreoTransaccional` lo apunta y sigue.
-        app(CorreoTransaccional::class)->guiaOrganizador($actividad);
 
         /*
          * Quien ya tenía la sesión abierta no estrena cuenta: ni se le vuelve a

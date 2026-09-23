@@ -48,7 +48,8 @@
             {{-- Con la ficha ya con nombre, el campo viaja escondido con el
                  suyo: se envía, pero no se pregunta (C4). --}}
             <x-buscador-organizacion
-                :valor="\App\Support\Formulario::viejo('org_nombre', $organizacion?->nombre)" />
+                :valor="\App\Support\Formulario::viejo('org_nombre', $organizacion?->nombre)"
+                :en-wizard="true" />
 
             <label class="lbl">Tipo de organización
                 <input class="fld" x-bind:value="tipo" readonly style="background:#f8f9fa;color:var(--gris);">
@@ -183,28 +184,41 @@
                data-etiqueta="{{ CamposDeActividad::etiqueta('email') }}">Correo electrónico *
             <input class="fld @error('email') is-invalid @enderror" type="email" name="email"
                    x-model="correoCuenta" placeholder="contacto@organizacion.cl" autocomplete="email"
+                   x-bind:class="{ 'is-invalid': correoExiste }"
+                   x-on:blur="comprobarCorreo()" x-on:input.debounce.700ms="comprobarCorreo()"
                    x-bind:disabled="conSesion">
             <span class="helper">Con este correo entrarás a tu cuenta.</span>
-            @error('email') <span class="field-error">{{ $message }}</span> @enderror
+            @error('email')
+                @if ($message !== \App\Support\ReglasDeCampo::CORREO_YA_EXISTE)
+                    <span class="field-error">{{ $message }}</span>
+                @endif
+            @enderror
 
             {{--
-                P11. Cuando el correo ya tiene cuenta, decirlo no basta: hay que
-                dar las dos salidas. Van aquí, pegadas al campo, y no dentro del
-                mensaje de error: el resumen de arriba escribe los mensajes con
-                `x-text`, que escapa el HTML, así que unos enlaces metidos en el
-                texto se leerían literales.
+                P11 y punto 2 del 23/09. Cuando el correo ya tiene cuenta se
+                dice en cuanto se sale del campo, no al enviar el formulario
+                entero. Y decirlo no basta: hay que dar las dos salidas. Van
+                aquí, pegadas al campo, y no dentro del mensaje de error: el
+                resumen de arriba escribe los mensajes con `x-text`, que escapa
+                el HTML, así que unos enlaces metidos en el texto se leerían
+                literales.
 
-                Se reconoce por la constante y no comparando la frase suelta:
-                cambiar el texto no puede apagar los enlaces sin que nadie lo
-                note.
+                «Inicia sesión» abre el acceso del propio wizard y no la página
+                de acceso: ir a otra pantalla era lo que borraba lo escrito.
+                La contraseña olvidada sí sale a otra pestaña, que ésta no se
+                cierra.
+
+                Lo enciende `comprobarCorreo()`, o el rebote del envío si la
+                consulta no llegó a hacerse (sin JavaScript, sin red).
             --}}
-            @if ($errors->get('email') && in_array(\App\Support\ReglasDeCampo::CORREO_YA_EXISTE, $errors->get('email'), true))
-                <span class="helper" style="display:block;margin-top:2px;">
-                    <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
-                    o <a class="textlink" href="{{ route('password.request') }}">recupera tu contraseña</a>
-                    si no la recuerdas.
-                </span>
-            @endif
+            <span class="field-error" x-show="correoExiste && ! conSesion" x-cloak>{{ \App\Support\ReglasDeCampo::CORREO_YA_EXISTE }}</span>
+            <span class="helper" x-show="correoExiste && ! conSesion" x-cloak style="display:block;margin-top:2px;" data-correo-existe>
+                <button type="button" class="textlink" x-on:click="abrirAcceso(correoCuenta)"
+                        style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--naranjo);text-decoration:underline;text-underline-offset:3px;">Inicia sesión</button>
+                aquí mismo, sin perder lo que llevas escrito, o
+                <a class="textlink" href="{{ route('password.request') }}" target="_blank" rel="noopener">recupera tu contraseña</a>
+                si no la recuerdas.
+            </span>
         </label>
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">

@@ -48,6 +48,38 @@ class ActivityEvaluation extends Model
         ],
     ];
 
+    /**
+     * Las otras dos preguntas de la encuesta, con el mismo texto que ve quien
+     * la responde. Punto 8 del 23/09: las respuestas se enseñan junto a su
+     * pregunta, y el texto vive aquí una sola vez para que el formulario y
+     * los paneles no puedan decir cosas distintas.
+     */
+    public const PREGUNTA_SIGNIFICADO = 'Después de participar, ¿qué significa para ti el Patrimonio Social?';
+
+    public const PREGUNTA_ORIGEN = '¿Cómo te enteraste de esta actividad?';
+
+    /**
+     * Cada respuesta con la pregunta que la originó, en el orden del
+     * formulario. Lo que no se contestó (las dos últimas son opcionales en la
+     * práctica) no sale.
+     *
+     * @return list<array{clave: string, pregunta: string, respuesta: string}>
+     */
+    public function respuestas(): array
+    {
+        $escala = fn (string $clave) => $this->{$clave} === null ? '' : sprintf(
+            '%d de 5 (1 = %s, 5 = %s)',
+            $this->{$clave}, self::ESCALAS[$clave]['min'], self::ESCALAS[$clave]['max'],
+        );
+
+        return array_values(array_filter([
+            ['clave' => 'experiencia', 'pregunta' => self::ESCALAS['experiencia']['pregunta'], 'respuesta' => $escala('experiencia')],
+            ['clave' => 'motivacion', 'pregunta' => self::ESCALAS['motivacion']['pregunta'], 'respuesta' => $escala('motivacion')],
+            ['clave' => 'significado', 'pregunta' => self::PREGUNTA_SIGNIFICADO, 'respuesta' => (string) $this->significado],
+            ['clave' => 'como_se_entero', 'pregunta' => self::PREGUNTA_ORIGEN, 'respuesta' => $this->origen_label],
+        ], fn ($r) => trim($r['respuesta']) !== ''));
+    }
+
     /** Lo que cabe en la respuesta abierta. El mismo número en la regla y en el contador. */
     public const MAX_SIGNIFICADO = 300;
 

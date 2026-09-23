@@ -150,8 +150,15 @@ for (const pantalla of PANTALLAS) {
   await esperar(300);
 
   di('Una que ya tiene cuenta lo dice', (await texto()).includes('ya tiene una cuenta'));
-  di('Con enlace a iniciar sesión', await p.evaluate(() => !! [...document.querySelectorAll('a')]
-    .find((a) => /inicia sesión/i.test(a.textContent) && (a.getAttribute('href') ?? '').includes('/mi-cuenta/login'))));
+  // En el wizard, «Inicia sesión» abre su propio acceso, que no recarga
+  // (23/09); en el registro no hay tal acceso y sigue siendo el enlace.
+  const enWizard = pantalla.nombre.startsWith('Wizard');
+  di(enWizard ? 'Con botón a iniciar sesión sin salir del wizard' : 'Con enlace a iniciar sesión', await p.evaluate((enWizard) => {
+    const aviso = document.querySelector('[data-org-tomada]');
+    const boton = [...aviso.querySelectorAll('button')].find((b) => /inicia sesión/i.test(b.textContent));
+    const enlace = [...aviso.querySelectorAll('a')].find((a) => /inicia sesión/i.test(a.textContent) && (a.getAttribute('href') ?? '').includes('/mi-cuenta/login'));
+    return enWizard ? (!! boton && ! enlace) : (!! enlace && ! boton);
+  }, enWizard));
   di('Y a recuperar la contraseña', await p.evaluate(() => !! [...document.querySelectorAll('a')]
     .find((a) => /recupera la contraseña/i.test(a.textContent) && (a.getAttribute('href') ?? '').includes('recuperar'))));
   di('Y no se marca como reclamada', await p.$eval('input[name="org_id"]', (n) => n.value === ''));

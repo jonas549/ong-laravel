@@ -106,6 +106,9 @@ export const wizard = (inicial) => ({
 
         this.$watch('correoCuenta', (valor) => {
             if (this.mismoCorreo) this.correoContacto = valor;
+
+            // El aviso de «ya tiene cuenta» era del correo de antes.
+            if ((valor ?? '').trim() !== this.correoComprobado) this.correoExiste = false;
         });
 
         // Al abrir ya marcada —que es el valor por defecto— el espejo tiene que
@@ -343,9 +346,64 @@ export const wizard = (inicial) => ({
     accesoError: '',
     entrando: false,
 
-    abrirAcceso() {
+    /*
+     * ── Si el correo del paso 3 ya tiene cuenta (punto 2 del 23/09) ──
+     *
+     * Antes se sabía al enviar el formulario entero, cuando ya estaba escrita
+     * la actividad, y el enlace del aviso llevaba a otra pantalla: se perdía
+     * todo. Ahora se pregunta al salir del campo —o al dejar de escribir— y el
+     * aviso ofrece el acceso de aquí mismo, que no recarga.
+     *
+     * `correoComprobado` evita repetir la consulta por el mismo correo: el
+     * `blur` y el `input` con pausa suelen llegar juntos.
+     */
+    rutaCorreo: inicial.rutaCorreo ?? '/publicar-actividad/correo',
+    correoExiste: inicial.correoExiste ?? false,
+    correoComprobado: inicial.correoExiste ? (inicial.correoCuenta ?? '').trim() : '',
+
+    async comprobarCorreo() {
+        const correo = (this.correoCuenta ?? '').trim();
+
+        if (this.conSesion || correo === this.correoComprobado) return;
+
+        this.correoComprobado = correo;
+        this.correoExiste = false;
+
+        // A medio escribir no se pregunta: el formato lo revisa el envío.
+        if (! /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return;
+
+        try {
+            const respuesta = await fetch(this.rutaCorreo, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ email: correo }),
+            });
+
+            if (! respuesta.ok) return;
+
+            const datos = await respuesta.json();
+
+            // Si mientras tanto lo cambió, esta respuesta ya no es de su correo.
+            if ((this.correoCuenta ?? '').trim() === correo) this.correoExiste = datos.existe === true;
+        } catch {
+            // Sin respuesta no se dice nada: el envío lo sigue comprobando.
+        }
+    },
+
+    /**
+     * `correo`, desde el aviso de «ya tiene cuenta»: ése es el correo con el
+     * que va a entrar, aunque el diálogo guarde otro de antes.
+     */
+    abrirAcceso(correo = '') {
         this.accesoAbierto = true;
         this.accesoError = '';
+
+        if (correo) this.accesoCorreo = correo;
 
         // El correo que ya hubiera escrito en el paso 3, de partida: casi
         // siempre es el mismo con el que se registró.
@@ -413,6 +471,7 @@ export const wizard = (inicial) => ({
         this.accesoAbierto = false;
         this.accesoClave = '';
         this.correoCuenta = datos.correo ?? '';
+        this.correoExiste = false;
 
         /*
          * El token CSRF nuevo, antes que nada.
@@ -499,6 +558,8 @@ export const wizard = (inicial) => ({
             this.conSesion = false;
             this.ficha = null;
             this.correoCuenta = '';
+            this.correoComprobado = '';
+            this.correoExiste = false;
             this.accesoCorreo = '';
             this.soltarOrg();
             this.buscarOrg = '';

@@ -34,7 +34,8 @@ class ActivityController extends Controller
             ->byRegion($request->integer('region') ?: null)
             ->byCommune($request->integer('comuna') ?: null)
             ->byFormato(Filtro::texto($request, 'formato') ?: null)
-            ->byTerm($request->integer('tema') ?: null);
+            ->byTerm($request->integer('tema') ?: null)
+            ->byTexto(mb_substr(Filtro::texto($request, 'q'), 0, 100));
 
         $comunes = [
             'vista' => $vista,

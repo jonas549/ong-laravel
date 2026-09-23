@@ -139,10 +139,23 @@ class SettingsSeeder extends Seeder
                 // D1 de la sexta tanda. Se siembra con el diseño de Canva que
                 // mandó el cliente; la ONG lo cambia aquí sin tocar el correo.
                 'grupo' => 'general', 'clave' => 'guia_organizador_url', 'tipo' => 'texto',
-                'valor' => 'https://www.canva.com/design/DAHGZdhU2ZE/daWOTMwxbN7B8xjFdDXANQ/view',
+                // El enlace corto del ticket (punto 11 del 23/09). Lleva al
+                // mismo diseño que el largo que se sembró antes.
+                'valor' => 'https://canva.link/r3abo554dfga5g6',
                 'label' => 'Enlace a la guía para organizadores',
-                'descripcion' => 'Se manda por correo a cada organización cuando registra una actividad (plantilla «Guía para organizadores»). '
+                'descripcion' => 'Se manda por correo a cada organización cuando se publica una de sus actividades (plantilla «Guía para organizadores»). '
                     .'Vacío, ese correo no sale.',
+            ],
+            [
+                // Punto 9 del 23/09. El aviso de «una actividad volvió de
+                // ajustes» iba a cada administrador activo, y así le llegaba a
+                // una persona a su correo personal. El cliente pide el buzón
+                // del equipo, y que se pueda cambiar desde aquí.
+                'grupo' => 'general', 'clave' => 'avisos_email', 'tipo' => 'texto',
+                'valor' => 'diadelpatrimoniosocial@comunidad-org.cl',
+                'label' => 'Correo que recibe los avisos de actividades',
+                'descripcion' => 'A dónde llega el aviso de que una organización corrigió y reenvió su actividad. '
+                    .'Es el único correo que va de la plataforma hacia el equipo: los demás van a las organizaciones o a los inscritos.',
             ],
             [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica_desde', 'tipo' => 'int', 'valor' => '1',

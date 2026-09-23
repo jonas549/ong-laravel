@@ -114,7 +114,13 @@ class MyActivityController extends Controller
                 'latitud' => $datos['latitud'] ?? null,
                 'longitud' => $datos['longitud'] ?? null,
                 'participantes_estimados' => $datos['participantes_estimados'] ?? null,
-                'cupos_disponibles' => $datos['cupos_disponibles'] ?? null,
+                // Igual que en el wizard: sin inscripción, sin cupos. Y al
+                // encenderla en una ficha que no tenía, el total parte del
+                // primer número que se escriba.
+                'cupos_disponibles' => $request->boolean('inscripcion_habilitada') ? ($datos['cupos_disponibles'] ?? null) : null,
+                'cupos_totales' => $request->boolean('inscripcion_habilitada')
+                    ? ($activity->cupos_totales ?? $datos['cupos_disponibles'] ?? null)
+                    : null,
                 'abierta_publico' => $request->boolean('abierta_publico'),
                 'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
                 'info_previa' => $datos['info_previa'] ?? null,

@@ -63,7 +63,10 @@ const filas = await p.$$eval('tbody tr', (n) => n.length);
 di('Enseña las respuestas sembradas', filas >= 5, filas + ' filas');
 
 const columnas = await p.$$eval('thead th', (n) => n.map((c) => c.textContent.trim()).filter(Boolean));
-di('Con la columna del texto libre', columnas.some((c) => c.includes('Patrimonio Social')), columnas.join(' · '));
+// Punto 8 del 23/09: la pregunta ya no es la cabecera, va con cada respuesta.
+di('Con la columna de respuestas', columnas.includes('Respuestas'), columnas.join(' · '));
+di('Y el texto libre bajo su pregunta', await p.evaluate(() => [...document.querySelectorAll('tbody .eval-pregunta')]
+  .some((dt) => dt.textContent.includes('Patrimonio Social'))));
 
 t('Los promedios de las dos escalas');
 /*

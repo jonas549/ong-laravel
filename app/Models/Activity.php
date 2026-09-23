@@ -196,6 +196,28 @@ class Activity extends Model
             : $q;
     }
 
+    /**
+     * El buscador de /actividades (punto 5 del 23/09): el texto, en el nombre
+     * de la actividad o en el de su organización. Nada más.
+     *
+     * Tildes y mayúsculas las resuelve la intercalación de la base
+     * (`utf8mb4_unicode_ci`): «fundacion» encuentra «Fundación».
+     */
+    public function scopeByTexto(Builder $q, ?string $texto): Builder
+    {
+        $texto = trim((string) $texto);
+
+        if ($texto === '') {
+            return $q;
+        }
+
+        $como = '%'.\App\Support\Filtro::like($texto).'%';
+
+        return $q->where(fn ($w) => $w
+            ->where('titulo', 'like', $como)
+            ->orWhereHas('organization', fn ($o) => $o->where('nombre', 'like', $como)));
+    }
+
     public function scopeUpcoming(Builder $q): Builder
     {
         return $q->where(function ($w) {

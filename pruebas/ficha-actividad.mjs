@@ -165,6 +165,12 @@ try {
     const fb = botones.find((b) => b.texto === 'Facebook');
     const cp = botones.find((b) => b.texto === 'Copiar enlace');
     di('WhatsApp lleva el título y el enlace', wa?.href?.startsWith('https://wa.me/?text=') && decodeURIComponent(wa.href).includes(SLUG));
+
+    // Punto 10 del 23/09: el mensaje que pidió el cliente, con nombre y enlace.
+    const tituloFicha = await p.$eval('h1', (h) => h.textContent.trim());
+    const mensaje = decodeURIComponent(new URL(wa?.href ?? 'https://x').searchParams.get('text') ?? '');
+    di('y el mensaje es el del cliente', /^Súmate a esta actividad de celebración del Día del Patrimonio Social: /.test(mensaje)
+        && mensaje.includes(tituloFicha) && mensaje.endsWith(SLUG), mensaje);
     di('Facebook lleva el sharer con la url', fb?.href?.includes('facebook.com/sharer/sharer.php?u=') && decodeURIComponent(fb.href).includes(SLUG));
     di('los dos abren fuera y con noopener', [wa, fb].every((b) => b.destino === '_blank' && /noopener/.test(b.rel ?? '')));
     di('los dos funcionan sin JavaScript', [wa, fb].every((b) => b.tag === 'A' && b.href.startsWith('https://')));

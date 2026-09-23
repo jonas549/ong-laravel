@@ -18,6 +18,33 @@ class ParticipantController extends Controller
     /** Cuántas filas muestra la tabla antes de pedir "Ver todos". */
     private const POR_PAGINA = 8;
 
+    /**
+     * «Inscritos» de la barra de secciones (punto 7 del 23/09).
+     *
+     * Los inscritos se gestionan actividad por actividad, y hasta ahora sólo
+     * se llegaba a ellos desde cada tarjeta de «Mis actividades». Esto es la
+     * puerta de la sección: sus actividades con inscripción, cuántos tiene
+     * cada una y el enlace a su lista. No duplica la lista.
+     *
+     * Entran también las que ya no piden inscripción pero tienen inscritos
+     * (una cancelada, por ejemplo): esas personas siguen ahí.
+     */
+    public function resumen(Request $request)
+    {
+        $organizacion = $request->user()->organization;
+
+        $actividades = $organizacion
+            ? Activity::where('organization_id', $organizacion->id)
+                ->where(fn ($q) => $q->where('inscripcion_habilitada', true)->orWhereHas('registrations'))
+                ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
+                ->with('commune')
+                ->latest('updated_at')
+                ->get()
+            : collect();
+
+        return view('account.participants.resumen', ['actividades' => $actividades]);
+    }
+
     public function index(Request $request, Activity $activity)
     {
         $this->authorize('manageParticipants', $activity);

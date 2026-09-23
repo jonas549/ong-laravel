@@ -68,7 +68,7 @@ Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'can
  */
 Route::get('/evaluar/{activity:slug}', [EvaluationController::class, 'show'])->name('evaluar.show');
 Route::post('/evaluar/{activity:slug}', [EvaluationController::class, 'store'])
-    ->middleware('throttle:5,1')
+    ->middleware('throttle:5,1,evaluar')
     ->name('evaluar.store');
 Route::get('/evaluar/{activity:slug}/gracias', [EvaluationController::class, 'gracias'])->name('evaluar.gracias');
 
@@ -89,10 +89,21 @@ Route::get('/evaluar/{activity:slug}/gracias', [EvaluationController::class, 'gr
 Route::get('/publicar-actividad', [PublishController::class, 'create'])
     ->name('publish.create');
 
+/*
+ * TODOS los frenos de este archivo llevan nombre (el tercer parámetro), cada
+ * uno el suyo, y uno nuevo tiene que llevarlo también.
+ *
+ * Sin nombre, Laravel cuenta todas las rutas con `throttle:X,Y` en un único
+ * contador por IP, y cada ruta sólo cambia el tope con el que lo mira. Once
+ * búsquedas de organización en el paso 3 bastaban para que entrar y publicar
+ * —tope 10— devolvieran 429, y un 429 al publicar se lleva lo escrito. Lo
+ * mismo con recuperar la contraseña o evaluar después de navegar un rato.
+ */
+
 // El mismo freno que el registro: este POST puede crear cuenta y disparar
 // tres correos, así que sin límite era la vía para saltarse el del registro.
 Route::post('/publicar-actividad', [PublishController::class, 'store'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:10,1,publicar')
     ->name('publish.store');
 Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::class, 'done'])->name('publish.done');
 
@@ -104,7 +115,7 @@ Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::clas
  * límite sería una forma cómoda de pasear la tabla entera letra a letra.
  */
 Route::get('/organizaciones/buscar', [PublishController::class, 'organizaciones'])
-    ->middleware('throttle:60,1')
+    ->middleware('throttle:60,1,organizaciones')
     ->name('publish.organizaciones');
 
 /*
@@ -116,12 +127,25 @@ Route::get('/organizaciones/buscar', [PublishController::class, 'organizaciones'
  * controlador, que usa el mismo `ControlDeAcceso`.
  */
 Route::post('/publicar-actividad/entrar', [PublishController::class, 'entrar'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:10,1,entrar')
     ->name('publish.entrar');
+
+/*
+ * Si el correo del paso 3 ya tiene cuenta, dicho al salir del campo y no al
+ * enviar (punto 2 del 23/09).
+ *
+ * POST y no GET para que los correos no acaben en los registros del servidor
+ * como parte de la URL. El freno está para que no sirva de listado: lo que
+ * responde es lo mismo que ya decía el formulario al enviarlo, pero sin tener
+ * que rellenar nada.
+ */
+Route::post('/publicar-actividad/correo', [PublishController::class, 'correo'])
+    ->middleware('throttle:20,1,correo')
+    ->name('publish.correo');
 
 // B3: cerrar la sesión sin salir del wizard, para entrar con otra cuenta.
 Route::post('/publicar-actividad/salir', [PublishController::class, 'salir'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:10,1,salir')
     ->name('publish.salir');
 
 /*
@@ -133,7 +157,7 @@ Route::post('/publicar-actividad/salir', [PublishController::class, 'salir'])
  * sólo ahorra las consultas repetidas.
  */
 Route::get('/direcciones/buscar', [PublishController::class, 'direcciones'])
-    ->middleware('throttle:90,1')
+    ->middleware('throttle:90,1,direcciones')
     ->name('publish.direcciones');
 
 Route::get('/noticias', [PostController::class, 'index'])->name('posts.index');
@@ -151,10 +175,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/correo/verificar', [Account\VerificacionController::class, 'notice'])
         ->name('verification.notice');
     Route::get('/correo/verificar/{id}/{hash}', [Account\VerificacionController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])
+        ->middleware(['signed', 'throttle:6,1,verificar-correo'])
         ->name('verification.verify');
     Route::post('/correo/verificar/reenviar', [Account\VerificacionController::class, 'send'])
-        ->middleware('throttle:6,1')
+        ->middleware('throttle:6,1,reenviar-verificacion')
         ->name('verification.send');
 });
 
@@ -171,7 +195,7 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
 
     Route::get('/registro', [Account\RegistroController::class, 'create'])->name('registro');
     Route::post('/registro', [Account\RegistroController::class, 'store'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:10,1,registro')
         ->name('registro.store');
 
     Route::middleware(['auth', 'role:organizer'])->group(function () {
@@ -180,17 +204,17 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
         // Perfil: mismo controlador que el del admin, distinto layout.
         Route::get('/perfil', [PerfilController::class, 'edit'])->name('perfil');
         Route::put('/perfil', [PerfilController::class, 'update'])
-            ->middleware('throttle:12,1')
+            ->middleware('throttle:12,1,perfil')
             ->name('perfil.update');
         // El freno es por la contraseña actual: con una sesión ya abierta se
         // podía probar sin límite, que es justo lo que hace falta para
         // aprovechar una sesión robada.
         Route::post('/perfil/contrasena', [PerfilController::class, 'password'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,perfil-contrasena')
             ->name('perfil.password');
         // B6: el logo de su organización, que el wizard ya no exige.
         Route::put('/perfil/logo', [Account\OrganizacionLogoController::class, 'update'])
-            ->middleware('throttle:12,1')
+            ->middleware('throttle:12,1,perfil-logo')
             ->name('perfil.logo');
         Route::post('/perfil/sesiones/cerrar', [PerfilController::class, 'cerrarSesion'])->name('perfil.sesiones.cerrar');
         Route::post('/perfil/sesiones/otras', [PerfilController::class, 'cerrarOtras'])->name('perfil.sesiones.otras');
@@ -209,6 +233,7 @@ Route::prefix('mi-cuenta')->name('account.')->group(function () {
         Route::post('/actividades/{activity}/cancelar', [Account\MyActivityController::class, 'cancel'])
             ->name('activities.cancel');
 
+        Route::get('/inscritos', [Account\ParticipantController::class, 'resumen'])->name('participants.resumen');
         Route::get('/actividades/{activity}/participantes', [Account\ParticipantController::class, 'index'])
             ->name('participants.index');
         Route::get('/actividades/{activity}/participantes/exportar', [Account\ParticipantController::class, 'export'])
@@ -252,7 +277,7 @@ Route::prefix('mi-cuenta')->group(function () {
     Route::get('/recuperar-contrasena', [Account\PasswordResetController::class, 'request'])
         ->name('password.request');
     Route::post('/recuperar-contrasena', [Account\PasswordResetController::class, 'email'])
-        ->middleware('throttle:6,1')
+        ->middleware('throttle:6,1,recuperar-contrasena')
         ->name('password.email');
     Route::get('/restablecer-contrasena/{token}', [Account\PasswordResetController::class, 'reset'])
         ->name('password.reset');
@@ -281,13 +306,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/perfil', [PerfilController::class, 'edit'])->name('perfil');
         Route::put('/perfil', [PerfilController::class, 'update'])
-            ->middleware('throttle:12,1')
+            ->middleware('throttle:12,1,admin-perfil')
             ->name('perfil.update');
         // El freno es por la contraseña actual: con una sesión ya abierta se
         // podía probar sin límite, que es justo lo que hace falta para
         // aprovechar una sesión robada.
         Route::post('/perfil/contrasena', [PerfilController::class, 'password'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,admin-perfil-contrasena')
             ->name('perfil.password');
         Route::post('/perfil/sesiones/cerrar', [PerfilController::class, 'cerrarSesion'])->name('perfil.sesiones.cerrar');
         Route::post('/perfil/sesiones/otras', [PerfilController::class, 'cerrarOtras'])->name('perfil.sesiones.otras');
@@ -353,7 +378,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // alcance del panel, y sin límite una sesión de admin robada podría
         // recorrer la lista de usuarios entera.
         Route::post('/usuarios/{user}/contrasena', [Admin\UserController::class, 'cambiarContrasena'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:10,1,admin-contrasena-usuario')
             ->name('users.password');
         Route::post('/usuarios/{user}/estado', [Admin\UserController::class, 'toggleActive'])->name('users.toggle');
         Route::delete('/usuarios/{user}', [Admin\UserController::class, 'destroy'])->name('users.destroy');
@@ -385,7 +410,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // El autoguardado dispara cada pocos segundos mientras se escribe, así
         // que lleva su propio freno, más ancho que el de un formulario normal.
         Route::post('/paginas/home/{seccion}/borrador', [Admin\HomeSectionController::class, 'borrador'])
-            ->middleware('throttle:120,1')
+            ->middleware('throttle:120,1,borrador-home')
             ->name('home.borrador');
         Route::delete('/paginas/home/{seccion}/borrador', [Admin\HomeSectionController::class, 'descartarBorrador'])->name('home.borrador.descartar');
         Route::post('/paginas/home/{seccion}/versiones/{version}/restaurar', [Admin\HomeSectionController::class, 'restaurar'])->name('home.restaurar');
@@ -426,7 +451,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Subir dispara una petición por tanda de archivos: freno propio, más
         // ancho que el de un formulario normal pero lejos de ser libre.
         Route::post('/medios', [Admin\MediaController::class, 'store'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,medios')
             ->name('medios.store');
         Route::get('/medios/{medio}', [Admin\MediaController::class, 'show'])->name('medios.show');
         Route::put('/medios/{medio}', [Admin\MediaController::class, 'update'])->name('medios.update');

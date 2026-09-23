@@ -40,6 +40,12 @@
             </div>
             @php $tono = $activity->estado_color; @endphp
             <span style="flex:none;font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;background:{{ $tono['bg'] }};color:{{ $tono['ink'] }};border:1.5px solid {{ $tono['borde'] }};">{{ $activity->estado_label }}</span>
+            {{-- Punto 4 del 23/09: publicada en el acto (organizador ya
+                 verificado), su ficha ya existe y se puede ir a verla. En
+                 revisión no: la ficha pública todavía no se enseña. --}}
+            @if ($activity->estado === 'publicada')
+                <a href="{{ route('activities.show', $activity) }}" class="btn btn-primary" style="flex:none;" data-ver-actividad>Ver mi actividad</a>
+            @endif
         </div>
 
         <div style="background:#fff;border:1px solid var(--linea);border-radius:24px;padding:28px;box-shadow:0 18px 40px -32px rgba(0,0,0,.22);margin-bottom:18px;">

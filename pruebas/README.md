@@ -134,6 +134,15 @@ php artisan db:seed --class=UserSeeder
 | `peso-imagenes.mjs` | que la portada y el logo **se reduzcan en el navegador** antes de subirse, con imágenes de 5 MB fabricadas con GD, y que si aun reducidas no caben se avise y **se corte el envío**. Las imágenes no se versionan: son megas de ruido, y el ruido es justo lo que hace falta —una imagen plana se comprime a nada y no probaría el límite— (**necesita Chrome**) |
 | `invitacion-evaluacion.mjs` | el correo que invita a evaluar cuando la actividad ya pasó: que el momento lo decida la ONG, que el enlace lleve a la encuesta, que **una segunda pasada no vuelva a escribir**, y que con el ajuste en «no enviar» no salga nada. Necesita Mailpit en el 8025 (**necesita Chrome**) |
 | `acceso-wizard.mjs` | iniciar sesión a mitad del wizard **sin perder lo escrito**: rellena medio formulario, entra, comprueba campo por campo que nada se ha perdido y publica la actividad de verdad. Eso último es donde salía el 419 del token CSRF regenerado (**necesita Chrome**) |
+| `cupos.mjs` | cupos e inscripción previa, publicando de verdad por el wizard y por el editor de mi-cuenta: sin inscripción **no viajan ni se guardan cupos**, con inscripción el campo **sale vacío** con «Ej. 80» de marcador, y la ficha sólo enseña cupos si se pide inscripción (**necesita Chrome** y MySQL por consola) |
+| `ver-mi-actividad.mjs` | la pantalla final de publicar: con la actividad **publicada en el acto** lleva «Ver mi actividad» a su ficha; en revisión, no. Lee de la base, no escribe (**necesita Chrome**) |
+| `buscador-actividades.mjs` | el buscador de texto de `/actividades`: por nombre de actividad y de organización, **sin tildes ni mayúsculas**, que `%` no sea comodín, que se combine con los filtros y viaje al calendario y al cambiar de mes. Los recuentos se comparan con la base (**necesita Chrome**) |
+| `exportar-inscripciones.mjs` | el Excel de «Exportar inscripciones» del admin: el ID primero y **los datos de la actividad** en cada fila, celda a celda contra la base. Lo lee con el mismo OpenSpout (`leer-xlsx.php`). Añade un colaborador a la actividad y lo quita al terminar (**necesita Chrome**; desde la raíz del repo) |
+| `secciones-panel.mjs` | la barra «Secciones» del panel del organizador en sus seis pantallas, con la sección actual marcada, y la página **Inscritos**: una fila por actividad con inscripción y sus inscritos contados como en la base. No escribe (**necesita Chrome**) |
+| `evaluaciones-preguntas.mjs` | que en el panel del admin y en el del organizador **cada respuesta vaya bajo su pregunta**, con el mismo texto del formulario. Siembra `datos-evaluacion.php` y **lo limpia al terminar** (**necesita Chrome**; desde la raíz del repo) |
+| `avisos-destinatario.php` | a quién llega el aviso de «actividad corregida»: al buzón `avisos_email`, al que se ponga en el panel, y a los administradores sólo si está vacío. Con el correo falseado y dentro de una transacción que se deshace: no deja nada. `php artisan tinker --execute="require base_path('pruebas/avisos-destinatario.php');"` |
+| `avisos-panel.mjs` | que ese buzón se cambie desde Configuración → General, que rechace lo que no es un correo **diciéndolo junto al campo**, y que quede como estaba (**necesita Chrome**) |
+| `correo-existente.mjs` | el aviso de «este usuario ya existe» del paso 3: que sale **al salir del campo** y no al enviar, que su «Inicia sesión» abre el acceso del wizard y **conserva lo escrito**, que el rebote del servidor tampoco manda a otra página, y que la consulta tiene **freno propio** y no gasta el de entrar. Vacía la caché de los frenos al empezar y al terminar (**necesita Chrome**; se corre desde la raíz del repo, llama a `artisan`) |
 | `direcciones-photon.mjs` | las sugerencias de dirección contra el Photon real: que las coordenadas no vengan cambiadas de orden, que caigan dentro de Chile, que **el campo siga admitiendo una dirección que no es una calle**, y que el enlace del mapa use el punto y no la cadena. Deja la actividad que toca como estaba (**necesita Chrome**) |
 | `duplicar-seccion.mjs` | duplicar una sección del home: que la copia nazca con el contenido de la original y **que editarla no toque a la original**, que se pinte en el home con el parcial de su base y con un ancla distinta, que se arrastre y se esconda como cualquier otra, que se pueda borrar, y que las ancladas no se dupliquen ni pidiéndolo a mano (**necesita Chrome**) |
 | `tanda-produccion.mjs` | el repaso de toda la tanda **contra producción**, sólo con lo que no escribe nada. Es el que se corre tras desplegar (**necesita Chrome**) |
@@ -295,11 +304,12 @@ Tres suites escriben de verdad y por eso tienen su gemela de sólo lectura:
 |---|---|
 | `hilo-moderacion.mjs` | `hilo-moderacion-lectura.mjs` |
 | `evaluaciones-fotos.mjs` | `evaluaciones-fotos-lectura.mjs` |
-| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs` | `tanda-produccion.mjs` |
+| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs` | `tanda-produccion.mjs` |
 
 El motivo no es la prudencia genérica: devolver una actividad a revisión avisa
-**por correo a todos los administradores activos**, y en producción son tres,
-dos de ellos personas de verdad. Publicar, subir fotos o reclamar una
+**por correo al buzón del equipo** (`avisos_email`, Configuración → General;
+hasta el 23/09 iba a todos los administradores activos), que en producción lee
+gente de verdad. Publicar, subir fotos o reclamar una
 organización dejan además datos que luego hay que ir a buscar para borrarlos.
 
 ### `datos-hilo.php` — el hilo de moderación

@@ -9,6 +9,10 @@
     // los cinco pasos y un `required` dentro de un paso oculto hace que Chrome
     // corte el envío sin decir nada— y el registro sí, que es una sola página.
     'requerido' => false,
+    // Dentro del wizard hay un acceso propio que no recarga (P14): ahí
+    // «Inicia sesión» abre ese diálogo y no la página de acceso, que se
+    // llevaba lo escrito. En el registro no existe, y sigue siendo el enlace.
+    'enWizard' => false,
 ])
 
 {{--
@@ -69,11 +73,18 @@
     </span>
 
     {{-- Y la otra cara: la organización ya tiene cuenta. --}}
-    <span class="field-error" x-show="orgTomada" x-cloak>
+    <span class="field-error" x-show="orgTomada" x-cloak data-org-tomada>
         <span x-text="orgTomada?.nombre"></span> ya tiene una cuenta.
-        <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
-        o <a class="textlink" href="{{ route('password.request') }}">recupera la contraseña</a>
-        para publicar con ella.
+        @if ($enWizard)
+            <button type="button" class="textlink" x-on:click="abrirAcceso()"
+                    style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--naranjo);text-decoration:underline;text-underline-offset:3px;">Inicia sesión</button>
+            o <a class="textlink" href="{{ route('password.request') }}" target="_blank" rel="noopener">recupera la contraseña</a>
+            para publicar con ella sin perder lo que llevas escrito.
+        @else
+            <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
+            o <a class="textlink" href="{{ route('password.request') }}">recupera la contraseña</a>
+            para publicar con ella.
+        @endif
     </span>
 
     {{-- El id viaja aparte del nombre: el servidor no se fía del nombre para

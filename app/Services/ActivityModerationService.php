@@ -52,6 +52,10 @@ class ActivityModerationService
 
         $actividad->estado = $nuevoEstado;
 
+        // Antes de que `published_at` se rellene: es lo que dice si es la
+        // primera vez que sale publicada.
+        $primeraPublicacion = $nuevoEstado === 'publicada' && $actividad->published_at === null;
+
         if ($nuevoEstado === 'publicada') {
             $actividad->published_at ??= now();
             $actividad->publicada_automaticamente = $automatica;
@@ -93,6 +97,19 @@ class ActivityModerationService
             if ($anterior === 'ajustes' && $nuevoEstado === 'revision') {
                 $this->avisarDeVueltaDeAjustes($actividad, $comentario);
             }
+
+            /*
+             * D1, corregido el 23/09 (punto 11): la guía para organizadores
+             * sale al PUBLICAR, como dice el ticket, no al registrar. Aquí
+             * pasan los dos caminos —la revisión a mano y la aprobación
+             * automática—, así que no hay una segunda rama que recordar.
+             *
+             * Sólo la primera vez: una actividad que vuelve a publicarse
+             * después de editarla no necesita la guía otra vez.
+             */
+            if ($primeraPublicacion) {
+                app(CorreoTransaccional::class)->guiaOrganizador($actividad);
+            }
         }
 
         return $actividad;
@@ -102,20 +119,27 @@ class ActivityModerationService
      * Avisa a la ONG de que una actividad volvió corregida, con el mensaje que
      * escribió el organizador dentro.
      *
-     * Va a todos los administradores activos, y no a una dirección fija de
-     * configuración, porque el encargo es que se entere quien modera y no hay
-     * un buzón del equipo: el que primero la vea la atiende.
+     * Va al buzón del equipo, `avisos_email` de Configuración → General
+     * (punto 9 del 23/09). Antes iba a cada administrador activo, porque no
+     * había buzón, y así le llegaba a una persona a su correo personal.
+     *
+     * Sólo si ese ajuste está vacío o no es un correo se vuelve a lo de antes:
+     * un aviso que no llega a nadie es peor que uno que llega a quien no era.
      *
      * Como todo el correo de este proyecto, un fallo aquí no puede tumbar la
      * moderación: el cambio de estado ya está guardado.
      */
     private function avisarDeVueltaDeAjustes(Activity $actividad, ?string $mensaje): void
     {
-        $destinos = User::where('role', 'admin')
-            ->where('is_active', true)
-            ->whereNotNull('email')
-            ->pluck('email')
-            ->all();
+        $buzon = trim((string) \App\Models\Setting::get('avisos_email'));
+
+        $destinos = filter_var($buzon, FILTER_VALIDATE_EMAIL)
+            ? [$buzon]
+            : User::where('role', 'admin')
+                ->where('is_active', true)
+                ->whereNotNull('email')
+                ->pluck('email')
+                ->all();
 
         if (! $destinos) {
             return;

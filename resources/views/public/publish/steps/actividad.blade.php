@@ -347,9 +347,18 @@
         </div>
         <input type="hidden" name="inscripcion_habilitada" x-bind:value="insc ? 1 : 0">
 
+        {{--
+            Con «No», el campo no viaja: `x-show` sólo lo esconde, y escondido
+            seguía mandando su 80 de ejemplo, que acababa en la ficha como
+            «Cupos disponibles 80» de una actividad sin inscripción. En el HTML
+            fuente va dentro de un `<sc-if>` y ahí sencillamente no existe;
+            `disabled` es lo que lo deja igual. El servidor lo descarta también.
+            Con «Sí» sale vacío y el 80 va de marcador: venir relleno hacía que
+            quien no lo tocara publicara con 80 cupos. Vacío es «sin límite».
+        --}}
         <label class="lbl" style="margin-top:16px;max-width:260px;" x-show="insc" x-cloak>Cupos disponibles
             <input class="fld @error('cupos_totales') is-invalid @enderror" name="cupos_totales"
-                   inputmode="numeric" value="@viejo('cupos_totales', 80)">
+                   inputmode="numeric" value="@viejo('cupos_totales')" placeholder="Ej. 80" x-bind:disabled="! insc">
             <span class="helper">Las personas podrán reservar su cupo desde el sitio web.</span>
             @error('cupos_totales') <span class="field-error">{{ $message }}</span> @enderror
         </label>

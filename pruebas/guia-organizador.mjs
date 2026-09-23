@@ -62,8 +62,9 @@ p.on('pageerror', (e) => errores.push(String(e)));
 try {
   t('Configuración → General tiene el enlace');
 
-  di('El ajuste existe y trae el diseño de Canva',
-    guiaAntes === 'https://www.canva.com/design/DAHGZdhU2ZE/daWOTMwxbN7B8xjFdDXANQ/view', guiaAntes);
+  // Punto 11 del 23/09: el enlace corto del ticket, que lleva al mismo diseño.
+  di('El ajuste existe y trae el enlace del ticket',
+    guiaAntes === 'https://canva.link/r3abo554dfga5g6', guiaAntes);
   di('La plantilla existe y está activa', ultima(tinker(
     `echo App\\Models\\EmailTemplate::porClave('guia_organizador') ? 'si' : 'no';`)) === 'si');
 
@@ -99,12 +100,36 @@ try {
   ]);
   di('La actividad se registra', /\/listo/.test(p.url()), p.url().replace(B, ''));
 
-  const encolado = ultima(tinker(`echo App\\Models\\EmailLog::where('plantilla','guia_organizador')->where('to','like','%${CORREO}%')->count();`));
-  di('El correo queda en el registro de correos', encolado === '1', `${encolado} fila(s)`);
+  const guias = () => ultima(tinker(`echo App\\Models\\EmailLog::where('plantilla','guia_organizador')->where('to','like','%${CORREO}%')->count();`));
+
+  /*
+   * Punto 11 del 23/09: la guía sale al PUBLICAR, no al registrar. Una
+   * organización nueva pasa por revisión con su primera actividad, así que al
+   * registrarla todavía no hay guía.
+   */
+  const estado = ultima(tinker(`echo App\\Models\\Activity::where('titulo','${TITULO}')->value('estado');`));
+  di('La primera actividad de la organización queda en revisión', estado === 'revision', estado);
+  di('**Al registrarla NO sale la guía**', guias() === '0', `${guias()} fila(s)`);
+
+  t('La ONG la aprueba: ahora sí');
+
+  tinker(`$a = App\\Models\\Activity::where('titulo','${TITULO}')->first();`
+    + ` app(App\\Services\\ActivityModerationService::class)->cambiar($a, 'publicada', App\\Models\\User::where('email','${ADMIN}')->first()); echo 'OK';`);
+  di('**Al publicarla sale la guía**', guias() === '1', `${guias()} fila(s)`);
 
   // La cola la corre el planificador en el servidor; aquí, a mano.
   artisan('queue:work', '--stop-when-empty', '--tries=1');
   await esperar(800);
+
+  // Vuelve a revisión (una edición) y se publica otra vez: la guía ya la tiene.
+  tinker(`$a = App\\Models\\Activity::where('titulo','${TITULO}')->first(); $m = app(App\\Services\\ActivityModerationService::class);`
+    + ` $m->cambiar($a, 'revision'); $m->cambiar($a->fresh(), 'publicada'); echo 'OK';`);
+  di('Republicarla no la manda otra vez', guias() === '1', `${guias()} fila(s)`);
+  const repetida = ultima(tinker(
+    `$a = App\\Models\\Activity::where('titulo','${TITULO}')->first(); echo app(App\\Services\\CorreoTransaccional::class)->guiaOrganizador($a) ? 'si' : 'no';`));
+  di('Ni aunque se pida a mano: una por actividad', repetida === 'no');
+  artisan('queue:work', '--stop-when-empty', '--tries=1');
+  await esperar(500);
 
   const correos = await correosPara(CORREO);
   const guia = correos.find((m) => /guía para organizar/i.test(m.Subject));
@@ -113,14 +138,17 @@ try {
 
   if (guia) {
     const html = (await (await fetch(`${MAILPIT}/api/v1/message/${guia.ID}`)).json()).HTML;
-    di('**Con el botón a la guía de Configuración**', html.includes('href="https://www.canva.com/design/DAHGZdhU2ZE/daWOTMwxbN7B8xjFdDXANQ/view"'));
+    di('**Con el botón a la guía de Configuración**', html.includes(`href="${guiaAntes}"`));
+    di('Y dice que ya está publicada, no que se avisará', html.includes('ya está publicada') && ! html.includes('te avisaremos'));
     di('Y el enlace a su cuenta', html.includes(`${B}/mi-cuenta/actividades`) || html.includes('/mi-cuenta/actividades'));
     di('Sin marcadores sin rellenar', ! /\{\{\s*\w+\s*\}\}/.test(html));
   }
 
   t('Con otro enlace, sale el nuevo; vacío, no sale');
 
-  tinker(`App\\Models\\Setting::where('clave','guia_organizador_url')->update(['valor' => 'https://ejemplo.cl/guia-${SELLO}']); cache()->flush(); echo 'OK';`);
+  // Se olvida la que ya se mandó: si no, «una por actividad» no la dejaría salir.
+  tinker(`App\\Models\\EmailLog::where('plantilla','guia_organizador')->where('to','like','%${CORREO}%')->delete();`
+    + ` App\\Models\\Setting::where('clave','guia_organizador_url')->update(['valor' => 'https://ejemplo.cl/guia-${SELLO}']); cache()->flush(); echo 'OK';`);
   const conOtro = ultima(tinker(
     `$a = App\\Models\\Activity::where('titulo','${TITULO}')->first(); echo app(App\\Services\\CorreoTransaccional::class)->guiaOrganizador($a) ? 'si' : 'no';`));
   artisan('queue:work', '--stop-when-empty', '--tries=1');
@@ -152,7 +180,7 @@ try {
   await a.goto(`${B}/admin/configuracion`, { waitUntil: 'networkidle2' });
   di('Configuración → General enseña el campo', await a.evaluate(() =>
     document.body.innerText.includes('Enlace a la guía para organizadores')
-    && [...document.querySelectorAll('input')].some((i) => i.value.includes('canva.com/design/DAHGZdhU2ZE'))));
+    && [...document.querySelectorAll('input')].some((i) => i.value.includes('canva.link/r3abo554dfga5g6'))));
   await a.goto(`${B}/admin/plantillas`, { waitUntil: 'networkidle2' });
   di('Y la plantilla sale en Plantillas de correo, editable', await a.evaluate(() =>
     document.body.innerText.includes('Guía para organizadores')));

@@ -137,7 +137,7 @@
             {{-- ── Respuesta abierta ── --}}
             <div class="evaluacion-campo" data-campo="significado" data-obligatorio
                  data-etiqueta="Qué significa para ti el Patrimonio Social">
-                <label class="evaluacion-lbl" for="ev-significado">Después de participar, ¿qué significa para ti el Patrimonio Social? *</label>
+                <label class="evaluacion-lbl" for="ev-significado">{{ ActivityEvaluation::PREGUNTA_SIGNIFICADO }} *</label>
 
                 <textarea class="fld evaluacion-texto @error('significado') is-invalid @enderror"
                           id="ev-significado" name="significado" rows="4"
@@ -169,7 +169,7 @@
 
             {{-- ── Cómo se enteró ── --}}
             <div class="evaluacion-campo" data-campo="como_se_entero" data-etiqueta="Cómo te enteraste">
-                <label class="evaluacion-lbl" for="ev-origen">¿Cómo te enteraste de esta actividad?</label>
+                <label class="evaluacion-lbl" for="ev-origen">{{ ActivityEvaluation::PREGUNTA_ORIGEN }}</label>
                 <select class="fld @error('como_se_entero') is-invalid @enderror" id="ev-origen" name="como_se_entero">
                     <option value="">Selecciona una opción</option>
                     @foreach ($origenes as $clave => $texto)

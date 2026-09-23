@@ -76,7 +76,7 @@ class EmailTemplate extends Model
          */
         'guia_organizador' => [
             'nombre' => 'Guía para organizadores',
-            'descripcion' => 'Se envía a la organización cada vez que registra una actividad, con el enlace a la guía para organizadores. '
+            'descripcion' => 'Se envía a la organización cuando se publica cada una de sus actividades, con el enlace a la guía para organizadores. '
                 .'El enlace se cambia en Configuración → General; si está vacío, este correo no sale.',
             'variables' => ['nombre', 'organizacion', 'actividad', 'enlace_guia', 'enlace_cuenta', 'sitio'],
         ],

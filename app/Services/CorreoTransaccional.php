@@ -167,11 +167,16 @@ class CorreoTransaccional
     }
 
     /**
-     * La guía para organizadores (D1 de la sexta tanda), a la organización que
-     * acaba de registrar una actividad.
+     * La guía para organizadores (D1 de la sexta tanda), a la organización
+     * cuya actividad acaba de publicarse (punto 11 del 23/09; antes salía al
+     * registrarla).
      *
      * Sin enlace configurado no sale: un correo cuyo botón no lleva a ninguna
      * parte es peor que ninguno.
+     *
+     * Y una vez por actividad. Las que estaban en revisión cuando se cambió
+     * el momento ya la recibieron al registrarse, y al aprobarlas les llegaría
+     * otra vez. El registro de correos guarda a qué actividad fue cada una.
      */
     public function guiaOrganizador(Activity $actividad): bool
     {
@@ -179,6 +184,15 @@ class CorreoTransaccional
         $guia = trim((string) Setting::get('guia_organizador_url'));
 
         if (blank($destino) || $guia === '') {
+            return false;
+        }
+
+        $yaEnviada = \App\Models\EmailLog::where('plantilla', 'guia_organizador')
+            ->where('related_type', Activity::class)
+            ->where('related_id', $actividad->getKey())
+            ->exists();
+
+        if ($yaEnviada) {
             return false;
         }
 

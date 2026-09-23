@@ -58,6 +58,9 @@
         rutaOrganizaciones: {{ Js::from(route('publish.organizaciones')) }},
         rutaEntrar: {{ Js::from(route('publish.entrar')) }},
         rutaSalir: {{ Js::from(route('publish.salir')) }},
+        rutaCorreo: {{ Js::from(route('publish.correo')) }},
+        {{-- Si el envío rebotó por eso, el aviso del correo sale ya puesto. --}}
+        correoExiste: {{ Js::from(in_array(\App\Support\ReglasDeCampo::CORREO_YA_EXISTE, $errors->get('email'), true)) }},
         {{-- El desvío del paso 1, que ahora redirige de verdad. --}}
         urlVoluntariado: {{ Js::from($urlVoluntariado) }},
         {{-- P16: el buscador de direcciones y el punto que hubiera al rebotar. --}}

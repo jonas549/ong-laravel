@@ -147,7 +147,7 @@
                         <div style="color:var(--gris-700);">{{ $activity->formato }}</div>
                     </div>
 
-                    @if ($activity->cupos_disponibles !== null)
+                    @if ($activity->inscripcion_habilitada && $activity->cupos_disponibles !== null)
                         <div>
                             <div class="helper" style="font-weight:700;">Cupos disponibles</div>
                             <div style="color:var(--gris-700);font-variant-numeric:tabular-nums;">{{ $activity->cupos_disponibles }}</div>

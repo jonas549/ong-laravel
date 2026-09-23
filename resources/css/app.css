@@ -3782,3 +3782,69 @@ img.org-logo {
 
     .fecha-calendario-movil:has(.fecha-calendario-movil-nativo:disabled) { opacity: .4; }
 }
+
+/*
+ * Las secciones del panel del organizador (punto 7 del 23/09): agrupadas
+ * bajo un título, como botones, y la de la pantalla actual marcada. Los
+ * colores son los de `.chip`, para no inventar un tercer tipo de botón.
+ */
+.secciones {
+    display: flex;
+    align-items: center;
+    gap: 14px 18px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid var(--linea);
+    border-radius: 18px;
+    box-shadow: 0 14px 30px -26px rgba(0, 0, 0, .25);
+}
+
+.secciones-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--naranjo-600);
+}
+
+.secciones-lista { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.seccion {
+    font-size: 14.5px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1.5px solid #e4e6e8;
+    background: #fff;
+    color: var(--ink);
+    transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+
+.seccion:hover { border-color: var(--naranjo); color: var(--naranjo); }
+
+.seccion--activa,
+.seccion--activa:hover {
+    background: var(--naranjo-100);
+    border-color: var(--naranjo);
+    color: var(--naranjo-600);
+}
+
+@media (max-width: 760px) {
+    .secciones { padding: 12px 14px; }
+    .secciones-titulo { flex-basis: 100%; }
+    .seccion { font-size: 14px; padding: 8px 13px; }
+}
+
+/*
+ * Las respuestas de una evaluación, cada una bajo su pregunta (punto 8 del
+ * 23/09). La pregunta, pequeña y gris; la respuesta, a tamaño de lectura.
+ */
+.eval-respuestas { margin: 0 0 12px; display: flex; flex-direction: column; gap: 12px; }
+.eval-respuesta { margin: 0; }
+.eval-pregunta { font-size: 12.5px; font-weight: 600; line-height: 1.45; color: var(--gris); margin: 0 0 3px; }
+.eval-contestacion { font-size: 15px; line-height: 1.6; color: var(--gris-700); margin: 0; white-space: pre-line; }
+
+.eval-respuestas--compacta { margin: 0; gap: 8px; min-width: 260px; }
+.eval-respuestas--compacta .eval-pregunta { font-size: 11.5px; }
+.eval-respuestas--compacta .eval-contestacion { font-size: 13.5px; line-height: 1.5; }

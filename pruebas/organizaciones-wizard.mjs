@@ -118,11 +118,25 @@ await esperar(300);
 
 const avisoTomada = await texto();
 di('Dice que ya tiene cuenta', avisoTomada.includes('ya tiene una cuenta'));
-di('Con enlace a iniciar sesión', await p.evaluate(() => !! [...document.querySelectorAll('a')]
-  .find((a) => /inicia sesión/i.test(a.textContent) && a.getAttribute('href').includes('/mi-cuenta/login'))));
-di('Y a recuperar la contraseña', await p.evaluate(() => !! [...document.querySelectorAll('a')]
-  .find((a) => /recupera la contraseña/i.test(a.textContent) && a.getAttribute('href').includes('recuperar'))));
+// Dentro del wizard, «Inicia sesión» abre su propio acceso (que no recarga) y
+// no la página de acceso, que se llevaba lo escrito. En el registro sigue
+// siendo el enlace: lo comprueba `registro-organizacion.mjs`.
+di('Con un botón que inicia sesión aquí mismo', await p.evaluate(() => {
+  const aviso = document.querySelector('[data-org-tomada]');
+  return !! [...aviso.querySelectorAll('button')].find((b) => /inicia sesión/i.test(b.textContent))
+    && ! aviso.querySelector('a[href*="/mi-cuenta/login"]');
+}));
+di('Y a recuperar la contraseña, en otra pestaña', await p.evaluate(() =>
+  document.querySelector('[data-org-tomada] a[href*="recuperar"]')?.target === '_blank'));
 di('No se marca como reclamada', await p.$eval('input[name="org_id"]', (n) => n.value === ''));
+
+await p.evaluate(() => [...document.querySelectorAll('[data-org-tomada] button')].find((b) => /inicia sesión/i.test(b.textContent)).click());
+await esperar(300);
+di('**Pulsarlo abre el acceso del wizard, sin salir**', await p.evaluate(() =>
+  Alpine.$data(document.querySelector('[x-data^="wizard"]')).accesoAbierto === true
+  && location.pathname === '/publicar-actividad'));
+await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).cerrarAcceso());
+await esperar(200);
 
 /* ═══════════════════ P10 — reclamar una libre ════════════════════ */
 
@@ -285,9 +299,13 @@ di('Dice que el usuario ya existe', repetido.includes('Este usuario ya existe'))
  * el HTML entero pasaría aunque no se hubiera pintado nada.
  */
 const bloqueEnlaces = (repetido.match(
-  /Este usuario ya existe[\s\S]{0,600}?<\/label>/
+  /Este usuario ya existe[\s\S]{0,1500}?<\/label>/
 ) ?? [''])[0];
-di('Con enlace a iniciar sesión, pegado al campo', bloqueEnlaces.includes('/mi-cuenta/login'));
+
+// Punto 2 del 23/09: «Inicia sesión» abre el acceso del propio wizard. El
+// enlace a la página de acceso era lo que se llevaba lo escrito.
+di('Con botón a iniciar sesión, pegado al campo', /abrirAcceso\(correoCuenta\)"[^>]*>Inicia sesión/.test(bloqueEnlaces));
+di('Que no manda a la página de acceso', ! bloqueEnlaces.includes('/mi-cuenta/login'));
 di('Y a recuperar la contraseña', bloqueEnlaces.includes('recuperar-contrasena'));
 
 /* ═══════════════════ No se puede robar una organización ══════════ */

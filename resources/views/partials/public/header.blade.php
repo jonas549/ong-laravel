@@ -9,7 +9,12 @@
     El desenfoque va en .nav-barra y no en el <header>. Si envuelve también al
     panel, al abrirlo el navegador tiene que rehacer el desenfoque de media
     pantalla: en un teléfono eso es el parpadeo en blanco y el retardo al tocar.
+
+    «Voluntariado» lleva a las oportunidades de Voluntariados Chile hasta que
+    esté la integración con su API (Etapa 3). Es otro sitio, así que se abre
+    en otra pestaña, como el botón del home (C5).
 --}}
+@php($voluntariado = 'https://voluntariadoschile.cl/oportunidades')
 <header style="position:sticky;top:0;z-index:50;"
         x-data="{ abierto: false }"
         x-on:keydown.escape.window="abierto = false">
@@ -31,7 +36,7 @@
 
             <div class="nav-links" style="display:flex;align-items:center;gap:24px;margin:0 auto;flex:0 1 auto;min-width:0;">
                 <a class="navlink" href="{{ route('activities.index') }}">Actividades</a>
-                <a class="navlink" href="{{ route('publish.create') }}">Voluntariado</a>
+                <a class="navlink" href="{{ $voluntariado }}" target="_blank" rel="noopener">Voluntariado</a>
                 <a class="navlink" href="{{ route('home') }}#que-es">¿Qué es el Patrimonio Social?</a>
                 <a class="navlink" href="{{ route('home') }}#ediciones">Ediciones</a>
                 <a class="navlink" href="{{ route('posts.index') }}">Noticias</a>
@@ -84,13 +89,14 @@
          style="position:absolute;top:100%;left:0;right:0;background:#fff;border-top:1px solid #eeeff0;border-bottom:1px solid #eeeff0;box-shadow:0 18px 30px -22px rgba(0,0,0,.35);padding:14px 20px 20px;display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 76px);overflow-y:auto;">
 
         @foreach ([
-            ['Actividades', route('activities.index')],
-            ['Voluntariado', route('publish.create')],
-            ['¿Qué es el Patrimonio Social?', route('home') . '#que-es'],
-            ['Ediciones', route('home') . '#ediciones'],
-            ['Noticias', route('posts.index')],
-        ] as [$texto, $destino])
-            <a class="navlink-movil" href="{{ $destino }}" x-on:click="abierto = false">{{ $texto }}</a>
+            ['Actividades', route('activities.index'), false],
+            ['Voluntariado', $voluntariado, true],
+            ['¿Qué es el Patrimonio Social?', route('home') . '#que-es', false],
+            ['Ediciones', route('home') . '#ediciones', false],
+            ['Noticias', route('posts.index'), false],
+        ] as [$texto, $destino, $fuera])
+            <a class="navlink-movil" href="{{ $destino }}" x-on:click="abierto = false"
+               @if ($fuera) target="_blank" rel="noopener" @endif>{{ $texto }}</a>
         @endforeach
 
         <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--linea);">

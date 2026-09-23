@@ -16,7 +16,7 @@
     // Lo que hay ahora en la URL, para que el conmutador y «Limpiar» no se
     // lleven por delante los filtros puestos.
     $puestos = array_filter(
-        request()->only(['region', 'comuna', 'tema', 'formato']),
+        request()->only(['q', 'region', 'comuna', 'tema', 'formato']),
         fn ($v) => $v !== null && $v !== '',
     );
 @endphp
@@ -39,6 +39,21 @@
             <input type="hidden" name="vista" value="calendario">
             <input type="hidden" name="mes" value="{{ $calendario->mes->format('Y-m') }}">
         @endif
+
+        {{--
+            Punto 5 del 23/09: búsqueda libre por nombre de actividad o de
+            organización. Ocupa la fila entera, encima de los desplegables, y
+            viaja con ellos: es un filtro más del mismo formulario.
+        --}}
+        <div style="grid-column:1 / -1;">
+            <label class="helper" for="f-q" style="display:block;margin-bottom:6px;font-weight:600;">Buscar</label>
+            <div style="position:relative;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                     style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--gris);pointer-events:none;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input class="fld" type="search" name="q" id="f-q" value="{{ request('q') }}" maxlength="100"
+                       placeholder="Nombre de la actividad u organización" style="padding-left:42px;">
+            </div>
+        </div>
 
         <div>
             <label class="helper" for="f-region" style="display:block;margin-bottom:6px;font-weight:600;">Región</label>
