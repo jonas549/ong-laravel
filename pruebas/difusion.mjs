@@ -33,11 +33,12 @@ const fechasAntes = sql(`select ifnull(valor, '') from settings where clave = 'd
 // Las columnas del dibujo, en píxeles del lienzo (ver resources/js/difusion.js).
 const COLUMNAS = [
     { nombre: 'cuándo', x0: 162, x1: 316, y0: 905, y1: 1005 },
-    { nombre: 'dónde', x0: 404, x1: 556, y0: 905, y1: 1005 },
+    // La dirección usa la columna entera, desde el borde del pin (punto 3 del 30/09).
+    { nombre: 'dónde', x0: 354, x1: 556, y0: 905, y1: 1001 },
     { nombre: 'cupos', x0: 590, x1: 766, y0: 915, y1: 1005 },
     { nombre: 'formato', x0: 805, x1: 990, y0: 950, y1: 1005 },
     { nombre: 'organiza', x0: 218, x1: 440, y0: 1070, y1: 1140 },
-    { nombre: 'web', x0: 572, x1: 945, y0: 1100, y1: 1130 },
+    { nombre: 'web', x0: 572, x1: 945, y0: 1050, y1: 1100 },
     { nombre: 'pie', x0: 222, x1: 742, y0: 1220, y1: 1330 },
 ];
 
@@ -78,6 +79,21 @@ const fueraDeSitio = (textos) => textos.filter((x) => {
 
 const hay = (textos, re) => textos.some((x) => re.test(x.t));
 
+/**
+ * La dirección tal como quedó escrita: las líneas grises de la columna,
+ * junto al pin o desde su borde. Las de la región van en tinta oscura.
+ */
+const direccion = (textos) => textos.filter((x) => [354, 404].includes(x.x) && x.y > 930 && x.y <= 1003 && x.color === '#63666a')
+    .map((x) => x.t).join(' ');
+
+/*
+ * El corazón asoma por encima de la caja: su borde de arriba está en y=1111
+ * desde x≈787 (medido en la capa). Ningún texto que llegue hasta ahí puede
+ * bajar de y=1098 contando el descendente (punto 3 del 30/09).
+ */
+const tocaElCorazon = (textos) => textos.filter((x) => x.y > 1040 && x.y < 1200 && x.x < 990 && x.x + x.ancho > 787
+    && x.y + 6 > 1104).map((x) => `«${x.t}» y=${x.y}`);
+
 try {
     await p.goto(`${B}/mi-cuenta/login`);
     await p.type('[name="email"]', ORG);
@@ -98,11 +114,14 @@ try {
     t('2 · Sin foto, con horas y de varios días');
     const sinFoto = await generar(ids['sin-foto']);
     di('se genera igual, con el banner de la edición', sinFoto.estado === 'lista' && sinFoto.foto);
-    di('la fecha de varios días', hay(sinFoto.textos, /^\d+ al \d+ de /), sinFoto.textos.find((x) => / al /.test(x.t))?.t);
+    // Sin espacio al final: según el mes, el nombre baja a la línea siguiente.
+    di('la fecha de varios días', hay(sinFoto.textos, /^\d+ al \d+ de\b/), sinFoto.textos.find((x) => / al /.test(x.t))?.t);
     di('las horas', hay(sinFoto.textos, /^10:00 – 13:00$/));
     di('los cupos', hay(sinFoto.textos, /^55 disponibles$/));
     di('la descripción sin los saltos de línea', hay(sinFoto.textos, /barrio\. Trae/));
     di('ningún texto fuera de su sitio', fueraDeSitio(sinFoto.textos).length === 0, fueraDeSitio(sinFoto.textos).join(' · '));
+    di('la dirección, entera', direccion(sinFoto.textos) === 'Sede vecinal, calle Los Aromos 123', direccion(sinFoto.textos));
+    di('«Más información en:» y la web no tocan el corazón', tocaElCorazon(sinFoto.textos).length === 0, tocaElCorazon(sinFoto.textos).join(' · '));
 
     t('3 · Todo al máximo');
     const larga = await generar(ids.larga);
@@ -115,6 +134,19 @@ try {
     di('los cupos agotados', hay(larga.textos, /^Cupos agotados$/));
     di('la región larga no se sale', fueraDeSitio(larga.textos).length === 0, fueraDeSitio(larga.textos).join(' · '));
     di('ni la fecha de varios meses', ! larga.textos.some((x) => x.y > 900 && x.x === 162 && x.t.endsWith('…')));
+    /*
+     * La columna tiene 76 px de alto para comuna, región y dirección. Con la
+     * región más larga del país en tres líneas, una dirección de ~90
+     * caracteres sale entera; la del escenario (130) ya no cabe ni a 11 px y
+     * se corta con «…», pero dentro de la columna.
+     */
+    di('la dirección absurda se corta con «…», dentro de la columna',
+        direccion(larga.textos).endsWith('…') && ! larga.textos.some((x) => x.x === 354 && x.x + x.ancho > 556), direccion(larga.textos));
+    const DIR_REAL = 'Av. Libertador Bernardo O\'Higgins 1234, departamento 56, frente a la plaza de armas';
+    sql(`update activities set direccion = '${DIR_REAL.replace(/'/g, "''")}' where id = ${ids.larga}`);
+    const larga2 = await generar(ids.larga);
+    di(`una dirección larga real (${DIR_REAL.length} caracteres), entera, con la región más larga`, direccion(larga2.textos) === DIR_REAL, direccion(larga2.textos));
+    di('y sin salirse de su sitio', fueraDeSitio(larga2.textos).length === 0, fueraDeSitio(larga2.textos).join(' · '));
 
     t('4 · En línea, sin fecha y sin inscripción');
     const online = await generar(ids.online);
@@ -179,7 +211,68 @@ try {
     di('la pantalla no desborda', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
     di('la vista previa cabe', await p.evaluate(() => document.querySelector('.difusion-vista').getBoundingClientRect().right <= window.innerWidth));
 
-    t('10 · Sin errores de JavaScript');
+    t('10 · El botón de compartir hace siempre algo (punto 4 del 30/09)');
+    await p.setViewport({ width: 1440, height: 900 });
+    await nav.defaultBrowserContext().overridePermissions(B, ['clipboard-read', 'clipboard-write', 'clipboard-sanitized-write']);
+    await generar(1);
+    const escritorio = await p.evaluate(() => {
+        const b = document.querySelector('[data-compartir]');
+        return { modo: Alpine.$data(document.querySelector('.difusion')).modo, visible: b?.getBoundingClientRect().height > 0, texto: b?.textContent.trim() };
+    });
+    di('en el escritorio el botón está y dice «Copiar imagen»', escritorio.visible && escritorio.texto === 'Copiar imagen', JSON.stringify(escritorio));
+    await p.click('[data-compartir]');
+    await new Promise((r) => setTimeout(r, 800));
+    const copiado = await p.evaluate(async () => {
+        const items = await navigator.clipboard.read();
+        const blob = await items[0]?.getType('image/png');
+        const img = await createImageBitmap(blob);
+        return { tipo: blob?.type, ancho: img.width, alto: img.height, aviso: document.querySelector('[data-aviso-compartir]')?.innerText };
+    }).catch((e) => ({ error: String(e) }));
+    di('al pulsarlo, la imagen queda en el portapapeles a 1080×1350', copiado.ancho === 1080 && copiado.alto === 1350, JSON.stringify(copiado));
+    di('y lo dice en pantalla', /copiada/i.test(copiado.aviso ?? ''), copiado.aviso);
+
+    /*
+     * El teléfono, simulado: puntero de dedo y `navigator.share` de mentira que
+     * apunta lo que recibe. Con Chrome sin pantalla no hay diálogo de compartir
+     * de verdad; esto prueba la lógica, no el diálogo del sistema.
+     */
+    const telefono = async (comoAcaba) => {
+        const pg = await nav.newPage();
+        await pg.evaluateOnNewDocument((comoAcaba) => {
+            const mm = window.matchMedia.bind(window);
+            window.matchMedia = (q) => (q === '(pointer: coarse)' ? { matches: true, addEventListener() {}, removeEventListener() {} } : mm(q));
+            window.__compartido = [];
+            navigator.canShare = () => true;
+            navigator.share = async (d) => {
+                window.__compartido.push({ archivos: d.files?.map((f) => `${f.name}:${f.type}:${f.size > 0}`) });
+                if (comoAcaba === 'cancela') throw new DOMException('cancelado', 'AbortError');
+                if (comoAcaba === 'falla') throw new DOMException('no permitido', 'NotAllowedError');
+            };
+            window.__descargas = 0;
+            const clic = HTMLAnchorElement.prototype.click;
+            HTMLAnchorElement.prototype.click = function () { if (this.download) { window.__descargas++; return; } return clic.call(this); };
+        }, comoAcaba);
+        await pg.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+        await pg.goto(`${B}/mi-cuenta/actividades/1/difusion`, { waitUntil: 'networkidle2' });
+        await pg.waitForFunction(() => Alpine.$data(document.querySelector('.difusion'))?.estado === 'lista', { timeout: 20000 });
+        const texto = await pg.$eval('[data-compartir]', (b) => b.textContent.trim());
+        await pg.click('[data-compartir]');
+        await new Promise((r) => setTimeout(r, 600));
+        const r = await pg.evaluate(() => ({ compartido: window.__compartido, descargas: window.__descargas,
+            aviso: document.querySelector('[data-aviso-compartir]')?.innerText ?? '' }));
+        await pg.close();
+        await p.bringToFront();
+        return { texto, ...r };
+    };
+    const tBien = await telefono('bien');
+    di('en el teléfono dice «Compartir»', tBien.texto === 'Compartir', tBien.texto);
+    di('y abre el compartir nativo con el PNG', tBien.compartido.length === 1 && /\.png:image\/png:true$/.test(tBien.compartido[0].archivos?.[0] ?? ''), JSON.stringify(tBien.compartido));
+    const tCancela = await telefono('cancela');
+    di('cerrar el diálogo sin elegir no descarga ni avisa', tCancela.descargas === 0 && ! tCancela.aviso, JSON.stringify(tCancela));
+    const tFalla = await telefono('falla');
+    di('si el diálogo falla, se descarga y lo dice', tFalla.descargas === 1 && /descarg/i.test(tFalla.aviso), JSON.stringify(tFalla));
+
+    t('11 · Sin errores de JavaScript');
     di('ninguno', errores.length === 0, errores.join(' | '));
 } finally {
     sql(`update organizations set logo_path = ${logoAntes ? `'${logoAntes}'` : 'null'} where id = ${orgId}`);

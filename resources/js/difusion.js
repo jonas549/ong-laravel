@@ -13,6 +13,8 @@
  * con «…» en la última palabra entera.
  */
 
+import { AVISOS, compartirImagen, modoDeCompartir } from './compartir-imagen';
+
 const ANCHO = 1080;
 const ALTO = 1350;
 
@@ -33,7 +35,7 @@ const CAPAS = {
     'icono-formato': { x: 805, y: 872, w: 45, h: 42 },
     // El de la capa venía más arriba y más pequeño que en la pieza de
     // referencia; manda la referencia.
-    'icono-web': { x: 496, y: 1063, w: 54, h: 54 },
+    'icono-web': { x: 496, y: 1045, w: 54, h: 54 },
     // Los dos logos están guardados al doble, para que no se vean blandos.
     'logo-dps': { x: 657, y: 28, w: 363, h: 99 },
     'logo-comunidad': { x: 38, y: 1213, w: 152, h: 112 },
@@ -220,23 +222,121 @@ function datosDeLaCaja(ctx, datos) {
      * Dónde: comuna y región; la dirección, más pequeña, debajo. La columna es
      * estrecha y hay regiones muy largas («Metropolitana de Santiago»,
      * «Libertador General Bernardo O'Higgins»): el lugar puede ocupar tres
-     * líneas, y entonces la dirección se queda en una.
+     * líneas. Lugar y dirección se ajustan juntos: ver `dondeCompleto`.
      */
     etiqueta('Dónde', 404, 897);
-    const lugar = ajustar(ctx, datos.donde.lugar, 152, 2, 20, 17, 400, TEXTO).lineas.some((l) => l.endsWith('…'))
-        ? ajustar(ctx, datos.donde.lugar, 152, 3, 18, 15, 400, TEXTO)
-        : ajustar(ctx, datos.donde.lugar, 152, 2, 20, 17, 400, TEXTO);
-    ctx.fillStyle = TINTA;
-    y = escribir(ctx, lugar.lineas, 404, 925, Math.round(lugar.tam * 1.25));
-    if (datos.donde.direccion) {
-        valor(datos.donde.direccion, 404, y + 24, 152, lugar.lineas.length > 2 ? 1 : 2, 15, 13, GRIS);
-    }
+    dondeCompleto(ctx, datos.donde.lugar, datos.donde.direccion);
 
     etiqueta('Cupos', 664, 897);
     valor(datos.cupos, 590, 935, 176, 2);
 
     etiqueta('Formato', 805, 942);
     valor(datos.formato, 805, 972, 180, 1);
+}
+
+/**
+ * Comuna y región, y debajo la dirección ENTERA (punto 3 del 30/09: salía
+ * cortada a dos líneas).
+ *
+ * El hueco es pequeño: de y=925 a y=1003, porque en 1008 empieza el panel de
+ * «Organiza». Para que quepa más:
+ *
+ * - La dirección aprovecha el ancho de toda la columna, desde el borde del pin
+ *   (x=354; por debajo de y≈930 el pin ya no está) hasta antes de la divisoria
+ *   (x=556), y no sólo los 152 px del lugar.
+ * - Lugar y dirección se ajustan juntos: si con el lugar grande la dirección no
+ *   cabe entera ni a 11 px, el lugar baja de tamaño antes de cortar nada.
+ *
+ * Sólo si ni así cabe —direcciones de más de unos 100 caracteres con la región
+ * más larga del país— la dirección se corta con «…», dentro de su columna.
+ */
+function dondeCompleto(ctx, lugar, direccion) {
+    const LUGAR = { x: 404, ancho: 152, y: 925 };
+    const DIR = { x: 354, ancho: 202 };
+    const FONDO = 1003;
+
+    const enLineas = (texto, ancho, max, t) => {
+        ctx.font = fuente(400, t, TEXTO);
+        const lineas = repartir(ctx, texto, ancho);
+        return lineas.length <= max && lineas.every((l) => ctx.measureText(l).width <= ancho) ? lineas : null;
+    };
+
+    /*
+     * Dos formas de poner el lugar. La de siempre: todas las líneas a la
+     * derecha del pin, como en las demás columnas. Y, sólo cuando con ésa la
+     * dirección no cabe entera, rodeando el pin: la primera línea a su lado y
+     * las siguientes por debajo, con el ancho entero, igual que la dirección.
+     * Con la región más larga («Aysén del General Carlos Ibáñez del Campo»)
+     * son dos líneas en vez de tres.
+     */
+    const lugarEnLineas = (max, t, rodea) => {
+        ctx.font = fuente(400, t, TEXTO);
+        const palabras = String(lugar ?? '').split(/\s+/).filter(Boolean);
+        const lineas = [];
+        let linea = '';
+        for (const p of palabras) {
+            const ancho = lineas.length && rodea ? DIR.ancho : LUGAR.ancho;
+            const prueba = linea ? `${linea} ${p}` : p;
+            if (ctx.measureText(prueba).width <= ancho || ! linea) {
+                linea = prueba;
+            } else {
+                lineas.push(linea);
+                linea = p;
+            }
+        }
+        if (linea) lineas.push(linea);
+        const caben = lineas.every((l, i) => ctx.measureText(l).width <= (i && rodea ? DIR.ancho : LUGAR.ancho));
+
+        return lineas.length <= max && caben ? { lineas, tam: t, rodea } : null;
+    };
+
+    // El lugar, de más a menos: primero a la manera de siempre (dos líneas de
+    // 20 a 17 px, tres de 18 a 15) y después rodeando el pin (de 20 a 13).
+    const opciones = [
+        ...[20, 19, 18, 17].map((t) => lugarEnLineas(2, t, false)),
+        ...[18, 17, 16, 15].map((t) => lugarEnLineas(3, t, false)),
+        ...[20, 19, 18, 17, 16, 15, 14, 13].map((t) => lugarEnLineas(2, t, true)),
+        ...[18, 17, 16, 15, 14, 13].map((t) => lugarEnLineas(3, t, true)),
+    ].filter(Boolean);
+    if (! opciones.length) opciones.push({ ...ajustar(ctx, lugar, LUGAR.ancho, 3, 15, 14, 400, TEXTO), rodea: false });
+
+    const pintar = (l, d) => {
+        ctx.fillStyle = TINTA;
+        ctx.font = fuente(400, l.tam, TEXTO);
+        ctx.textAlign = 'left';
+        const altoLugar = Math.round(l.tam * 1.25);
+        l.lineas.forEach((linea, i) => ctx.fillText(linea, i && l.rodea ? DIR.x : LUGAR.x, LUGAR.y + i * altoLugar));
+        if (! d) return;
+        ctx.fillStyle = GRIS;
+        ctx.font = fuente(400, d.tam, TEXTO);
+        escribir(ctx, d.lineas, d.x, d.y0, d.alto);
+    };
+
+    const finDelLugar = (l) => LUGAR.y + (l.lineas.length - 1) * Math.round(l.tam * 1.25);
+
+    if (! direccion) return pintar(opciones[0], null);
+
+    // La dirección, al mayor tamaño que quepa; a igual tamaño, alineada con el
+    // lugar, y si no, con el ancho entero de la columna.
+    for (const l of opciones) {
+        for (let t = 14; t >= 11; t -= 1) {
+            for (const col of (l.rodea ? [DIR] : [LUGAR, DIR])) {
+                const alto = Math.round(t * 1.25);
+                const y0 = finDelLugar(l) + t + 6;
+                const lineas = enLineas(direccion, col.ancho, Math.floor((FONDO - y0) / alto) + 1, t);
+                if (lineas) return pintar(l, { lineas, tam: t, alto, y0, x: col.x });
+            }
+        }
+    }
+
+    // No cabe entera: el lugar más compacto y la dirección cortada en su sitio.
+    const l = opciones.at(-1);
+    const alto = Math.round(11 * 1.25);
+    const y0 = finDelLugar(l) + 17;
+    ctx.font = fuente(400, 11, TEXTO);
+    const lineas = repartirHasta(ctx, direccion, DIR.ancho, Math.max(1, Math.floor((FONDO - y0) / alto) + 1));
+
+    return pintar(l, { lineas, tam: 11, alto, y0, x: DIR.x });
 }
 
 /** «Organiza», con su logo o sus iniciales, y «Más información en:». */
@@ -287,10 +387,16 @@ function pieDeLaCaja(ctx, datos, logo) {
 
     ctx.fillStyle = TINTA;
     ctx.textAlign = 'left';
+    /*
+     * Punto 3 del 30/09: el bloque topaba con el corazón, que asoma por
+     * encima de la caja: su borde de arriba llega a y=1111 entre x≈787 y
+     * x≈990, medido en la capa. Sube 20 px —con el globo, ver CAPAS— y la
+     * última letra con descendente queda en y≈1098: 13 px de aire.
+     */
     ctx.font = fuente(700, 20, TEXTO);
-    ctx.fillText('Más información en:', 572, 1080);
+    ctx.fillText('Más información en:', 572, 1060);
     const w = ajustar(ctx, datos.web, 370, 1, 25, 18, 400, TEXTO);
-    ctx.fillText(w.lineas[0], 572, 1112);
+    ctx.fillText(w.lineas[0], 572, 1092);
 }
 
 /** El pie blanco sobre la franja naranja de abajo. */
@@ -324,7 +430,7 @@ export async function dibujarDifusion(canvas, datos, rutaCapas, fotoPorDefecto) 
     ctx.fillText = (t, x, y) => {
         const ancho = ctx.measureText(t).width;
         const izq = ctx.textAlign === 'center' ? x - ancho / 2 : x;
-        textos.push({ t: String(t), x: Math.round(izq), y: Math.round(y), ancho: Math.round(ancho), fuente: ctx.font });
+        textos.push({ t: String(t), x: Math.round(izq), y: Math.round(y), ancho: Math.round(ancho), fuente: ctx.font, color: ctx.fillStyle });
         escribirOriginal(t, x, y);
     };
 
@@ -379,7 +485,9 @@ export function difusion(datos, rutaCapas, fotoPorDefecto) {
         estado: 'dibujando',
         url: '',
         archivo: null,
-        puedeCompartir: false,
+        // 'compartir', 'copiar' o 'descargar': ver compartir-imagen.js.
+        modo: 'descargar',
+        aviso: '',
         dibujo: null,
 
         async init() {
@@ -389,8 +497,9 @@ export function difusion(datos, rutaCapas, fotoPorDefecto) {
                 const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/png'));
                 this.archivo = new File([blob], datos.archivo, { type: 'image/png' });
                 this.url = URL.createObjectURL(blob);
-                // En el teléfono, «Compartir» la manda directo a Instagram o WhatsApp.
-                this.puedeCompartir = !! navigator.canShare?.({ files: [this.archivo] });
+                // En el teléfono, «Compartir» la manda directo a Instagram o
+                // WhatsApp; en el escritorio la copia para pegarla.
+                this.modo = modoDeCompartir(this.archivo);
                 this.estado = 'lista';
             } catch (e) {
                 console.error(e);
@@ -399,11 +508,7 @@ export function difusion(datos, rutaCapas, fotoPorDefecto) {
         },
 
         async compartir() {
-            try {
-                await navigator.share({ files: [this.archivo], title: datos.titulo });
-            } catch {
-                // Cancelar el diálogo de compartir no es un error que haya que contar.
-            }
+            this.aviso = AVISOS[await compartirImagen(this.archivo, { titulo: datos.titulo })];
         },
     };
 }

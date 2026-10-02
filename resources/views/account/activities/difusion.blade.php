@@ -39,10 +39,17 @@
                 <a class="btn btn-primary" x-bind:href="url || null" x-bind:download="archivo?.name"
                    x-bind:class="estado !== 'lista' && 'is-disabled'" x-bind:aria-disabled="estado !== 'lista'"
                    data-descargar>Descargar imagen</a>
-                <button type="button" class="btn btn-outline" x-show="puedeCompartir" x-cloak
-                        x-on:click="compartir()">Compartir</button>
+                {{-- Punto 4 del 30/09: el botón hace siempre algo. En el
+                     teléfono comparte; en el escritorio copia la imagen para
+                     pegarla; donde no se pueda ni eso, ya está «Descargar». --}}
+                <button type="button" class="btn btn-outline" x-show="estado === 'lista' && modo !== 'descargar'" x-cloak
+                        x-on:click="compartir()" data-compartir
+                        x-text="modo === 'compartir' ? 'Compartir' : 'Copiar imagen'">Compartir</button>
                 <a class="btn btn-outline" href="{{ route('account.activities.edit', $activity) }}">Editar actividad</a>
             </div>
+
+            <p class="helper" x-show="aviso" x-cloak x-text="aviso" data-aviso-compartir
+               style="margin-top:12px;color:var(--naranjo-600);font-weight:600;" role="status"></p>
 
             <p class="field-error" x-show="estado === 'error'" x-cloak style="margin-top:14px;">
                 No se pudo preparar la imagen. Recarga la página e inténtalo de nuevo.
