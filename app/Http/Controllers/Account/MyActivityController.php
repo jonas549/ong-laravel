@@ -61,6 +61,7 @@ class MyActivityController extends Controller
             ->when($estadoBuscado, fn ($q) => $q->where('estado', $estadoBuscado))
             ->with(['commune', 'region', 'terms'])
             ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
+            ->withExists('registrations as tiene_inscripciones')
             ->latest('updated_at')
             ->get();
 

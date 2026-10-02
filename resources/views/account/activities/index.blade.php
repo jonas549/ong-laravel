@@ -111,7 +111,9 @@
                                 <span style="font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px;background:var(--gris-100);color:var(--gris-700);">{{ $t->nombre }}</span>
                             @endforeach
 
-                            @if ($a->estado === 'publicada')
+                            {{-- Punto 5 del 30/09: sin inscripción previa no
+                                 puede haber inscritos. --}}
+                            @if ($a->estado === 'publicada' && $a->admiteInscritos())
                                 <a href="{{ route('account.participants.index', $a) }}"
                                    style="font-size:13px;font-weight:600;color:var(--naranjo);margin-left:4px;">Ver participantes inscritos →</a>
                             @endif

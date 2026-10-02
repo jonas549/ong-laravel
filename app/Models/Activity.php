@@ -164,6 +164,24 @@ class Activity extends Model
 
     // ── Scopes ───────────────────────────────────────────────────
 
+    /**
+     * Las que pueden tener inscritos: piden inscripción, o la pidieron y ya
+     * tienen alguna aunque después la apagaran. Es el criterio de todas las
+     * pantallas que enseñan o enlazan inscritos (punto 5 del 30/09): en una
+     * actividad «sin inscripción previa» no puede haber nadie.
+     */
+    public function scopeConInscripcion(Builder $q): Builder
+    {
+        return $q->where(fn ($q) => $q->where('inscripcion_habilitada', true)->orWhereHas('registrations'));
+    }
+
+    /** Lo mismo, sobre una ficha ya cargada (usa `tiene_inscripciones` si viene contado). */
+    public function admiteInscritos(): bool
+    {
+        return $this->inscripcion_habilitada
+            || (bool) ($this->tiene_inscripciones ?? $this->registrations()->exists());
+    }
+
     public function scopePublished(Builder $q): Builder
     {
         return $q->where('estado', 'publicada')->whereNotNull('published_at');

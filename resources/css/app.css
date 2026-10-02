@@ -3830,6 +3830,24 @@ img.org-logo {
     color: var(--naranjo-600);
 }
 
+/* Punto 6 del 30/09: el recordatorio del logo. Una línea, sin cerrar nada. */
+.aviso-logo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 16px;
+    flex-wrap: wrap;
+    margin: 12px 0 0;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid #f3dcc4;
+    background: var(--naranjo-100);
+    font-size: 14px;
+    color: var(--gris-700);
+}
+
+.aviso-logo a { font-weight: 700; color: var(--naranjo-600); white-space: nowrap; }
+
 @media (max-width: 760px) {
     .secciones { padding: 12px 14px; }
     .secciones-titulo { flex-basis: 100%; }

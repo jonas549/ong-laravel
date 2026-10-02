@@ -35,7 +35,7 @@ class ParticipantController extends Controller
 
         $actividades = $organizacion
             ? Activity::where('organization_id', $organizacion->id)
-                ->where(fn ($q) => $q->where('inscripcion_habilitada', true)->orWhereHas('registrations'))
+                ->conInscripcion()
                 ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
                 ->with('commune')
                 ->latest('updated_at')

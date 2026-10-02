@@ -63,7 +63,8 @@ class RegistrationController extends Controller
         return view('admin.registrations.exportar', [
             'filtros' => $this->filtros($request),
             'estados' => Registration::ESTADOS,
-            'actividades' => Activity::orderBy('titulo')->pluck('titulo', 'id'),
+            // Sólo las que pueden tener inscritos (punto 5 del 30/09).
+            'actividades' => Activity::conInscripcion()->orderBy('titulo')->pluck('titulo', 'id'),
             'cuantos' => $this->consulta($request)->count(),
         ]);
     }

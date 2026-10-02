@@ -26,6 +26,15 @@
 
     // Los inscritos de una actividad son de «Inscritos», aunque su dirección
     // cuelgue de /actividades.
+    /*
+     * Punto 6 del 30/09: en el teléfono el logo ya no se pide al publicar, y
+     * hay organizaciones que se quedan sin él. Se les recuerda aquí, en todas
+     * las pantallas del panel menos en el perfil, que es donde se sube. Lo
+     * decide la ficha, no una marca de «visto»: desaparece al subirlo.
+     */
+    $organizacion = auth()->user()?->organization;
+    $faltaLogo = $organizacion && blank($organizacion->logo_path) && ! request()->routeIs('account.perfil');
+
     $secciones = [
         ['Mis actividades', route('account.activities.index'), request()->routeIs('account.activities.*')],
         ['Inscritos', route('account.participants.resumen'), request()->routeIs('account.participants.*')],
@@ -67,4 +76,11 @@
             @endif
         </div>
     </nav>
+
+    @if ($faltaLogo)
+        <p class="aviso-logo" data-aviso-logo role="note">
+            <span>Tu organización todavía no tiene logo: mientras tanto, en el sitio se muestran sus iniciales.</span>
+            <a href="{{ route('account.perfil') }}#logo-organizacion">Subir el logo →</a>
+        </p>
+    @endif
 </div>

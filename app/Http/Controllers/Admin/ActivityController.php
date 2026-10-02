@@ -33,6 +33,7 @@ class ActivityController extends Controller
             ->when($soloVueltas, fn ($q) => $q->vueltasDeAjustes())
             ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('titulo', 'like', "%{$b}%"))
             ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
+            ->withExists('registrations as tiene_inscripciones')
             ->latest('updated_at')
             ->paginate(20)
             ->withQueryString();

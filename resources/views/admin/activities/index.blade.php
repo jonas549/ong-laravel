@@ -85,7 +85,15 @@
                     <td>{{ $a->organization?->nombre }}</td>
                     <td style="white-space:nowrap;">{{ $a->fecha_corta }}</td>
                     <td>{{ $a->lugar }}</td>
-                    <td class="num">{{ $a->inscritos }}</td>
+                    {{-- Un 0 diría «nadie se inscribió»; sin inscripción previa,
+                         no aplica (punto 5 del 30/09). --}}
+                    <td class="num">
+                        @if ($a->admiteInscritos())
+                            {{ $a->inscritos }}
+                        @else
+                            <span class="helper" title="No requiere inscripción">—</span>
+                        @endif
+                    </td>
                     <td>
                         <span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;background:{{ $t['bg'] }};color:{{ $t['ink'] }};">
                             {{ $a->estado_filtro }}
