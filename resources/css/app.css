@@ -3880,3 +3880,51 @@ img.org-logo {
 @media (max-width: 760px) {
     .difusion { grid-template-columns: minmax(0, 1fr); gap: 22px; }
 }
+
+/*
+ * «Soy parte del DPS», tras inscribirse (punto 7 del 30/09). Reusa la
+ * maqueta de la imagen de difusión; esto es lo que tiene de propio.
+ */
+.soy-parte-confirmacion {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    padding: 24px 26px;
+    margin-bottom: 34px;
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--linea);
+    box-shadow: 0 18px 40px -32px rgba(0, 0, 0, .22);
+}
+
+/* Sin `min-width: 0` el texto no encoge dentro del flex, y un correo largo
+   —que no tiene dónde partirse— empujaba el recuadro fuera de la pantalla. */
+.soy-parte-confirmacion > div { min-width: 0; }
+.soy-parte-confirmacion strong { overflow-wrap: anywhere; }
+
+.soy-parte-check {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--naranjo-100);
+    color: var(--naranjo);
+}
+
+.soy-parte-post,
+.soy-parte-kit {
+    margin-top: 22px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid var(--linea);
+}
+
+.soy-parte-kit { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+
+@media (max-width: 560px) {
+    .soy-parte-confirmacion { padding: 20px; gap: 14px; }
+    .soy-parte-confirmacion h1 { font-size: 24px !important; }
+}

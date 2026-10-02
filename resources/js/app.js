@@ -3,6 +3,7 @@ import { iniciarAnclas } from './anclas';
 import { editorActividad } from './editor-actividad';
 import { compartir } from './compartir';
 import { difusion } from './difusion';
+import { soyParte } from './soy-parte';
 import { encuestaEvaluacion } from './evaluacion';
 import { campoImagen } from './imagenes';
 import { registroOrganizador } from './organizaciones';
@@ -157,6 +158,9 @@ Alpine.data('compartir', compartir);
 
 // La imagen de difusión de una actividad. Ver resources/js/difusion.js.
 Alpine.data('difusion', difusion);
+
+// «Soy parte del DPS», tras inscribirse. Ver resources/js/soy-parte.js.
+Alpine.data('soyParte', soyParte);
 
 window.Alpine = Alpine;
 Alpine.start();

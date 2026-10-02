@@ -41,8 +41,26 @@ export function descargar(archivo) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/**
+ * El portapapeles de los navegadores sólo admite PNG: un JPEG —la imagen de
+ * «Soy parte del DPS»— lo rechaza. Se redibuja en PNG antes de copiarlo.
+ */
+async function comoPng(archivo) {
+    if (archivo.type === 'image/png') return archivo;
+
+    const bitmap = await createImageBitmap(archivo);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+
+    return new Promise((ok, mal) => canvas.toBlob((b) => (b ? ok(b) : mal(new Error('sin PNG'))), 'image/png'));
+}
+
 async function copiarImagen(archivo) {
-    await navigator.clipboard.write([new ClipboardItem({ [archivo.type]: archivo })]);
+    // Se le pasa la promesa y no el blob: Safari exige que `write` se llame
+    // dentro del clic, y convertir antes de llamarlo lo dejaría fuera.
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': comoPng(archivo) })]);
 }
 
 /**

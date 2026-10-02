@@ -50,6 +50,11 @@ Route::get('/actividades/{activity:slug}/calendario.ics', [ActivityController::c
     ->name('activities.calendario');
 Route::post('/actividades/{activity:slug}/inscribirse', [RegistrationController::class, 'store'])
     ->name('registrations.store');
+// Punto 7 del 30/09: la pantalla que sigue a inscribirse, con la imagen
+// «Soy parte del DPS» para compartir. Sin datos de nadie: vale también como
+// enlace desde un correo.
+Route::get('/actividades/{activity:slug}/soy-parte', [RegistrationController::class, 'soyParte'])
+    ->name('registrations.soy-parte');
 Route::get('/inscripcion/{token}/cancelar', [RegistrationController::class, 'cancel'])
     ->name('registrations.cancel');
 

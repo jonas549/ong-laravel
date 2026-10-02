@@ -65,7 +65,37 @@ class RegistrationController extends Controller
         $correos->inscripcionConfirmada($inscripcion);
         $correos->nuevaInscripcion($inscripcion);
 
-        return back()->with('ok', 'Listo, guardamos tu inscripción. Te esperamos.');
+        /*
+         * Punto 7 del 30/09: antes volvía a la misma ficha con un aviso arriba
+         * y el formulario debajo, como si no hubiera pasado nada. Ahora va a
+         * una pantalla propia que lo confirma y ofrece compartir que se es
+         * parte del Día del Patrimonio Social.
+         */
+        return redirect()
+            ->route('registrations.soy-parte', $activity)
+            ->with('inscrito', ['nombre' => $inscripcion->nombre, 'correo' => $inscripcion->correo]);
+    }
+
+    /**
+     * «Soy parte del DPS»: la imagen fija de la edición para descargar o
+     * compartir, el texto del post y el kit de difusión.
+     *
+     * Recién inscrito (`inscrito` en la sesión) lleva arriba la confirmación.
+     * Sin eso —un enlace guardado, o desde un correo— enseña sólo la parte de
+     * compartir: no hay nada de nadie que esconder.
+     */
+    public function soyParte(Activity $activity)
+    {
+        abort_unless($activity->estado === 'publicada', 404);
+
+        $web = rtrim((string) config('app.url'), '/');
+
+        return view('public.activities.soy-parte', [
+            'activity' => $activity,
+            'inscrito' => session('inscrito'),
+            'texto' => 'Me sumo a la celebración nacional del Día del Patrimonio Social. ¡Súmate tú también! '.$web,
+            'kit' => Setting::get('kit_difusion_url'),
+        ]);
     }
 
     public function cancel(string $token)
