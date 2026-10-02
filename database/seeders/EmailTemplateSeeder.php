@@ -53,7 +53,8 @@ class EmailTemplateSeeder extends Seeder
                      <p style="margin:0 0 6px;"><strong>Dónde:</strong> {{ lugar }}</p>
                      <p style="margin:0 0 14px;"><strong>Organiza:</strong> {{ organizacion }}</p>
                      <p style="margin:0 0 14px;">Si al final no puedes ir, avísanos para liberar tu cupo: <a href="{{ enlace_cancelar }}" style="color:#cc6600;">cancelar mi inscripción</a>.</p>
-                     {{ bloque_calendario }}',
+                     {{ bloque_calendario }}
+                     {{ bloque_soy_parte }}',
                     'Ver la actividad',
                     '{{ enlace_actividad }}',
                 ),

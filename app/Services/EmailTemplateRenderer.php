@@ -57,6 +57,10 @@ class EmailTemplateRenderer
             'bloque_calendario' => '<p style="margin:22px 0 0;font-size:14px;color:#63666A;">'
                 .'Añádelo a tu calendario: <a href="#" style="color:#cc6600;font-weight:600;">Google Calendar</a>'
                 .' &nbsp;·&nbsp; <a href="#" style="color:#cc6600;font-weight:600;">Apple, Outlook y otros</a></p>',
+            'bloque_soy_parte' => '<div style="margin:24px 0 0;padding:20px;background:#faf7f3;border:1px solid #eceef0;'
+                .'border-radius:16px;text-align:center;font-size:13.5px;color:#63666a;">'
+                .'<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#33363a;">Cuenta que eres parte</p>'
+                .'Aquí va el botón que lleva a la imagen «Soy parte del DPS» para compartir.</div>',
             /*
              * En la vista previa el QR se enseña como un hueco y no como una
              * imagen: el código de verdad viaja incrustado en el correo y aquí

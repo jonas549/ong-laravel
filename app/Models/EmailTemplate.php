@@ -25,7 +25,7 @@ class EmailTemplate extends Model
         'inscripcion_confirmada' => [
             'nombre' => 'Confirmación de inscripción',
             'descripcion' => 'Se envía a la persona que se inscribe en una actividad.',
-            'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'organizacion', 'enlace_actividad', 'enlace_cancelar', 'bloque_calendario', 'sitio'],
+            'variables' => ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'organizacion', 'enlace_actividad', 'enlace_cancelar', 'bloque_calendario', 'bloque_soy_parte', 'sitio'],
         ],
         'nueva_inscripcion' => [
             'nombre' => 'Aviso de nueva inscripción',

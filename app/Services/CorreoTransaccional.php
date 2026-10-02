@@ -47,7 +47,38 @@ class CorreoTransaccional
             $this->datosDeActividad($actividad) + [
                 'nombre' => $inscripcion->nombre,
                 'enlace_cancelar' => route('registrations.cancel', $inscripcion->token),
+                'bloque_soy_parte' => $actividad ? $this->bloqueSoyParte($actividad) : '',
             ], $inscripcion);
+    }
+
+    /**
+     * «Cuenta que eres parte»: lleva a la pantalla de la imagen para compartir
+     * (punto 7 del 30/09). Un enlace y no la imagen adjunta: así el correo no
+     * engorda y no depende del trabajo de adjuntos, que está aplazado.
+     *
+     * Montado aquí por lo mismo que el del QR: la plantilla la edita la ONG y
+     * no tiene condicionales, y sin actividad el bloque entero desaparece.
+     */
+    private function bloqueSoyParte(Activity $actividad): string
+    {
+        $enlace = e(route('registrations.soy-parte', $actividad));
+
+        return trim(<<<HTML
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;">
+            <tr>
+                <td style="padding:20px;background:#faf7f3;border:1px solid #eceef0;border-radius:16px;text-align:center;">
+                    <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#33363a;">Cuenta que eres parte</p>
+                    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6;color:#63666a;">
+                        Comparte en tus redes que te sumas al Día del Patrimonio Social
+                        e invita a otras personas a participar.
+                    </p>
+                    <a href="{$enlace}" style="display:inline-block;background:#ffffff;color:#cc6600;font-weight:600;font-size:13.5px;padding:10px 20px;border:1.5px solid #e57200;border-radius:999px;text-decoration:none;">
+                        Cuenta que eres parte
+                    </a>
+                </td>
+            </tr>
+        </table>
+        HTML);
     }
 
     /** Aviso a la organización de que alguien se inscribió. */
