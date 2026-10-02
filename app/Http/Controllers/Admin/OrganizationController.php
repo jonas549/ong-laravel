@@ -70,6 +70,59 @@ class OrganizationController extends Controller
         return $this->index($request, true);
     }
 
+    /**
+     * Sumar una organización al listado, sin cuenta (punto 11 del 30/09).
+     *
+     * Queda exactamente como las del listado importado: libre, sin verificar y
+     * activa. Sale en el buscador del wizard y quien la represente la reclama
+     * poniéndose su contraseña. Lo que no se le pone aquí —el tipo, por
+     * ejemplo— se le pregunta entonces.
+     */
+    public function create()
+    {
+        return view('admin.organizations.create', [
+            'organizacion' => new Organization(['activo' => true]),
+            'tipos' => Organization::TIPOS,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $request->merge(Enlace::normalizarCampos($request->all(), ['enlace_web', 'enlace_red_social']));
+        $request->merge(['nombre' => preg_replace('/\s+/u', ' ', trim((string) $request->input('nombre')))]);
+
+        $datos = $request->validate([
+            // El mismo criterio que el wizard: sin repetir, salvo las borradas.
+            'nombre' => ['required', 'string', 'max:255', Rule::unique('organizations', 'nombre')->whereNull('deleted_at')],
+            'tipo' => ['nullable', Rule::in(Organization::TIPOS)],
+            'tipo_otro' => ['nullable', 'required_if:tipo,Otra', 'string', 'max:255'],
+            'unidad_educativa' => ['nullable', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:2000'],
+            'correo_contacto' => ['nullable', 'email', 'max:255'],
+            'enlace_web' => Enlace::reglas(),
+            'enlace_red_social' => Enlace::reglas(),
+            'logo_path' => ['nullable', 'string', 'max:255'],
+            'anios_participacion' => ['nullable', 'string', 'max:100'],
+        ], [
+            'nombre.unique' => 'Ya hay una organización con ese nombre en el listado. Búscala antes de crear otra.',
+        ], [
+            'nombre' => 'el nombre',
+            'tipo' => 'el tipo',
+            'correo_contacto' => 'el correo de contacto',
+        ]);
+
+        $organizacion = Organization::create($datos + [
+            // Sin dueño: eso es lo que la deja reclamable en el wizard.
+            'user_id' => null,
+            'verificada' => false,
+            'activo' => true,
+        ]);
+
+        return redirect()
+            ->route('admin.organizations.edit', $organizacion)
+            ->with('ok', "«{$organizacion->nombre}» ya está en el listado, sin cuenta: quien la represente puede reclamarla al publicar una actividad.");
+    }
+
     public function edit(Organization $organization)
     {
         return view('admin.organizations.edit', [
@@ -94,6 +147,7 @@ class OrganizationController extends Controller
             'enlace_web' => Enlace::reglas(),
             'enlace_red_social' => Enlace::reglas(),
             'logo_path' => ['nullable', 'string', 'max:255'],
+            'anios_participacion' => ['nullable', 'string', 'max:100'],
             'requiere_revision' => ['nullable', 'boolean'],
         ], [], [
             'nombre' => 'el nombre',

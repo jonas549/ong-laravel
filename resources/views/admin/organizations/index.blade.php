@@ -12,6 +12,11 @@
     Para lo demás está «Desactivar», que la esconde del sitio sin tocar nada.
 --}}
 
+@section('actions')
+    {{-- Punto 11 del 30/09: sumar una al listado sin pasar por un CSV. --}}
+    <a href="{{ route('admin.organizations.create') }}" class="btn btn-primary btn-sm" data-nueva-organizacion>+ Nueva organización</a>
+@endsection
+
 @section('content')
 
 @if ($soloPendientes)

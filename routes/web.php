@@ -346,6 +346,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('organizations.verify');
         // Antes que `/{organization}`: si no, el comodin se traga «exportar».
         Route::get('/organizaciones/exportar', [Admin\OrganizationController::class, 'exportar'])->name('organizations.exportar');
+        // Punto 11 del 30/09: sumar al listado una organización sin cuenta,
+        // como las importadas, para que la reclame quien la represente.
+        Route::get('/organizaciones/crear', [Admin\OrganizationController::class, 'create'])->name('organizations.create');
+        Route::post('/organizaciones', [Admin\OrganizationController::class, 'store'])->name('organizations.store');
         Route::get('/organizaciones/{organization}/editar', [Admin\OrganizationController::class, 'edit'])->name('organizations.edit');
         Route::put('/organizaciones/{organization}', [Admin\OrganizationController::class, 'update'])->name('organizations.update');
         Route::post('/organizaciones/{organization}/estado', [Admin\OrganizationController::class, 'alternar'])->name('organizations.alternar');
