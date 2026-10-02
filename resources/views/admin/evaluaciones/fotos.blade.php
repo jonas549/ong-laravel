@@ -10,8 +10,17 @@
         `request()->query()` y no una lista de campos: así un filtro nuevo en la
         pantalla viaja solo, sin que nadie tenga que acordarse de añadirlo aquí.
     --}}
+    {{-- Punto 9 del 30/09: con una actividad filtrada ya bajaba sólo ésa,
+         pero el botón decía lo mismo y no se notaba. Ahora la nombra. --}}
+    @php $tituloFiltrado = $filtros['actividad'] ? ($actividades[$filtros['actividad']] ?? null) : null; @endphp
     <a href="{{ route('admin.evaluaciones.fotos.zip', request()->query() + ['estado' => $cual]) }}"
-       class="btn btn-outline btn-sm">Descargar estas fotografías</a>
+       class="btn btn-outline btn-sm" data-descargar-todas>
+        @if ($tituloFiltrado)
+            Descargar las fotos de «{{ Str::limit($tituloFiltrado, 34) }}»
+        @else
+            Descargar estas fotografías
+        @endif
+    </a>
     <a href="{{ route('admin.evaluaciones.index', request()->query()) }}" class="btn btn-outline btn-sm">Ver respuestas</a>
 @endsection
 
@@ -88,10 +97,40 @@
             : 'No hay fotografías sin autorizar.' }}
     </section>
 @else
+    {{--
+        Punto 8 del 30/09: marcar fotos y bajar sólo ésas. La selección es de
+        esta página; el zip la cruza con la pestaña y los filtros, así que
+        nunca mezcla autorizadas con las que no lo están.
+    --}}
+    <div x-data="{ sel: [], todas: @js($fotos->pluck('id')->map(fn ($id) => (string) $id)->values()) }">
+    <form method="GET" action="{{ route('admin.evaluaciones.fotos.zip') }}" class="eval-seleccion" data-barra-seleccion>
+        @foreach (request()->except(['page', 'fotos']) + ['estado' => $cual] as $clave => $valor)
+            @if (is_scalar($valor))
+                <input type="hidden" name="{{ $clave }}" value="{{ $valor }}">
+            @endif
+        @endforeach
+        <template x-for="id in sel" :key="id"><input type="hidden" name="fotos[]" :value="id"></template>
+
+        <label class="eval-seleccion-todas">
+            <input type="checkbox" data-seleccionar-todas
+                   x-bind:checked="sel.length === todas.length"
+                   x-on:change="sel = $event.target.checked ? [...todas] : []">
+            Seleccionar todas las de esta página
+        </label>
+        <span class="helper" x-text="sel.length ? (sel.length === 1 ? '1 seleccionada' : sel.length + ' seleccionadas') : 'Marca las que quieras bajar'"></span>
+        <button type="submit" class="btn btn-primary btn-sm" x-bind:disabled="! sel.length" data-descargar-seleccion>
+            Descargar seleccionadas
+        </button>
+    </form>
+
     <section class="eval-fotos">
         @foreach ($fotos as $foto)
             @php $e = $foto->evaluation; @endphp
-            <article class="card eval-foto">
+            <article class="card eval-foto" x-bind:class="sel.includes('{{ $foto->id }}') && 'eval-foto--marcada'">
+                <label class="eval-foto-marca" title="Seleccionar esta fotografía">
+                    <input type="checkbox" value="{{ $foto->id }}" x-model="sel" data-marcar-foto
+                           aria-label="Seleccionar la fotografía #{{ $foto->id }}">
+                </label>
                 <a href="{{ route('admin.evaluaciones.foto', $foto) }}" target="_blank" rel="noopener" class="eval-foto-marco">
                     {{-- `loading="lazy"`: una cuadrícula de veinticuatro fotos son
                          veinticuatro peticiones al disco privado, y las de abajo
@@ -112,10 +151,17 @@
                             <button type="submit" class="btn btn-outline btn-sm" data-cargando="Copiando…">Pasar a la biblioteca</button>
                         </form>
                     @endif
+
+                    {{-- Punto 9: bajar las de su actividad sin pasar por el filtro. --}}
+                    @if ($e?->activity_id && ! $filtros['actividad'])
+                        <a class="textlink eval-foto-actividad-zip" data-zip-actividad
+                           href="{{ route('admin.evaluaciones.fotos.zip', ['estado' => $cual, 'actividad' => $e->activity_id]) }}">Descargar las de esta actividad</a>
+                    @endif
                 </div>
             </article>
         @endforeach
     </section>
+    </div>
 
     <div style="margin-top:20px;">{{ $fotos->links() }}</div>
 @endif

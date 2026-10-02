@@ -3701,7 +3701,46 @@ img.org-logo {
     gap: 16px;
 }
 
-.eval-foto { overflow: hidden; padding: 0; }
+.eval-foto { overflow: hidden; padding: 0; position: relative; }
+
+/* Punto 8 del 30/09: marcar fotos para bajar sólo ésas. */
+.eval-foto--marcada { outline: 3px solid var(--naranjo); outline-offset: -3px; }
+
+.eval-foto-marca {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .92);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+    cursor: pointer;
+}
+
+.eval-foto-marca input { width: 18px; height: 18px; margin: 0; accent-color: var(--naranjo); cursor: pointer; }
+
+.eval-seleccion {
+    display: flex;
+    align-items: center;
+    gap: 10px 18px;
+    flex-wrap: wrap;
+    margin: 0 0 14px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid var(--linea);
+}
+
+.eval-seleccion-todas { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.eval-seleccion-todas input { width: 17px; height: 17px; accent-color: var(--naranjo); }
+.eval-seleccion .btn { margin-left: auto; }
+.eval-seleccion .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.eval-foto-actividad-zip { font-size: 13px; }
 
 .eval-foto-marco {
     display: block;

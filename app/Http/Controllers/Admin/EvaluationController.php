@@ -186,9 +186,28 @@ class EvaluationController extends Controller
 
         $cual = Filtro::texto($request, 'estado') === 'sin-autorizar' ? 'sin-autorizar' : 'autorizadas';
 
-        $fotos = $this->consultaDeFotos($request, $cual)->with('evaluation.activity')->get();
+        /*
+         * Punto 8 del 30/09: sólo las marcadas. Se cruzan con los filtros y la
+         * pestaña en vez de fiarse de los ids: así un id cambiado a mano no
+         * mete en el zip de «autorizadas» una foto sin autorización.
+         */
+        $marcadas = collect((array) $request->input('fotos', []))
+            ->map(fn ($id) => (int) $id)->filter()->unique()->values();
+
+        $fotos = $this->consultaDeFotos($request, $cual)
+            ->when($marcadas->isNotEmpty(), fn ($q) => $q->whereIn('id', $marcadas))
+            ->with('evaluation.activity')
+            ->get();
 
         abort_if($fotos->isEmpty(), 404, 'No hay fotografías que descargar con esos filtros.');
+
+        // Punto 9: el nombre del zip dice de qué actividad es, si es de una.
+        $idActividad = $this->filtros($request)['actividad'];
+        $actividad = $idActividad ? Activity::find($idActividad) : null;
+        $nombreZip = 'fotografias-'
+            .($marcadas->isNotEmpty() ? 'seleccion-' : '')
+            .($actividad ? Str::slug(Str::limit($actividad->titulo, 60, '')).'-' : '')
+            .$cual.'-'.Fecha::iso(now()).'.zip';
 
         $temporal = tempnam(sys_get_temp_dir(), 'dps-fotos-');
 
@@ -225,7 +244,7 @@ class EvaluationController extends Controller
 
         return response()->download(
             $temporal,
-            'fotografias-'.$cual.'-'.Fecha::iso(now()).'.zip',
+            $nombreZip,
             ['Content-Type' => 'application/zip'],
         )->deleteFileAfterSend(true);
     }
