@@ -210,9 +210,7 @@ class PublishActivityRequest extends FormRequest
             'email.unique' => ReglasDeCampo::CORREO_YA_EXISTE,
             'org_id.exists' => 'Esa organización ya tiene una cuenta, o ya no está disponible. '
                 .'Si es la tuya, inicia sesión para publicar con ella.',
-            'org_nombre.unique' => 'Ya hay una organización registrada con ese nombre. '
-                .'Si es la tuya, inicia sesión con la cuenta que la creó y podrás sumar la actividad desde ahí. '
-                .'Si es otra organización distinta, escribe un nombre que la diferencie.',
+            'org_nombre.unique' => $this->avisoNombreRepetido(),
             'password.confirmed' => 'Las contraseñas no coinciden.',
             'org_tipo_otro.required_if' => 'Especifica qué tipo de organización es.',
             'org_unidad_educativa.required_if' => 'Indica qué unidad o comunidad educativa organiza.',

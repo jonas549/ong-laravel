@@ -58,8 +58,8 @@
                 <button type="button" class="org-sugerencia" x-on:click="elegirOrg(o)">
                     <span class="org-sugerencia-nombre" x-text="o.nombre"></span>
                     <span class="org-sugerencia-estado"
-                          x-text="o.libre ? 'En el listado' : 'Ya tiene cuenta'"
-                          x-bind:class="o.libre ? '' : 'org-sugerencia-estado-tomada'"></span>
+                          x-text="o.propia ? 'Tu organización' : (o.libre ? 'En el listado' : 'Ya tiene cuenta')"
+                          x-bind:class="o.libre || o.propia ? '' : 'org-sugerencia-estado-tomada'"></span>
                 </button>
             </li>
         </template>
@@ -76,10 +76,20 @@
     <span class="field-error" x-show="orgTomada" x-cloak data-org-tomada>
         <span x-text="orgTomada?.nombre"></span> ya tiene una cuenta.
         @if ($enWizard)
-            <button type="button" class="textlink" x-on:click="abrirAcceso()"
-                    style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--naranjo);text-decoration:underline;text-underline-offset:3px;">Inicia sesión</button>
-            o <a class="textlink" href="{{ route('password.request') }}" target="_blank" rel="noopener">recupera la contraseña</a>
-            para publicar con ella sin perder lo que llevas escrito.
+            {{-- Con la sesión ya abierta, «inicia sesión» no lleva a ningún
+                 sitio (punto 1 del 30/09): lo que hace falta es la otra cuenta. --}}
+            <span x-show="! conSesion">
+                <button type="button" class="textlink" x-on:click="abrirAcceso()"
+                        style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--naranjo);text-decoration:underline;text-underline-offset:3px;">Inicia sesión</button>
+                o <a class="textlink" href="{{ route('password.request') }}" target="_blank" rel="noopener">recupera la contraseña</a>
+                para publicar con ella sin perder lo que llevas escrito.
+            </span>
+            <span x-show="conSesion" x-cloak>
+                Está registrada con otra cuenta, no con la que tienes abierta. Si es tu organización,
+                <button type="button" class="textlink" x-on:click="salirYEntrarConOtra()"
+                        style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--naranjo);text-decoration:underline;text-underline-offset:3px;">entra con esa cuenta</button>
+                sin perder lo que llevas escrito.
+            </span>
         @else
             <a class="textlink" href="{{ route('account.login') }}">Inicia sesión</a>
             o <a class="textlink" href="{{ route('password.request') }}">recupera la contraseña</a>

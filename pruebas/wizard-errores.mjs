@@ -246,8 +246,10 @@ t('Los campos de hora: un <select> con las 24 en punto (B4)');
  * `sexta-hora.mjs`.
  */
 di('es un select', await p.$eval('[name="hora_inicio"]', (e) => e.tagName) === 'SELECT');
-di('con las 24 horas y la opción vacía',
-    await p.$eval('[name="hora_termino"]', (e) => e.options.length) === 25);
+// 24 horas y dos vacías: «Elegir hora» arriba y la oculta antes de las 9:00,
+// que es la que hace que el desplegable abra ahí (23/09).
+di('con las 24 horas y las dos opciones vacías',
+    await p.$eval('[name="hora_termino"]', (e) => e.options.length) === 26);
 
 await p.select('[name="hora_termino"]', '18:00');
 di('lo que viaja es «HH:MM»',

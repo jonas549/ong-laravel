@@ -71,7 +71,7 @@ class PublishController extends Controller
     public function organizaciones(Request $request)
     {
         return response()->json([
-            'organizaciones' => Organization::buscarPorNombre(Filtro::texto($request, 'q')),
+            'organizaciones' => Organization::buscarPorNombre(Filtro::texto($request, 'q'), $request->user()?->id),
         ]);
     }
 
@@ -285,7 +285,7 @@ class PublishController extends Controller
                         ->putFile('organizaciones', new File($retenido));
                 }
 
-                if ($conSesion) {
+                if ($conSesion?->organization) {
                     /*
                      * Ya tiene cuenta y organización: se reusan. El usuario es
                      * `hasOne` de organización, así que crear otra dejaría dos
@@ -297,7 +297,16 @@ class PublishController extends Controller
                     $organizacion = $conSesion->organization;
                     $organizacion->fill($campos)->save();
                 } else {
-                    $usuario = User::create([
+                    /*
+                     * Sin organización: o no hay cuenta, o la hay pero sin
+                     * ficha enlazada (punto 1 del 30/09: las crea Panel →
+                     * Usuarios). En el segundo caso la cuenta ya existe y se
+                     * usa tal cual; lo que falta es la organización, que se
+                     * reclama del listado o se crea como para cualquiera.
+                     * Antes este camino daba por hecho que con sesión siempre
+                     * había organización, y terminaba en un 500.
+                     */
+                    $usuario = $conSesion ?? User::create([
                         'name' => $datos['org_nombre'],
                         'email' => $datos['email'],
                         'password' => $datos['password'],

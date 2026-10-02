@@ -76,9 +76,12 @@ class Organization extends Model
      * aparecieron los duplicados que hay hoy en producción. Verla y que le
      * digan «ésta ya tiene cuenta, inicia sesión» le lleva a donde tiene que ir.
      *
+     * `propia` marca la de quien pregunta, para no decirle a la dueña que esa
+     * organización «ya tiene cuenta, inicia sesión» con su sesión abierta.
+     *
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
-    public static function buscarPorNombre(string $texto, int $tope = 8)
+    public static function buscarPorNombre(string $texto, ?int $usuarioId = null, int $tope = 8)
     {
         $texto = trim($texto);
 
@@ -107,6 +110,7 @@ class Organization extends Model
                 'tipo' => $o->tipo,
                 'tipo_otro' => $o->tipo_otro,
                 'libre' => $o->estaSinReclamar(),
+                'propia' => $usuarioId !== null && $o->user_id === $usuarioId,
             ]);
     }
 

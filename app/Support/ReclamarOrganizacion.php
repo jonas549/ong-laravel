@@ -47,9 +47,18 @@ trait ReclamarOrganizacion
      */
     public function reclamada(): ?Organization
     {
-        // Con sesión abierta no se reclama nada: la actividad va a la
-        // organización que ya se tiene.
-        if ($this->user()) {
+        /*
+         * Con sesión abierta y organización propia no se reclama nada: la
+         * actividad va a la que ya se tiene.
+         *
+         * Pero hay cuentas de organizador SIN organización enlazada —las crea
+         * Panel → Usuarios, y también quedan así al cambiarle el rol a una de
+         * administración o al eliminar su ficha—, y ésas tienen que poder
+         * reclamar la suya del listado igual que quien no tiene cuenta. Antes
+         * se les negaba por tener sesión, y el nombre de su propia
+         * organización les rebotaba como repetido (punto 1 del 30/09).
+         */
+        if ($this->user()?->organization) {
             return null;
         }
 
@@ -113,6 +122,26 @@ trait ReclamarOrganizacion
      * @param  array<string, mixed>  $campos      para una organización nueva
      * @param  array<string, mixed>  $alReclamar  lo que sí se escribe si se reclama
      */
+    /**
+     * El aviso de nombre repetido, según quién lo lea.
+     *
+     * A quien no tiene sesión se le manda a entrar con la cuenta dueña. A quien
+     * ya está dentro, no: era justo lo que le decía a una organizadora con su
+     * propia cuenta abierta (punto 1 del 30/09), y no tenía dónde ir.
+     */
+    public function avisoNombreRepetido(): string
+    {
+        if ($this->user()) {
+            return 'Ya hay otra organización registrada con ese nombre y tiene su propia cuenta. '
+                .'Si es la tuya, elígela en la lista de sugerencias; si es una organización distinta, '
+                .'escribe un nombre que la diferencie.';
+        }
+
+        return 'Ya hay una organización registrada con ese nombre. '
+            .'Si es la tuya, inicia sesión con la cuenta que la creó y podrás sumar la actividad desde ahí. '
+            .'Si es otra organización distinta, escribe un nombre que la diferencie.';
+    }
+
     public function reclamarOCrear(User $usuario, array $campos, array $alReclamar): Organization
     {
         if ($reclamada = $this->reclamada()) {

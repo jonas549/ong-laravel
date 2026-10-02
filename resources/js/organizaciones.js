@@ -116,6 +116,14 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
         this.sugerenciasAbiertas = false;
         this.buscarOrg = org.nombre;
 
+        // La de quien pregunta: ni se reclama ni se le manda a entrar, que ya
+        // está dentro (punto 1 del 30/09). Se queda el nombre y nada más.
+        if (org.propia) {
+            this.soltarOrg();
+
+            return;
+        }
+
         if (!org.libre) {
             // Ya tiene cuenta. No se reclama: se le manda a iniciar sesión.
             this.orgElegida = null;
