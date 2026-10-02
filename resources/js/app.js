@@ -6,7 +6,7 @@ import { difusion } from './difusion';
 import { soyParte } from './soy-parte';
 import { encuestaEvaluacion } from './evaluacion';
 import { campoImagen } from './imagenes';
-import { registroOrganizador } from './organizaciones';
+import { organizacionDeUsuario, registroOrganizador } from './organizaciones';
 import { campoFecha, formularioGuiado } from './formularios';
 // Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
 import './campos';
@@ -144,6 +144,7 @@ Alpine.data('campoImagen', campoImagen);
 // La pantalla de crear cuenta de organizador (C1): el mismo buscador de
 // organizaciones que el paso 3 del wizard. Ver resources/js/organizaciones.js.
 Alpine.data('registroOrganizador', registroOrganizador);
+Alpine.data('organizacionDeUsuario', organizacionDeUsuario);
 Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);

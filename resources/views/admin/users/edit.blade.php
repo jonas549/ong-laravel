@@ -10,7 +10,9 @@
 <div style="display:flex;flex-direction:column;gap:18px;max-width:820px;">
 
     {{-- ── Datos ── --}}
-    <form method="POST" action="{{ route('admin.users.update', $usuario) }}" class="card" style="padding:26px;">
+    <form method="POST" action="{{ route('admin.users.update', $usuario) }}" class="card" style="padding:26px;"
+          data-editar-usuario
+          x-data="organizacionDeUsuario({ rol: @js(old('role', $usuario->role)), buscarOrg: @js(old('org_nombre', '')) })">
         @csrf
         @method('PUT')
 
@@ -31,7 +33,7 @@
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
             <label class="lbl">Rol
-                <select class="fld @error('role') is-invalid @enderror" name="role">
+                <select class="fld @error('role') is-invalid @enderror" name="role" x-model="rol">
                     <option value="organizer" @selected(old('role', $usuario->role) === 'organizer')>Organizador</option>
                     <option value="admin" @selected(old('role', $usuario->role) === 'admin')>Administración</option>
                 </select>
@@ -57,6 +59,22 @@
                 Organización: <strong>{{ $usuario->organization->nombre }}</strong>.
                 El correo de contacto que se publica es el de la organización, no el de esta cuenta.
             </p>
+        @else
+            {{--
+                Sin organización: o es de administración, o es un organizador
+                de los que se crearon antes de exigirla. Ése entra pero no
+                puede publicar con su ficha (punto 1 del 30/09), y aquí se le
+                asigna. Al pasar a alguien a organizador se pide lo mismo.
+            --}}
+            @if ($usuario->role === 'organizer')
+                <div class="alert alert-error" style="margin:16px 0 0;" data-sin-organizacion>
+                    <strong>Esta cuenta de organizador no tiene organización.</strong>
+                    Asígnale una abajo: hasta entonces, al publicar se le pide todo de nuevo.
+                </div>
+            @endif
+            <div style="margin-top:16px;">
+                @include('admin.users._organizacion')
+            </div>
         @endif
 
         <div style="margin-top:18px;">

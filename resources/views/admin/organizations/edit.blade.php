@@ -88,7 +88,14 @@
                 </button>
             </form>
 
-            @if ($organizacion->activities_count === 0)
+            @if ($organizacion->user_id)
+                {{-- Con cuenta no se borra: la cuenta se quedaría sin organización. --}}
+                <p class="helper" style="margin:0;" data-no-eliminar-con-cuenta>
+                    <strong>No se puede eliminar.</strong>
+                    Es la organización de la cuenta {{ $organizacion->user?->email }}, que se quedaría sin ella.
+                    Desactivarla la esconde sin borrar nada.
+                </p>
+            @elseif ($organizacion->activities_count === 0)
                 <x-panel.confirmar
                     :accion="route('admin.organizations.destroy', $organizacion)"
                     :titulo="'Eliminar «'.Str::limit($organizacion->nombre, 40).'»'"

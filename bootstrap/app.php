@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApplySmtpSettings;
 use App\Http\Middleware\AvisaSiLaSubidaEsDemasiadoGrande;
+use App\Http\Middleware\ConservaAvisosPendientes;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\SoloInvitados;
 use App\Listeners\LogSentMail;
@@ -34,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // La configuración SMTP vive en la base de datos, no en el .env,
         // así que hay que aplicarla en cada request antes de enviar nada.
         $middleware->appendToGroup('web', ApplySmtpSettings::class);
+        // Ver la clase: una consulta de fondo no gasta los avisos pendientes.
+        $middleware->appendToGroup('web', ConservaAvisosPendientes::class);
 
         $middleware->alias([
             'role' => EnsureRole::class,

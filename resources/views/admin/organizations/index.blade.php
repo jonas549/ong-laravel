@@ -104,7 +104,9 @@
 
                     {{-- Sin actividades, se puede eliminar. Con ellas, el botón
                          no está: borrarla se llevaría también sus inscripciones. --}}
-                    @if ($o->activities_count === 0)
+                    @if ($o->user_id)
+                        <span class="helper" title="Tiene una cuenta, que se quedaría sin organización: desactívala">No se puede eliminar</span>
+                    @elseif ($o->activities_count === 0)
                         <x-panel.confirmar
                             :accion="route('admin.organizations.destroy', $o)"
                             :titulo="'Eliminar «'.Str::limit($o->nombre, 40).'»'"

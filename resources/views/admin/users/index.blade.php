@@ -98,7 +98,9 @@
     <aside class="card" style="padding:24px;">
         <h2 style="font-size:16px;font-weight:700;margin:0 0 16px;">Nuevo usuario</h2>
 
-        <form method="POST" action="{{ route('admin.users.store') }}" style="display:flex;flex-direction:column;gap:14px;">
+        <form method="POST" action="{{ route('admin.users.store') }}" style="display:flex;flex-direction:column;gap:14px;"
+              data-crear-usuario
+              x-data="organizacionDeUsuario({ rol: @js(old('role', 'organizer')), buscarOrg: @js(old('org_nombre', '')) })">
             @csrf
             <div>
                 <label class="helper" for="u-name" style="display:block;margin-bottom:6px;font-weight:600;">Nombre</label>
@@ -118,11 +120,12 @@
             </div>
             <div>
                 <label class="helper" for="u-role" style="display:block;margin-bottom:6px;font-weight:600;">Rol</label>
-                <select class="fld" id="u-role" name="role">
+                <select class="fld" id="u-role" name="role" x-model="rol">
                     <option value="organizer">Organizador</option>
                     <option value="admin">Administración</option>
                 </select>
             </div>
+            @include('admin.users._organizacion')
             <button type="submit" class="btn btn-primary" style="justify-content:center;">Crear usuario</button>
         </form>
     </aside>

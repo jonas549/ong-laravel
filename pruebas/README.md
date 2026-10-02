@@ -153,6 +153,8 @@ php artisan db:seed --class=UserSeeder
 | `soy-parte.mjs` | la pantalla que sigue a inscribirse: la confirmación, la imagen «Soy parte del DPS», descargar, copiar la imagen en el escritorio, el compartir nativo en el teléfono (simulado), el texto del post y el kit. Deja el ajuste del kit como estaba (**necesita Chrome**; desde la raíz del repo) |
 | `fotos-seleccion.mjs` | las fotos de evaluaciones del panel: bajar sólo las marcadas y sólo las de una actividad. **Abre cada zip** con `ZipArchive` y mira qué fotos trae; una sin autorizar colada a mano no entra (**necesita Chrome**; desde la raíz del repo) |
 | `organizaciones-panel.mjs` | crear una organización libre desde Panel → Organizaciones y que alguien la reclame en el wizard; y que un nombre que no está en la lista cree la organización al publicar y la ofrezca después en el autocompletado (**necesita Chrome**; desde la raíz del repo) |
+| `correo-soy-parte.mjs` | se inscribe, procesa la cola y lee en Mailpit la confirmación: que traiga el botón «Cuenta que eres parte» a `/soy-parte` de esa actividad, los enlaces del calendario y ningún adjunto, y que el enlace abra la pantalla sin sesión (**necesita Chrome y Mailpit**; desde la raíz del repo) |
+| `organizador-con-organizacion.mjs` | Panel → Usuarios no deja un organizador sin organización: al crear (libre del listado, nueva, ya con cuenta, ninguna), al editar uno de los de antes y al pasar un admin a organizador; una organización con cuenta no se elimina ni forzando el DELETE; y **una consulta de fondo entre un envío rechazado y la recarga no se lleva los avisos ni lo escrito** (**necesita Chrome**; desde la raíz del repo) |
 | `tanda-produccion.mjs` | el repaso de toda la tanda **contra producción**, sólo con lo que no escribe nada. Es el que se corre tras desplegar (**necesita Chrome**) |
 | `smtp-real.mjs` | **No es una prueba, es un servidor.** SMTP mínimo pero de verdad: habla el protocolo, exige `AUTH LOGIN` y escribe en `buzon.jsonl` lo que recibe. |
 
@@ -312,7 +314,7 @@ Tres suites escriben de verdad y por eso tienen su gemela de sólo lectura:
 |---|---|
 | `hilo-moderacion.mjs` | `hilo-moderacion-lectura.mjs` |
 | `evaluaciones-fotos.mjs` | `evaluaciones-fotos-lectura.mjs` |
-| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs`, `difusion.mjs`, `mensaje-compartir.mjs`, `org-propia.mjs`, `conservar-al-entrar.mjs`, `inscritos-y-logo.mjs`, `soy-parte.mjs`, `fotos-seleccion.mjs`, `organizaciones-panel.mjs` | `tanda-produccion.mjs` |
+| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs`, `difusion.mjs`, `mensaje-compartir.mjs`, `org-propia.mjs`, `conservar-al-entrar.mjs`, `inscritos-y-logo.mjs`, `soy-parte.mjs`, `fotos-seleccion.mjs`, `organizaciones-panel.mjs`, `correo-soy-parte.mjs`, `organizador-con-organizacion.mjs` | `tanda-produccion.mjs` |
 
 El motivo no es la prudencia genérica: devolver una actividad a revisión avisa
 **por correo al buzón del equipo** (`avisos_email`, Configuración → General;

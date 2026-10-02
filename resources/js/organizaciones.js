@@ -165,6 +165,27 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
 });
 
 /**
+ * La organización de un organizador que se crea o se arregla en Panel →
+ * Usuarios (decisión del 02/10 tras el punto 1 del 30/09): desde ahí ya no se
+ * puede dejar un organizador sin organización.
+ *
+ * Es el buscador de arriba con lo que el panel tiene de propio: el campo sólo
+ * cuenta con el rol «Organizador» —con «Administración» va desactivado y no
+ * viaja—, y una organización que ya tiene cuenta no se manda a iniciar sesión:
+ * se avisa y se suelta.
+ */
+export const organizacionDeUsuario = (inicial = {}) => ({
+    ...buscadorOrganizaciones(inicial),
+
+    rol: inicial.rol ?? 'organizer',
+    raiz: null,
+
+    init() {
+        this.raiz = this.$el;
+    },
+});
+
+/**
  * La pantalla de crear cuenta de organizador.
  *
  * Es el buscador de arriba más lo único que esa pantalla tiene de propio: el

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ContrasenaCambiadaPorAdmin;
+use App\Models\Organization;
 use App\Models\User;
 use App\Services\ControlDeAcceso;
 use App\Services\SesionesActivas;
@@ -12,6 +13,7 @@ use App\Support\Filtro;
 use App\Support\Listado;
 use App\Support\Papelera;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -79,9 +81,94 @@ class UserController extends Controller
             'role' => 'rol',
         ]);
 
-        User::create($datos + ['is_active' => true, 'email_verified_at' => now()]);
+        $organizacion = $datos['role'] === User::ROL_ORGANIZER ? $this->organizacionPedida($request) : null;
 
-        return back()->with('ok', 'Usuario creado.');
+        DB::transaction(function () use ($datos, $organizacion) {
+            $usuario = User::create($datos + ['is_active' => true, 'email_verified_at' => now()]);
+
+            if ($organizacion) {
+                $this->enlazar($usuario, $organizacion);
+            }
+        });
+
+        return back()->with('ok', $organizacion
+            ? "Usuario creado, con «{$organizacion['nombre']}» como su organización."
+            : 'Usuario creado.');
+    }
+
+    /**
+     * La organización de un organizador que se crea o se arregla desde el
+     * panel (decisión del 02/10 tras el punto 1 del 30/09).
+     *
+     * Un organizador sin organización enlazada era una cuenta que entraba pero
+     * no podía hacer nada: el wizard la trataba como a quien no tiene ficha y
+     * su propio nombre le rebotaba como repetido. Desde el panel ya no se
+     * puede crear así. Se elige una libre del listado —se enlaza— o se escribe
+     * un nombre nuevo —se crea—. Una que ya tiene cuenta no se puede quitar a
+     * su dueño desde aquí: eso es mover actividades de una persona a otra.
+     *
+     * @return array{id: ?int, nombre: string}
+     */
+    private function organizacionPedida(Request $request): array
+    {
+        $request->merge(['org_nombre' => preg_replace('/\s+/u', ' ', trim((string) $request->input('org_nombre')))]);
+
+        $datos = $request->validate([
+            'org_nombre' => ['required', 'string', 'max:255'],
+            'org_id' => ['nullable', 'integer'],
+        ], [
+            'org_nombre.required' => 'Un organizador necesita su organización: elígela de la lista o escribe una nueva.',
+        ], ['org_nombre' => 'la organización']);
+
+        if ($id = (int) ($datos['org_id'] ?? 0)) {
+            $libre = Organization::sinReclamar()->where('activo', true)->find($id);
+
+            if (! $libre) {
+                throw ValidationException::withMessages([
+                    'org_nombre' => 'Esa organización ya tiene una cuenta, o ya no está disponible.',
+                ]);
+            }
+
+            return ['id' => $libre->id, 'nombre' => $libre->nombre];
+        }
+
+        $existe = Organization::whereRaw('LOWER(nombre) = ?', [mb_strtolower($datos['org_nombre'])])->first();
+
+        if ($existe) {
+            throw ValidationException::withMessages([
+                'org_nombre' => $existe->estaSinReclamar()
+                    ? 'Esa organización ya está en el listado: elígela en las sugerencias en vez de crear otra.'
+                    : 'Esa organización ya tiene una cuenta. Si es otra distinta, escribe un nombre que la diferencie.',
+            ]);
+        }
+
+        return ['id' => null, 'nombre' => $datos['org_nombre']];
+    }
+
+    /** Le pone dueño a la libre elegida, o crea la nueva ya con dueño. */
+    private function enlazar(User $usuario, array $organizacion): void
+    {
+        if ($organizacion['id']) {
+            // Se relee con bloqueo: entre validar y guardar alguien pudo
+            // reclamarla en el wizard.
+            $libre = Organization::sinReclamar()->lockForUpdate()->find($organizacion['id']);
+
+            if (! $libre) {
+                throw ValidationException::withMessages(['org_nombre' => 'Esa organización acaba de quedar reclamada por otra cuenta.']);
+            }
+
+            $libre->update(['user_id' => $usuario->id]);
+
+            return;
+        }
+
+        Organization::create([
+            'user_id' => $usuario->id,
+            'nombre' => $organizacion['nombre'],
+            'correo_contacto' => $usuario->email,
+            'verificada' => false,
+            'activo' => true,
+        ]);
     }
 
     public function edit(Request $request, User $user)
@@ -128,7 +215,19 @@ class UserController extends Controller
             ]);
         }
 
-        $user->update($datos);
+        // Un organizador no se queda sin organización: ni al pasar a serlo, ni
+        // si ya lo era sin ella (las cuentas creadas antes de esta regla).
+        $organizacion = $datos['role'] === User::ROL_ORGANIZER && ! $user->organization
+            ? $this->organizacionPedida($request)
+            : null;
+
+        DB::transaction(function () use ($user, $datos, $organizacion) {
+            $user->update($datos);
+
+            if ($organizacion) {
+                $this->enlazar($user, $organizacion);
+            }
+        });
 
         return redirect()
             ->route('admin.users.edit', [$user, 'rol' => $user->role])

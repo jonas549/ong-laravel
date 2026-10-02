@@ -207,6 +207,17 @@ class OrganizationController extends Controller
                 .'. Elimínalas primero o desactiva la organización, que la esconde sin borrar nada.');
         }
 
+        /*
+         * Con cuenta, tampoco: la cuenta se quedaría sin organización, que es
+         * justo lo que dejaba a un organizador sin poder publicar con su ficha
+         * (punto 1 del 30/09). Desactivarla la esconde sin romper nada.
+         */
+        if ($organization->user_id) {
+            return back()->with('error', 'No se puede eliminar «'.$organization->nombre.'»: es la organización de la cuenta '
+                .($organization->user?->email ?? 'de un organizador')
+                .', que se quedaría sin ella. Desactívala para esconderla del sitio.');
+        }
+
         $organization->delete();
 
         return back()->with('ok', "«{$organization->nombre}» eliminada. Se puede recuperar con el filtro de la papelera.");
