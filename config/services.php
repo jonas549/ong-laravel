@@ -31,13 +31,11 @@ return [
     /*
      * La API de Voluntariados Chile (oportunidades del Día del Patrimonio
      * Social). Todavía no hay integración: sólo la pantalla de prueba del
-     * panel, que existe únicamente con VCH_PROBADOR=true y nunca con
-     * APP_ENV=production. La API Key NO va aquí: se pega en la pantalla y no
-     * se guarda en ningún sitio.
+     * panel. La API Key NO va aquí: se pega en la pantalla y no se guarda en
+     * ningún sitio.
      */
     'voluntariados_chile' => [
         'url' => env('VCH_API_URL', 'https://wepgoxkyujickiwvldrs.supabase.co/functions/v1/patrimonio-social-opportunities'),
-        'probador' => (bool) env('VCH_PROBADOR', false),
     ],
 
     'slack' => [

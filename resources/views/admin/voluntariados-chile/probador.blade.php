@@ -2,8 +2,7 @@
 @section('title', 'Probar API Voluntariados Chile')
 
 {{--
-    Herramienta de desarrollo, no una pantalla del sitio: sólo existe con
-    VCH_PROBADOR=true y fuera de producción. Ver
+    Herramienta para probar la API, sólo para administradores. Ver
     Admin\ProbadorVoluntariadosController para el porqué de cada decisión.
 --}}
 

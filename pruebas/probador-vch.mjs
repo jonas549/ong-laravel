@@ -10,7 +10,6 @@
 //   · que la API Key no aparece en ningún sitio: ni en la respuesta, ni en la
 //     URL que se enseña, ni en el log de Laravel.
 //
-// Necesita VCH_PROBADOR=true en el .env local (la ruta no existe sin él).
 // Llama al endpoint real de Voluntariados Chile: sólo lectura, sin clave.
 //
 //   node pruebas/probador-vch.mjs
@@ -48,7 +47,7 @@ await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.evaluat
 
 const r = await p.goto(`${B}/admin/voluntariados-chile/probador`, { waitUntil: 'networkidle2' });
 t('La pantalla');
-di('Existe para un administrador (VCH_PROBADOR=true)', r.status() === 200, `${r.status()}`);
+di('Existe para un administrador', r.status() === 200, `${r.status()}`);
 di('Está en el menú del panel', await p.evaluate(() => [...document.querySelectorAll('a')].some((a) => /Probar API Voluntariados/.test(a.textContent))));
 di('El campo de la clave es de contraseña y no tiene name',
   await p.$eval('[data-probador-clave]', (n) => n.type === 'password' && ! n.name && n.autocomplete === 'off'));

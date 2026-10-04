@@ -23,10 +23,10 @@ use Illuminate\Support\Facades\Http;
  * mismo código que usará la sincronización. Entra un administrador con su
  * sesión de siempre.
  *
- * ── Por qué no puede quedar expuesta ──
+ * ── Quién la ve ──
  *
- * Las rutas sólo existen con `VCH_PROBADOR=true` en el `.env`, y nunca con
- * `APP_ENV=production` aunque alguien lo encienda allí (ver routes/web.php).
+ * Sólo un administrador: va en el grupo `role:admin` del panel. La consulta
+ * lleva freno propio (30 por minuto).
  *
  * ── La API Key ──
  *
