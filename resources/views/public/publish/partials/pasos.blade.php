@@ -43,11 +43,12 @@
 @endphp
 
 <div style="background:#fff;border-bottom:1px solid var(--linea);">
-    <div style="max-width:900px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;gap:14px;overflow-x:auto;">
+    <div style="max-width:900px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;gap:14px;overflow-x:auto;"
+         x-effect="const actual = paso; $nextTick(() => centrarPasoEnBarra($el, actual))">
         @foreach ($pasos as $n => $label)
             @php $oculto = in_array($n, $saltados, true); @endphp
             {{-- El paso 5 no se navega: se llega a él enviando el formulario. --}}
-            <button type="button" class="steplink"
+            <button type="button" class="steplink" data-paso-barra="{{ $n }}"
                     @if ($loop->last || ! $navegable) disabled @else x-on:click="irA({{ $n }})" @endif
                     @if ($oculto) style="display:none;" @endif
                     x-bind:style="estiloPaso(paso, {{ $n }}, {{ Js::from($navegable) }}@if ($saltable && $n === 2), saltaPaso2()@elseif ($saltable && $n === 3), saltaPaso3()@endif)">

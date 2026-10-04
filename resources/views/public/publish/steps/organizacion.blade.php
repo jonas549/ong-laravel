@@ -30,7 +30,7 @@
 
 <div style="background:#fff;border:1px solid var(--linea);border-radius:24px;box-shadow:0 18px 40px -32px rgba(0,0,0,.22);overflow:hidden;">
 
-    <div style="padding:30px;display:flex;flex-direction:column;gap:18px;border-bottom:1px solid var(--linea);">
+    <div class="wizard-seccion" style="padding:30px;display:flex;flex-direction:column;gap:18px;border-bottom:1px solid var(--linea);">
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"
              x-show="faltaEnElPaso3('org_nombre')">
             {{--
@@ -89,7 +89,8 @@
                x-cloak data-campo="org_unidad_educativa" data-obligatorio
                data-etiqueta="{{ CamposDeActividad::etiqueta('org_unidad_educativa') }}">¿Qué unidad, grupo o comunidad educativa organiza la actividad? *
             <input class="fld @error('org_unidad_educativa') is-invalid @enderror" name="org_unidad_educativa"
-                   value="@viejo('org_unidad_educativa', $organizacion?->unidad_educativa)" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B">
+                   value="@viejo('org_unidad_educativa', $organizacion?->unidad_educativa)" placeholder="Ej. Facultad de Enfermería, Centro de Estudiantes, 3° medio B"
+                   data-placeholder-movil="Ej. Facultad de Enfermería">
             @error('org_unidad_educativa') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
@@ -114,12 +115,12 @@
                  porque dependen del tipo elegido y del ancho de la pantalla.
                  `data-obligatorio` es lo que lee la guía de errores. --}}
             <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:8px;">Logo de la organización<span x-show="logoObligatorio()" x-cloak> *</span></div>
-            <div style="display:flex;align-items:center;gap:16px;">
+            <div class="campo-archivo" style="display:flex;align-items:center;gap:16px;">
                 <span style="display:grid;place-items:center;width:76px;height:76px;border-radius:20px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
                     <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:cover;">
                     <svg x-show="!previa" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
                 </span>
-                <div>
+                <div class="campo-archivo-texto">
                     <label class="btn btn-outline btn-sm" style="cursor:pointer;">
                         <span x-text="tiene ? 'Cambiar imagen' : 'Subir imagen'">Subir imagen</span>
                         <input type="file" name="org_logo" accept="image/jpeg,image/png,image/webp" style="display:none;"
@@ -159,7 +160,7 @@
         una sección, pero en vez de los campos va el aviso de a qué cuenta
         se suma.
     --}}
-    <div style="padding:30px;background:#fdfcfb;" x-show="conSesion" x-cloak>
+    <div class="wizard-seccion" style="padding:30px;background:#fdfcfb;" x-show="conSesion" x-cloak>
         <div class="seclabel" style="margin-bottom:6px;">Tu cuenta</div>
         <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0;max-width:60ch;">
             Esta actividad se sumará a tu cuenta, <strong style="color:var(--ink);" x-text="correoCuenta">{{ auth()->user()?->email }}</strong>.
@@ -171,7 +172,7 @@
              (B1/B2) y ahí el botón no llegaba a aparecer nunca. --}}
     </div>
 
-    <div style="padding:30px;background:#fdfcfb;" x-show="! conSesion" x-cloak>
+    <div class="wizard-seccion" style="padding:30px;background:#fdfcfb;" x-show="! conSesion" x-cloak>
         <div class="seclabel" style="margin-bottom:6px;">Crea tu acceso</div>
         <p style="font-size:14.5px;line-height:1.6;color:var(--gris);margin:0 0 18px;max-width:60ch;">Con este acceso podrás ingresar a tu cuenta para editar tus actividades y hacer seguimiento a tu publicación.</p>
 
@@ -239,9 +240,9 @@
         </div>
     </div>
 
-    <div style="padding:20px 30px;border-top:1px solid var(--linea);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div class="wizard-seccion wizard-pie" style="padding:20px 30px;border-top:1px solid var(--linea);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <span class="helper">* campos obligatorios</span>
-        <div style="display:flex;gap:10px;">
+        <div class="wizard-pie-botones" style="display:flex;gap:10px;">
             <button type="button" class="btn btn-outline" disabled title="Pendiente de definir">Guardar borrador</button>
             {{-- Revisa lo obligatorio de ESTE paso antes de dejar pasar. La
                  barra de pasos de arriba sigue navegando libre a propósito: ahí

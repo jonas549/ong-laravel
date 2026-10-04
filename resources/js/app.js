@@ -74,6 +74,24 @@ window.estiloCirculoPaso = (paso, n) => {
 };
 
 /*
+ * La barra de pasos se desplaza en horizontal cuando no cabe, y en el teléfono
+ * no cabe: a 390 px se ven el 1 y el 2, y estando en «Tu actividad» el paso en
+ * curso quedaba fuera de la pantalla (04/10). Se lleva al centro cada vez que
+ * cambia. Sin animación al cargar, para que no se vea el salto.
+ */
+window.centrarPasoEnBarra = (barra, paso) => {
+    const boton = barra?.querySelector(`[data-paso-barra="${paso}"]`);
+
+    if (!boton || barra.scrollWidth <= barra.clientWidth) return;
+
+    const destino = boton.getBoundingClientRect().left - barra.getBoundingClientRect().left
+        + barra.scrollLeft - (barra.clientWidth - boton.offsetWidth) / 2;
+
+    barra.scrollTo({ left: Math.max(0, destino), behavior: barra.dataset.centrada ? 'smooth' : 'auto' });
+    barra.dataset.centrada = '1';
+};
+
+/*
  * Secciones colapsables del menú del panel.
  *
  * El estado se guarda en localStorage para que el menú siga como lo dejaste al

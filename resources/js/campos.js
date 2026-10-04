@@ -117,4 +117,25 @@ export function montarCampos(raiz = document) {
     raiz.querySelectorAll('input[type="password"]:not([data-sin-visor])').forEach(ponerVisor);
 }
 
-document.addEventListener('DOMContentLoaded', () => montarCampos());
+/* ── Placeholders cortos en el teléfono (04/10) ──
+ *
+ * Un placeholder más largo que su caja sale cortado a media palabra, y en un
+ * campo no hay forma de partirlo en dos líneas. Donde el del escritorio no
+ * cabe a 390 px, la vista pone en `data-placeholder-movil` una versión corta
+ * que dice lo mismo, y aquí se cambia uno por otro según el ancho.
+ */
+const angosta = window.matchMedia('(max-width: 560px)');
+
+function ajustarPlaceholders() {
+    document.querySelectorAll('[data-placeholder-movil]').forEach((campo) => {
+        campo.dataset.placeholderAncho ??= campo.placeholder;
+        campo.placeholder = angosta.matches ? campo.dataset.placeholderMovil : campo.dataset.placeholderAncho;
+    });
+}
+
+angosta.addEventListener?.('change', ajustarPlaceholders);
+
+document.addEventListener('DOMContentLoaded', () => {
+    montarCampos();
+    ajustarPlaceholders();
+});

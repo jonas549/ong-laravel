@@ -20,14 +20,15 @@
 <div style="background:#fff;border:1px solid var(--linea);border-radius:24px;box-shadow:0 18px 40px -32px rgba(0,0,0,.22);overflow:hidden;">
 
     {{-- ── Información básica ── --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);">
+    <div class="wizard-seccion" style="padding:30px;border-bottom:1px solid var(--linea);">
         <div class="seclabel" style="margin-bottom:18px;">Información básica</div>
 
         <div style="display:flex;flex-direction:column;gap:18px;">
             <label class="lbl" data-campo="titulo" data-obligatorio
                    data-etiqueta="{{ CamposDeActividad::etiqueta('titulo') }}">Nombre de la actividad *
                 <input class="fld @error('titulo') is-invalid @enderror" name="titulo"
-                       value="@viejo('titulo')" placeholder="Ej. Jornada comunitaria en el barrio">
+                       value="@viejo('titulo')" placeholder="Ej. Jornada comunitaria en el barrio"
+                       data-placeholder-movil="Ej. Jornada comunitaria">
                 @error('titulo') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
@@ -85,7 +86,7 @@
     </div>
 
     {{-- ── Fecha y lugar ── --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);">
+    <div class="wizard-seccion" style="padding:30px;border-bottom:1px solid var(--linea);">
         <div class="seclabel" style="margin-bottom:18px;">Fecha y lugar</div>
 
         {{--
@@ -162,7 +163,7 @@
                  pidiendo campos que acaban de dejar de pedirse. --}}
             <input type="checkbox" name="sin_fecha_definida" value="1" x-model="sinFecha"
                    x-on:change="$nextTick(() => repasar())"
-                   style="width:18px;height:18px;accent-color:var(--naranjo);margin-top:2px;">
+                   style="width:18px;height:18px;accent-color:var(--naranjo);margin-top:2px;flex:none;">
             <span style="font-size:14.5px;color:var(--ink);">Disponible de forma permanente
                 <span class="helper" style="display:block;margin-top:3px;">Los campos de fecha y hora se deshabilitan. Úsalo para actividades sin fecha específica.</span>
             </span>
@@ -255,7 +256,7 @@
     </div>
 
     {{-- ── Temas y público ── --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);">
+    <div class="wizard-seccion" style="padding:30px;border-bottom:1px solid var(--linea);">
         <div class="seclabel" style="margin-bottom:18px;">Temas y público</div>
 
         <div data-campo="temas" data-obligatorio data-etiqueta="{{ CamposDeActividad::etiqueta('temas') }}">
@@ -317,7 +318,7 @@
     </div>
 
     {{-- ── Público de la actividad ── --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);">
+    <div class="wizard-seccion" style="padding:30px;border-bottom:1px solid var(--linea);">
         <div class="seclabel" style="margin-bottom:18px;">Público de la actividad</div>
 
         <label class="lbl" style="max-width:260px;">Cantidad de participantes estimados
@@ -374,17 +375,17 @@
         de peso llega al elegir el archivo y no después de enviar. Si aun
         reducida no entra, se corta el envío. Ver resources/js/imagenes.js.
     --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);"
+    <div class="wizard-seccion campo-seccion" style="padding:30px;border-bottom:1px solid var(--linea);"
          data-campo="imagen" data-etiqueta="Imagen de portada"
          x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de portada', comoJpeg: true })">
         <div class="seclabel" style="margin-bottom:18px;">Imagen de portada</div>
 
-        <div style="display:flex;align-items:center;gap:18px;">
+        <div class="campo-archivo campo-archivo--apilable" style="display:flex;align-items:center;gap:18px;">
             <span style="display:grid;place-items:center;width:150px;height:78px;border-radius:16px;border:1.5px dashed #dcdee1;background:#fbfbfc;color:#c3c6ca;flex:none;overflow:hidden;">
                 <img x-show="previa" x-cloak x-bind:src="previa" alt="" style="width:100%;height:100%;object-fit:cover;">
                 <svg x-show="!previa" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
             </span>
-            <div>
+            <div class="campo-archivo-texto">
                 <label class="btn btn-outline btn-sm" style="cursor:pointer;">
                     <span x-text="tiene ? 'Cambiar imagen de portada' : 'Subir imagen de portada'">Subir imagen de portada</span>
                     <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp" style="display:none;"
@@ -403,14 +404,14 @@
     </div>
 
     {{-- ── Información de contacto ── --}}
-    <div style="padding:30px;border-bottom:1px solid var(--linea);">
+    <div class="wizard-seccion" style="padding:30px;border-bottom:1px solid var(--linea);">
         <div class="seclabel" style="margin-bottom:6px;">Información de contacto</div>
         <p style="font-size:14px;color:var(--gris);margin:0 0 18px;">Estos datos aparecerán visibles en la ficha pública de la actividad.</p>
 
-        <label style="display:flex;align-items:center;gap:11px;cursor:pointer;margin-bottom:18px;font-size:14.5px;color:var(--ink);">
+        <label style="display:flex;align-items:flex-start;gap:11px;cursor:pointer;margin-bottom:18px;font-size:14.5px;line-height:1.45;color:var(--ink);">
             <input type="checkbox" name="usar_correo_cuenta" value="1" x-model="mismoCorreo"
-                   style="width:18px;height:18px;accent-color:var(--naranjo);">
-            Usar el mismo correo de la cuenta como correo de contacto público
+                   style="width:18px;height:18px;accent-color:var(--naranjo);margin-top:1px;flex:none;">
+            <span>Usar el mismo correo de la cuenta como correo de contacto público</span>
         </label>
 
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -450,7 +451,7 @@
     </div>
 
     {{-- ── Colaboración ── --}}
-    <div style="padding:30px;">
+    <div class="wizard-seccion" style="padding:30px;">
         <div class="seclabel" style="margin-bottom:18px;">Colaboración</div>
         <div style="font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:9px;">¿Esta iniciativa se realiza en colaboración con otras organizaciones o instituciones?</div>
 
@@ -472,17 +473,17 @@
                         <input type="hidden" name="colaboradores[]" x-bind:value="nombre">
                     </span>
                 </template>
-                <input class="fld" style="flex:1;min-width:200px;border:none;padding:4px 2px;box-shadow:none;"
-                       placeholder="Escribe un nombre y presiona Enter…"
+                <input class="fld" style="flex:1;min-width:min(100%, 270px);border:none;padding:4px 2px;box-shadow:none;"
+                       placeholder="Escribe un nombre y presiona Enter…" data-placeholder-movil="Escribe y presiona Enter…"
                        x-on:keydown.enter.prevent="agregarColaborador($event)">
             </div>
             <div class="helper" style="margin-top:8px;">Escribe el nombre de cada organización, empresa o institución con la que colaboras. Presiona enter para crear cada etiqueta.</div>
         </div>
     </div>
 
-    <div style="padding:20px 30px;border-top:1px solid var(--linea);background:#fdfcfb;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div class="wizard-seccion wizard-pie" style="padding:20px 30px;border-top:1px solid var(--linea);background:#fdfcfb;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <span class="helper">* campos obligatorios</span>
-        <div style="display:flex;gap:10px;">
+        <div class="wizard-pie-botones" style="display:flex;gap:10px;">
             <button type="button" class="btn btn-outline" disabled title="Pendiente de definir">Guardar borrador</button>
             <button type="submit" class="btn btn-primary">Enviar actividad →</button>
         </div>

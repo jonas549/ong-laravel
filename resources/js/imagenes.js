@@ -166,13 +166,18 @@ export function meterEnElCampo(entrada, archivo) {
     }
 }
 
-/** «1,4 MB», «480 KB». Para decirle a alguien cuánto pesa lo que eligió. */
+/**
+ * «1,4 MB», «480 KB». Para decirle a alguien cuánto pesa lo que eligió.
+ *
+ * Con espacio duro: en el teléfono el número y la unidad caían en renglones
+ * distintos («209» / «KB»).
+ */
 export function pesoLegible(bytes) {
     if (bytes >= 1024 * 1024) {
-        return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' MB';
+        return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + '\u00a0MB';
     }
 
-    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    return Math.max(1, Math.round(bytes / 1024)) + '\u00a0KB';
 }
 
 /**

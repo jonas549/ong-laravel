@@ -156,7 +156,7 @@
 
 
     {{-- ══ PASO 1 — ¿VOLUNTARIADO? ══ --}}
-    <div x-show="paso === 1" x-cloak data-paso="1" class="rise" style="max-width:860px;margin:0 auto;padding:64px 32px 96px;">
+    <div x-show="paso === 1" x-cloak data-paso="1" class="rise wizard-paso" style="max-width:860px;margin:0 auto;padding:64px 32px 96px;">
         <h1 style="font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 12px;color:var(--ink);text-wrap:pretty;">¿Necesitas convocar a personas voluntarias para esta actividad?</h1>
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:58ch;text-wrap:pretty;">Con esta respuesta sabremos si tu actividad necesita una convocatoria de voluntariado o solo difusión en el calendario.</p>
 
@@ -197,7 +197,7 @@
         @csrf
 
         {{-- ══ PASO 2 — TIPO DE ORGANIZACIÓN ══ --}}
-        <div x-show="paso === 2" x-cloak data-paso="2" class="rise" style="max-width:900px;margin:0 auto;padding:64px 32px 96px;">
+        <div x-show="paso === 2" x-cloak data-paso="2" class="rise wizard-paso" style="max-width:900px;margin:0 auto;padding:64px 32px 96px;">
             <h1 style="font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 12px;color:var(--ink);">¿Qué tipo de organización eres?</h1>
             <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 0 36px;max-width:56ch;">Según tu respuesta te pediremos solo los datos que corresponden.</p>
 
@@ -226,12 +226,12 @@
         </div>
 
         {{-- ══ PASO 3 — TU ORGANIZACIÓN ══ --}}
-        <div x-show="paso === 3" x-cloak data-paso="3" class="rise" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
+        <div x-show="paso === 3" x-cloak data-paso="3" class="rise wizard-paso" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
             @include('public.publish.steps.organizacion')
         </div>
 
         {{-- ══ PASO 4 — TU ACTIVIDAD ══ --}}
-        <div x-show="paso === 4" x-cloak data-paso="4" class="rise" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
+        <div x-show="paso === 4" x-cloak data-paso="4" class="rise wizard-paso" style="max-width:880px;margin:0 auto;padding:48px 32px 96px;">
             @include('public.publish.steps.actividad')
         </div>
     </form>

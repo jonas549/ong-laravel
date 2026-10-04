@@ -482,7 +482,7 @@
 
             {{-- ── Imagen ── --}}
             {{-- P19: mismo campo que el wizard, que reduce antes de subir. --}}
-            <div style="padding:30px;border-bottom:1px solid var(--linea);"
+            <div class="campo-seccion" style="padding:30px;border-bottom:1px solid var(--linea);"
                  data-campo="imagen" data-etiqueta="Imagen de la actividad"
                  x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de la actividad', comoJpeg: true })">
                 <div class="seclabel" style="margin-bottom:18px;">Imagen</div>

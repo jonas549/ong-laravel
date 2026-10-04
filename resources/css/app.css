@@ -1780,6 +1780,32 @@ button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
     img, svg, video, iframe { max-width: 100%; }
 }
 
+/* ── El wizard de publicar, a ancho de teléfono (04/10) ─────
+ *
+ * Revisión entera a 390 px con tres reglas del cliente: nada toca el borde de
+ * la tarjeta, ningún texto se corta y nada se monta. Lo que lo rompía era el
+ * espacio: el paso dejaba 32 px a cada lado y cada sección de la tarjeta otros
+ * 30, así que un campo se quedaba en 234 px útiles. Los márgenes del teléfono
+ * son los del resto del sitio (16-20 px).
+ */
+.campo-archivo-texto { min-width: 0; flex: 1; }
+.campo-archivo-texto .helper { overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+    .wizard-paso { padding-left: 16px !important; padding-right: 16px !important; padding-top: 32px !important; }
+    .wizard-seccion { padding-left: 20px !important; padding-right: 20px !important; }
+
+    /* Los dos botones del pie no caben en una línea: uno debajo del otro, a
+       todo el ancho. */
+    .wizard-pie { flex-direction: column; align-items: stretch !important; }
+    .wizard-pie-botones { flex-direction: column; }
+    .wizard-pie-botones .btn { width: 100%; box-sizing: border-box; justify-content: center; }
+
+    /* La portada: la vista previa arriba y el botón con su ayuda debajo. */
+    .campo-archivo--apilable { flex-direction: column; align-items: flex-start !important; }
+    .campo-archivo--apilable .campo-archivo-texto { width: 100%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
     .sticker, .floaty, .marquee-track { animation: none; }
@@ -2258,10 +2284,34 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
  * Hace falta en la caja entera y no sólo en el campo porque el fallo que se
  * viene a arreglar era justo de los que no tienen campo que teñir: un grupo de
  * chips no tiene borde. */
+/*
+ * El recuadro va DENTRO del flujo, con su propio relleno, y no como contorno.
+ *
+ * Era un `outline` a 8 px de la caja: no ocupa sitio, así que se dibujaba
+ * encima de lo que hubiera alrededor. Entre dos campos seguidos (16-18 px de
+ * separación) los dos recuadros se pisaban, y a 390 px el de «Nombre de la
+ * organización» tapaba la etiqueta «Tipo de organización» (04/10). Ocupando
+ * su sitio no puede montarse sobre nada.
+ */
+/*
+ * Y crece hacia los lados con margen negativo: el campo de dentro se queda
+ * alineado con los de alrededor, que es la simetría que pedía el bloque de
+ * «Nombre de la organización». Seis píxeles y no más: dos recuadros vecinos de
+ * una rejilla (16 px de separación) siguen sin tocarse, y en el teléfono el
+ * recuadro queda a 14 px del borde de la tarjeta.
+ *
+ * Una sección entera de la tarjeta (la portada) ya trae su relleno: ahí sólo
+ * se dibuja el recuadro.
+ */
 .campo-fallido {
-    outline: 1.5px solid #f0cdd8;
-    outline-offset: 8px;
-    border-radius: 3px;
+    box-shadow: inset 0 0 0 1.5px #f0cdd8;
+    border-radius: 14px;
+}
+
+.campo-fallido:not(.campo-seccion) {
+    padding: 8px 6px;
+    margin-left: -6px;
+    margin-right: -6px;
 }
 
 .campo-fallido .fld { border-color: var(--rosa); }
