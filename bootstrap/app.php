@@ -5,6 +5,7 @@ use App\Http\Middleware\AvisaDescargaLista;
 use App\Http\Middleware\AvisaSiLaSubidaEsDemasiadoGrande;
 use App\Http\Middleware\ConservaAvisosPendientes;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\NoGuardarConSesion;
 use App\Http\Middleware\SoloInvitados;
 use App\Listeners\LogSentMail;
 use Illuminate\Foundation\Application;
@@ -15,6 +16,9 @@ use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -41,6 +45,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Ver la clase: suelta el botón de una descarga cuando el archivo sale.
         $middleware->appendToGroup('web', AvisaDescargaLista::class);
         $middleware->encryptCookies(except: [AvisaDescargaLista::COOKIE]);
+        // Ver la clase: una pantalla con sesión no se queda en la memoria del
+        // navegador, que la devolvía con «atrás» después de cerrar sesión.
+        $middleware->appendToGroup('web', NoGuardarConSesion::class);
 
         $middleware->alias([
             'role' => EnsureRole::class,
@@ -55,6 +62,30 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withEvents(discover: false)
     ->withExceptions(function (Exceptions $exceptions) {
+        /*
+         * «Cerrar sesión» desde una pantalla vieja —restaurada con «atrás», o
+         * una pestaña que se quedó abierta hasta que caducó la sesión— lleva
+         * un token que ya no vale, y eso era un 419 «Page Expired» (04/10).
+         * Quien pulsa cerrar sesión quiere estar fuera: se le saca igual y se
+         * le dice. Forzar este camino no sirve para cerrar una sesión ajena:
+         * sin el token, la única que se cierra es la del propio navegador.
+         */
+        // Llega ya convertida en un 419: Laravel la transforma antes de
+        // pasarla aquí, con la original dentro.
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if (! $e->getPrevious() instanceof TokenMismatchException
+                || ! $request->routeIs('account.logout', 'admin.logout')) {
+                return null;
+            }
+
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route($request->routeIs('admin.logout') ? 'admin.login' : 'home')
+                ->with('ok', 'Tu sesión ya está cerrada.');
+        });
+
         /*
          * El enlace de verificación caduca a los 60 minutos, y abrir el correo
          * al día siguiente es lo normal. Sin esto se llegaba a un 403 en inglés

@@ -52,7 +52,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-<body @class(['fondo-calido' => $footerCompacto])>
+<body @class(['fondo-calido' => $footerCompacto]) @auth data-con-sesion @endauth>
 <div @class(['escala-form' => $footerCompacto])
      style="overflow-x:hidden;@if ($footerCompacto) min-height:100vh;display:flex;flex-direction:column; @endif">
 

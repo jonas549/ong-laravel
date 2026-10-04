@@ -148,20 +148,27 @@ for (const [quien, s, esperado] of [
 /* -------------------------------------------------- 5) los dos paneles */
 
 console.log('\n=== 5) Ningún rol entra en el panel del otro ===');
+/*
+ * Desde el 04/10, una cuenta activa en la sección del otro rol no recibe un
+ * 403 sino una redirección a SU panel (EnsureRole): el 403 era una pantalla
+ * muerta. Lo que se comprueba sigue siendo lo mismo —que no entra—, y además
+ * a dónde se la manda.
+ */
 const cruces = [
-  ['organizador → /admin                ', B, '/admin', 403],
-  ['organizador → /admin/usuarios       ', B, '/admin/usuarios', 403],
-  ['organizador → /admin/configuracion  ', B, '/admin/configuracion', 403],
-  ['organizador → /admin/correos        ', B, '/admin/correos', 403],
-  ['admin       → /mi-cuenta/actividades', ADMIN, '/mi-cuenta/actividades', 403],
-  ['admin       → /mi-cuenta/perfil     ', ADMIN, '/mi-cuenta/perfil', 403],
-  ['sin sesión  → /admin/usuarios       ', NADIE, '/admin/usuarios', 302],
-  ['sin sesión  → /mi-cuenta/actividades', NADIE, '/mi-cuenta/actividades', 302],
+  ['organizador → /admin                ', B, '/admin', 302, '/mi-cuenta/actividades'],
+  ['organizador → /admin/usuarios       ', B, '/admin/usuarios', 302, '/mi-cuenta/actividades'],
+  ['organizador → /admin/configuracion  ', B, '/admin/configuracion', 302, '/mi-cuenta/actividades'],
+  ['organizador → /admin/correos        ', B, '/admin/correos', 302, '/mi-cuenta/actividades'],
+  ['admin       → /mi-cuenta/actividades', ADMIN, '/mi-cuenta/actividades', 302, '/admin'],
+  ['admin       → /mi-cuenta/perfil     ', ADMIN, '/mi-cuenta/perfil', 302, '/admin'],
+  ['sin sesión  → /admin/usuarios       ', NADIE, '/admin/usuarios', 302, '/admin/login'],
+  ['sin sesión  → /mi-cuenta/actividades', NADIE, '/mi-cuenta/actividades', 302, '/mi-cuenta/login'],
 ];
 
-for (const [etq, s, ruta, esperado] of cruces) {
+for (const [etq, s, ruta, esperado, destino] of cruces) {
   const r = await s.pedir(ruta);
-  console.log(`  ${etq} → ${r.status}  ${veredicto(r.status === esperado)}`);
+  const a = (r.headers.get('location') ?? '').replace(BASE, '');
+  console.log(`  ${etq} → ${r.status} ${a}  ${veredicto(r.status === esperado && a === destino)}`);
 }
 
 /* --------------------------------- 6) límites del admin sobre sí mismo */

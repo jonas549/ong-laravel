@@ -79,6 +79,19 @@ window.estiloCirculoPaso = (paso, n) => {
  * curso quedaba fuera de la pantalla (04/10). Se lleva al centro cada vez que
  * cambia. Sin animación al cargar, para que no se vea el salto.
  */
+/*
+ * Una pantalla pintada con sesión que el navegador restaura de su memoria al
+ * pulsar «atrás» (04/10). El servidor ya la marca `no-store` para que no se
+ * guarde (`NoGuardarConSesion`), pero si un navegador la devuelve igual, se
+ * recarga: así decide el servidor, que sabe si la sesión sigue viva, y no una
+ * copia con un token caducado.
+ */
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted && document.body?.hasAttribute('data-con-sesion')) {
+        window.location.reload();
+    }
+});
+
 window.centrarPasoEnBarra = (barra, paso) => {
     const boton = barra?.querySelector(`[data-paso-barra="${paso}"]`);
 

@@ -199,8 +199,8 @@ try {
     di('entra como organizador', p.url().includes('/mi-cuenta'));
 
     await p.goto(`${B}/admin`, { waitUntil: 'networkidle2' });
-    const antes = await p.evaluate(() => document.body.innerText.slice(0, 120));
-    di('con su rol, el panel le rechaza', /no tienes acceso/i.test(antes) || p.url().includes('/admin/login'),
+    // Desde el 04/10 no es un 403: se le lleva a su panel (EnsureRole).
+    di('con su rol, el panel le rechaza y le lleva a su cuenta', p.url().endsWith('/mi-cuenta/actividades'),
         p.url());
 
     // Le suben a administrador, sin tocarle la sesión.
@@ -214,13 +214,12 @@ try {
     // Y al revés: se le devuelve el rol de organizador estando dentro del panel.
     sql(`UPDATE users SET role='organizer' WHERE email='${ORG.correo}'`);
     await p.goto(`${B}/admin`, { waitUntil: 'networkidle2' });
-    const textoTras = await p.evaluate(() => document.body.innerText.slice(0, 400));
+    const textoTras = await p.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
     di('y al bajarle el rol, el panel deja de dejarle pasar',
-        /no tienes acceso/i.test(textoTras) || p.url().includes('/login'));
-    di('el rechazo es un 403 con su explicación, no una pantalla en blanco',
-        /no tienes acceso a esta sección/i.test(textoTras), textoTras.replace(/\s+/g, ' ').slice(0, 80));
-    di('y ofrece por dónde salir',
-        await p.evaluate(() => [...document.querySelectorAll('a.btn')].length >= 1));
+        ! p.url().includes('/admin'), p.url());
+    di('le lleva a su cuenta, no a una pantalla muerta', p.url().endsWith('/mi-cuenta/actividades'));
+    di('con una línea que explica por qué',
+        /Esa página es del panel de administración/.test(textoTras));
 } finally {
     sql(`UPDATE users SET role='${rolOriginal}' WHERE email='${ORG.correo}'`);
     console.log(`  (rol de ${ORG.correo} devuelto a '${rolOriginal}')`);

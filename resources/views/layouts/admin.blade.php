@@ -8,7 +8,7 @@
     <link rel="icon" href="{{ asset('img/dps-logo-header.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
+<body @auth data-con-sesion @endauth>
 
 <div class="admin-shell" x-data="{ nav: false }" x-on:keydown.escape.window="nav = false">
     {{-- Sólo se ve bajo 900px: en escritorio manda la barra lateral. --}}

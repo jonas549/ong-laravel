@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
 use App\Models\User;
 use App\Services\ControlDeAcceso;
+use App\Support\DestinoPendiente;
 use App\Support\PuertaDeAcceso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -84,7 +85,8 @@ class AuthController extends Controller
 
         $this->acceso->exito($request, AccessLog::PANEL_ADMIN, $usuario);
 
-        return redirect()->intended(route('admin.dashboard'));
+        // Sólo un destino pendiente de este lado: ver DestinoPendiente.
+        return DestinoPendiente::redirigir($request, DestinoPendiente::PANEL, route('admin.dashboard'));
     }
 
     public function logout(Request $request)
