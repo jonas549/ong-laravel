@@ -511,6 +511,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Log de accesos
         Route::get('/accesos', [Admin\AccessLogController::class, 'index'])->name('accesos.index');
         Route::post('/accesos/desbloquear', [Admin\AccessLogController::class, 'desbloquear'])->name('accesos.desbloquear');
+
+        /*
+         * Pantalla de prueba de la API de Voluntariados Chile. Sólo existe con
+         * VCH_PROBADOR=true, y nunca en producción aunque se encienda allí:
+         * es una herramienta de desarrollo que hace llamadas a un tercero con
+         * la clave que se pegue. Ver ProbadorVoluntariadosController.
+         */
+        if (config('services.voluntariados_chile.probador') && ! app()->environment('production')) {
+            Route::get('/voluntariados-chile/probador', [Admin\ProbadorVoluntariadosController::class, 'index'])
+                ->name('voluntariados.probador');
+            Route::post('/voluntariados-chile/probador/consultar', [Admin\ProbadorVoluntariadosController::class, 'consultar'])
+                ->middleware('throttle:30,1,probador-vch')
+                ->name('voluntariados.probador.consultar');
+            Route::post('/voluntariados-chile/probador/revisar', [Admin\ProbadorVoluntariadosController::class, 'revisarPegado'])
+                ->name('voluntariados.probador.revisar');
+        }
     });
 });
 

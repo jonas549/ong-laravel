@@ -24,6 +24,7 @@ import {
     tablaSeleccion,
 } from './panel';
 import { wizard } from './wizard';
+import { probadorVch } from './probador-vch';
 
 /*
  * Barra de pasos del wizard (publicar-actividad.html).
@@ -153,6 +154,7 @@ Alpine.data('editorSeccion', editorSeccion);
 Alpine.data('ordenSecciones', ordenSecciones);
 Alpine.data('buscadorPanel', buscadorPanel);
 Alpine.data('marquesinaAdmin', marquesinaAdmin);
+Alpine.data('probadorVch', probadorVch);
 
 // Componentes transversales del panel (bloque H).
 Alpine.store('confirmacion', almacenConfirmacion);

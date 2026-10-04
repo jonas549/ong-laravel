@@ -99,6 +99,12 @@ class MenuPanel
                 // existen y sin un enlace aquí no habría forma de llegar a ellas.
                 self::nodo('Plantillas de correo', 'admin.templates.index', [], [], 'admin.templates.*'),
                 self::nodo('Registro de accesos', 'admin.accesos.index', [], [], 'admin.accesos.*'),
+
+                // Herramienta de desarrollo: sólo existe con VCH_PROBADOR=true
+                // y fuera de producción (ver routes/web.php).
+                ...(Route::has('admin.voluntariados.probador')
+                    ? [self::nodo('Probar API Voluntariados Chile', 'admin.voluntariados.probador', [], [], 'admin.voluntariados.*')]
+                    : []),
             ]),
         ];
     }
