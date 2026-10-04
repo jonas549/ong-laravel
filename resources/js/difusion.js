@@ -339,6 +339,51 @@ function dondeCompleto(ctx, lugar, direccion) {
     return pintar(l, { lineas, tam: 11, alto, y0, x: DIR.x });
 }
 
+/*
+ * El fondo del cuadrado del logo (04/10).
+ *
+ * Era blanco, y un logo blanco o muy claro —que los hay, pensados para ir
+ * sobre una foto o un color— desaparecía entero: el borde dibujaba el
+ * cuadrado, pero dentro no se veía nada. Ahora el fondo es un gris muy suave
+ * con un borde gris fino, que no le cambia el color a ningún logo; y si el
+ * logo es casi todo claro, ni ese gris basta (blanco sobre gris claro apenas
+ * contrasta), así que el cuadrado pasa a gris oscuro.
+ */
+const FONDO_LOGO = '#f2f3f5';
+const FONDO_LOGO_CLARO = '#4a4e54';
+const BORDE_LOGO = '#d9dce0';
+
+/**
+ * Si un logo es casi todo claro: la luminancia media de sus píxeles visibles.
+ * Se mira en pequeño, que para una media sobra. Si el navegador no deja leer
+ * los píxeles, se da por oscuro y queda el fondo de siempre.
+ */
+export function esLogoClaro(img) {
+    try {
+        const lado = 32;
+        const lienzo = document.createElement('canvas');
+        lienzo.width = lado;
+        lienzo.height = lado;
+        const c = lienzo.getContext('2d', { willReadFrequently: true });
+        encajar(c, img, 0, 0, lado, lado);
+
+        const px = c.getImageData(0, 0, lado, lado).data;
+        let suma = 0;
+        let cuantos = 0;
+
+        for (let i = 0; i < px.length; i += 4) {
+            if (px[i + 3] < 40) continue; // transparente: no es logo
+
+            suma += (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
+            cuantos++;
+        }
+
+        return cuantos > 0 && suma / cuantos > 0.85;
+    } catch {
+        return false;
+    }
+}
+
 /** «Organiza», con su logo o sus iniciales, y «Más información en:». */
 function pieDeLaCaja(ctx, datos, logo) {
     ctx.fillStyle = NARANJO;
@@ -350,9 +395,9 @@ function pieDeLaCaja(ctx, datos, logo) {
     if (logo) {
         ctx.save();
         rectRedondeado(ctx, L.x, L.y, L.s, L.s, L.r);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = esLogoClaro(logo) ? FONDO_LOGO_CLARO : FONDO_LOGO;
         ctx.fill();
-        ctx.strokeStyle = '#f0dcc8';
+        ctx.strokeStyle = BORDE_LOGO;
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.clip();

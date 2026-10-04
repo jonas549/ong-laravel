@@ -10,6 +10,8 @@
 import puppeteer from 'puppeteer-core';
 import { execFileSync } from 'node:child_process';
 import { ORG, CLAVE_ORG } from './credenciales.mjs';
+import { PNG } from 'pngjs';
+import { writeFileSync, rmSync } from 'node:fs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -162,6 +164,51 @@ try {
     di('no intenta un logo', sinLogo.logo === false);
     di(`salen sus iniciales («${iniciales}»)`, hay(sinLogo.textos, new RegExp(`^${iniciales}$`)));
     sql(`update organizations set logo_path = ${logoAntes ? `'${logoAntes}'` : 'null'} where id = ${orgId}`);
+
+    /*
+     * 5b · Un logo blanco no desaparece (04/10). Iba en un cuadrado blanco:
+     * dentro no se veía nada. Se fabrica un logo blanco sobre transparente y
+     * uno naranja, y se leen los píxeles del cuadrado en la imagen generada.
+     */
+    t('5b · Un logo blanco o claro se distingue en su cuadrado');
+    const fabricarLogo = (nombre, [r, g, b]) => {
+        const png = new PNG({ width: 200, height: 200 });
+        for (let y = 0; y < 200; y++) for (let x = 0; x < 200; x++) {
+            const i = (200 * y + x) << 2;
+            const dentro = (x - 100) ** 2 + (y - 100) ** 2 < 80 ** 2;
+            png.data[i] = r; png.data[i + 1] = g; png.data[i + 2] = b; png.data[i + 3] = dentro ? 255 : 0;
+        }
+        writeFileSync(`storage/app/public/organizaciones/${nombre}`, PNG.sync.write(png));
+        return `storage/organizaciones/${nombre}`;
+    };
+    /** Luminancia (0-1) de un punto de la imagen generada, en sus coordenadas de 1080×1350. */
+    const luz = (x, y) => p.evaluate((x, y) => {
+        const img = document.querySelector('[data-difusion-imagen]');
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const g = c.getContext('2d');
+        g.drawImage(img, 0, 0);
+        const [r, v, a] = g.getImageData(x, y, 1, 1).data;
+        return (0.2126 * r + 0.7152 * v + 0.0722 * a) / 255;
+    }, x, y);
+    // El cuadrado va en x 133-199, y 1063-1129: una esquina de fondo y el centro.
+    const FONDO_XY = [138, 1068], CENTRO_XY = [166, 1096];
+
+    const blanco = fabricarLogo(`prueba-blanco-${Date.now()}.png`, [255, 255, 255]);
+    sql(`update organizations set logo_path = '${blanco}' where id = ${orgId}`);
+    await generar(ids['sin-foto']);
+    const fondoBlanco = await luz(...FONDO_XY), logoBlanco = await luz(...CENTRO_XY);
+    di('con un logo blanco, el fondo del cuadrado es oscuro', fondoBlanco < 0.4, fondoBlanco.toFixed(2));
+    di('y el logo se ve: contraste de verdad entre los dos', logoBlanco - fondoBlanco > 0.5, `${logoBlanco.toFixed(2)} sobre ${fondoBlanco.toFixed(2)}`);
+
+    const naranja = fabricarLogo(`prueba-naranja-${Date.now()}.png`, [229, 114, 0]);
+    sql(`update organizations set logo_path = '${naranja}' where id = ${orgId}`);
+    await generar(ids['sin-foto']);
+    const fondoColor = await luz(...FONDO_XY);
+    di('con un logo de color, el fondo es un gris muy suave', fondoColor > 0.9 && fondoColor < 0.99, fondoColor.toFixed(3));
+
+    sql(`update organizations set logo_path = ${logoAntes ? `'${logoAntes}'` : 'null'} where id = ${orgId}`);
+    for (const f of [blanco, naranja]) rmSync(f.replace('storage/', 'storage/app/public/'), { force: true });
 
     t('6 · El pie se edita desde Configuración');
     sql(`update settings set valor = '8 y 9 de noviembre' where clave = 'difusion_fechas'`);
