@@ -29,6 +29,15 @@ const TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
  * subir un archivo grande. El JPEG se recomprime como JPEG y el PNG sigue
  * siendo PNG.
  *
+ * **Salvo con `comoJpeg`**, que es para la portada de la actividad. Ahí una
+ * transparencia no aporta nada —la portada siempre se pinta recortada sobre
+ * fondo— y el PNG sí cuesta caro: una ilustración de 1600 px pesa ~2 MB en PNG
+ * y ~250 KB en JPEG. Esos 2 MB, subidos desde un teléfono con mala cobertura,
+ * tardaban más de lo que LiteSpeed espera, el servidor cortaba la conexión sin
+ * que la petición llegara a Laravel y el botón se quedaba girando sin decir
+ * nada (04/10). Con `comoJpeg` cualquier PNG o WebP sale como JPEG, aunque ya
+ * cupiera, y lo transparente se rellena de blanco.
+ *
  * Devuelve `null` cuando no hay nada que hacer o cuando el navegador no puede
  * —falta `createImageBitmap`, falta `toBlob`, la imagen no se deja decodificar—,
  * y entonces quien llama decide qué hacer con el original.
@@ -36,9 +45,10 @@ const TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
  * @param {File} archivo
  * @param {number} ladoMaximo  píxeles del lado largo
  * @param {number} pesoMaximo  bytes que se admiten sin tocar nada
+ * @param {{comoJpeg?: boolean}} [opciones]
  * @returns {Promise<File|null>}
  */
-export async function reducirImagen(archivo, ladoMaximo, pesoMaximo) {
+export async function reducirImagen(archivo, ladoMaximo, pesoMaximo, { comoJpeg = false } = {}) {
     if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') {
         return null;
     }
@@ -59,9 +69,13 @@ export async function reducirImagen(archivo, ladoMaximo, pesoMaximo) {
     }
 
     const escala = Math.min(1, ladoMaximo / Math.max(bitmap.width, bitmap.height));
+    const tipo = comoJpeg ? 'image/jpeg' : archivo.type;
+    const cambiaDeTipo = tipo !== archivo.type;
 
-    // Ya cabe de sobra: recomprimirla sólo le quitaría calidad.
-    if (escala === 1 && archivo.size <= pesoMaximo) {
+    // Ya cabe de sobra: recomprimirla sólo le quitaría calidad. Pero si hay
+    // que pasarla a JPEG, no basta con que quepa: lo que se busca es que pese
+    // poco, no que pese menos que el límite.
+    if (escala === 1 && archivo.size <= pesoMaximo && ! cambiaDeTipo) {
         bitmap.close?.();
 
         return null;
@@ -79,18 +93,27 @@ export async function reducirImagen(archivo, ladoMaximo, pesoMaximo) {
         return null;
     }
 
+    // El JPEG no tiene transparencia, y lo transparente sale NEGRO si no se
+    // pinta nada debajo.
+    if (tipo === 'image/jpeg') {
+        pincel.fillStyle = '#fff';
+        pincel.fillRect(0, 0, lienzo.width, lienzo.height);
+    }
+
     pincel.drawImage(bitmap, 0, 0, lienzo.width, lienzo.height);
     bitmap.close?.();
 
     const blob = await new Promise((listo) => {
         try {
-            lienzo.toBlob(listo, archivo.type, CALIDAD);
+            lienzo.toBlob(listo, tipo, CALIDAD);
         } catch {
             listo(null);
         }
     });
 
-    if (! blob) return null;
+    // Hay navegadores que no saben codificar un tipo y devuelven PNG en su
+    // lugar sin avisar. Un «.jpg» que por dentro es PNG lo rechaza el servidor.
+    if (! blob || blob.type !== tipo) return null;
 
     /*
      * ── Cuándo NO nos quedamos con la reducida ──
@@ -115,7 +138,11 @@ export async function reducirImagen(archivo, ladoMaximo, pesoMaximo) {
         return null;
     }
 
-    return new File([blob], archivo.name, { type: archivo.type, lastModified: Date.now() });
+    // Al cambiar de tipo, cambia la extensión: el nombre es lo que se enseña
+    // junto al campo y lo que el servidor mira para guardarlo.
+    const nombre = cambiaDeTipo ? archivo.name.replace(/\.[^.]*$/, '') + '.jpg' : archivo.name;
+
+    return new File([blob], nombre, { type: tipo, lastModified: Date.now() });
 }
 
 /**
@@ -165,11 +192,13 @@ export function pesoLegible(bytes) {
  * @param {number} opciones.maxKb      lo que admite el servidor, en KB
  * @param {number} opciones.ladoMaximo píxeles del lado largo
  * @param {string} opciones.que        cómo llamarlo en los avisos
+ * @param {boolean} opciones.comoJpeg  pasarla siempre a JPEG (la portada; ver `reducirImagen`)
  */
-export const campoImagen = ({ maxKb, ladoMaximo = 1600, que = 'La imagen' }) => ({
+export const campoImagen = ({ maxKb, ladoMaximo = 1600, que = 'La imagen', comoJpeg = false }) => ({
     maxBytes: maxKb * 1024,
     ladoMaximo,
     que,
+    comoJpeg,
 
     nombre: '',
     previa: '',
@@ -218,7 +247,7 @@ export const campoImagen = ({ maxKb, ladoMaximo = 1600, que = 'La imagen' }) => 
         let definitivo = archivo;
 
         try {
-            const reducida = await reducirImagen(archivo, this.ladoMaximo, this.maxBytes);
+            const reducida = await reducirImagen(archivo, this.ladoMaximo, this.maxBytes, { comoJpeg: this.comoJpeg });
 
             if (reducida && meterEnElCampo(entrada, reducida)) {
                 definitivo = reducida;

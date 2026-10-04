@@ -18,8 +18,8 @@ use Throwable;
  * **La regla que no se puede romper: esto NUNCA bloquea.** La dirección sigue
  * siendo un campo de texto libre; la sugerencia ayuda a acertar y a guardar el
  * punto exacto, y si el servicio no responde el formulario tiene que seguir
- * funcionando igual. Por eso todo lo de aquí devuelve una lista vacía ante
- * cualquier fallo, y ninguna excepción sube al controlador.
+ * funcionando igual. Por eso todo lo de aquí devuelve `null` ante cualquier
+ * fallo, y ninguna excepción sube al controlador.
  *
  * Tres cosas que no son adorno:
  *
@@ -39,10 +39,19 @@ class Geocodificador
     private const API = 'https://photon.komoot.io/api/';
 
     /**
-     * Cuánto se espera. Corto a propósito: esto pasa mientras alguien escribe,
-     * y una sugerencia que llega a los ocho segundos no la lee nadie.
+     * Cuánto se espera en total, y cuánto a que acepte la conexión.
+     *
+     * Eran 4 y 4. El log de producción enseñó que no bastaba (28/09 y 30/09):
+     * «timed out after 4002 ms with 0 bytes received», o sea, Photon colgado
+     * a ratos, no lento —desde fuera contesta en 1-1,5 s—. Siete segundos
+     * cubren la mayoría de esos tropiezos sin dejar a nadie esperando a una
+     * lista que ya no lee, y el formulario dice «Buscando direcciones…»
+     * mientras tanto. Conectar sí tiene que ser rápido: si en 3 s ni acepta
+     * la conexión, no va a contestar.
      */
-    private const SEGUNDOS = 4;
+    private const SEGUNDOS = 7;
+
+    private const SEGUNDOS_CONEXION = 3;
 
     /** Lo que se guarda una respuesta. */
     private const CACHE_MINUTOS = 60 * 24;
@@ -51,11 +60,17 @@ class Geocodificador
     private const CENTRO_CL = ['lat' => -33.45, 'lon' => -70.65];
 
     /**
-     * Direcciones que coinciden con lo escrito.
+     * Direcciones que coinciden con lo escrito, o `null` si el servicio no
+     * respondió.
      *
-     * @return array<int, array{etiqueta: string, direccion: string, ciudad: string, latitud: float, longitud: float}>
+     * `null` y lista vacía son cosas distintas, y el formulario las dice
+     * distinto: «no hay sugerencias para eso» frente a «ahora no podemos
+     * sugerir, escríbela igual». Antes las dos eran `[]` y un fallo se veía
+     * exactamente igual que nada: el campo se quedaba callado.
+     *
+     * @return array<int, array{etiqueta: string, direccion: string, ciudad: string, latitud: float, longitud: float}>|null
      */
-    public function sugerencias(string $texto, int $tope = 6): array
+    public function sugerencias(string $texto, int $tope = 6): ?array
     {
         $texto = trim(preg_replace('/\s+/u', ' ', $texto) ?? '');
 
@@ -67,19 +82,33 @@ class Geocodificador
 
         $clave = 'photon:'.md5(mb_strtolower($texto).'|'.$tope);
 
-        return Cache::remember($clave, now()->addMinutes(self::CACHE_MINUTOS), function () use ($texto, $tope) {
-            return $this->preguntar($texto, $tope);
-        });
+        if (is_array($guardada = Cache::get($clave))) {
+            return $guardada;
+        }
+
+        $sugerencias = $this->preguntar($texto, $tope);
+
+        /*
+         * Sólo se guarda lo que respondió. Con `Cache::remember` se guardaba
+         * también el fallo, como lista vacía y durante un día: tras un solo
+         * timeout, esa dirección se quedaba sin sugerencias aunque Photon
+         * volviera a los dos minutos.
+         */
+        if ($sugerencias !== null) {
+            Cache::put($clave, $sugerencias, now()->addMinutes(self::CACHE_MINUTOS));
+        }
+
+        return $sugerencias;
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>>|null
      */
-    private function preguntar(string $texto, int $tope): array
+    private function preguntar(string $texto, int $tope): ?array
     {
         try {
             $respuesta = Http::timeout(self::SEGUNDOS)
-                ->connectTimeout(self::SEGUNDOS)
+                ->connectTimeout(self::SEGUNDOS_CONEXION)
                 // Photon pide identificarse; sin esto responde a veces con 429.
                 ->withHeaders(['User-Agent' => config('app.name').' (dps)'])
                 ->get(self::API, [
@@ -95,7 +124,9 @@ class Geocodificador
                 ]);
 
             if (! $respuesta->successful()) {
-                return [];
+                Log::info('Photon respondió con error', ['estado' => $respuesta->status()]);
+
+                return null;
             }
 
             return $this->limpiar($respuesta->json('features', []), $tope);
@@ -103,11 +134,12 @@ class Geocodificador
             /*
              * Un fallo aquí no es un error de la aplicación: es un servicio de
              * fuera que no contestó. Se anota para poder mirarlo y se devuelve
-             * vacío, que es lo que deja el campo funcionando como texto libre.
+             * `null`: el campo sigue funcionando como texto libre y el
+             * formulario avisa de que ahora no hay sugerencias.
              */
             Log::info('Photon no respondió', ['error' => $e->getMessage()]);
 
-            return [];
+            return null;
         }
     }
 

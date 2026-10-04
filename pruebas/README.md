@@ -54,6 +54,26 @@ pasaban también con el menú roto, y el fallo que arregla `wizard-errores.mjs`
 —un aviso correcto que quedaba fuera de la pantalla— es invisible por HTTP por
 definición. Lo que hay que medir ahí son píxeles.
 
+### Contra producción: la página «Un momento…»
+
+Desde octubre de 2026 el hosting pone delante una verificación anti-bots: una
+página titulada «Un momento…» que recarga a los 5 s y deja una cookie. A un
+Chrome sin interfaz **no lo deja pasar nunca** —se queda recargando—, así que
+una suite que espera `window.Alpine` agota el tiempo y parece que el sitio está
+roto. Para pasarla, el script tiene que presentarse como un navegador normal:
+
+```js
+const nav = await puppeteer.launch({ ..., args: ['--no-sandbox', '--disable-blink-features=AutomationControlled'] });
+const v = (await nav.version()).split('/')[1], mayor = v.split('.')[0];
+await p.setUserAgent(`Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${mayor}.0.0.0 Mobile Safari/537.36`, {
+  brands: [{ brand: 'Google Chrome', version: mayor }, { brand: 'Chromium', version: mayor }],
+  fullVersion: v, platform: 'Android', platformVersion: '14.0.0', architecture: '', model: '', mobile: true,
+});
+```
+
+Cambiar sólo el `userAgent` no basta: las cabeceras `sec-ch-ua` siguen diciendo
+«HeadlessChrome» y la verificación lo nota. `curl` pasa sin nada de esto.
+
 ## Las credenciales
 
 **No hay ninguna contraseña escrita en este repositorio.** Los scripts las leen
@@ -132,6 +152,7 @@ php artisan db:seed --class=UserSeeder
 | `duplicar-circuito.mjs` | A1: el circuito entero de duplicar una sección del home desde la pantalla, mirando el home público tras cada paso (**necesita Chrome**; publica: no contra producción) |
 | `guia-organizador.mjs` | D1: publica una actividad por el wizard, corre la cola y lee en **Mailpit** el correo con la guía para organizadores; con el enlace vacío no sale (no contra producción) |
 | `peso-imagenes.mjs` | que la portada y el logo **se reduzcan en el navegador** antes de subirse, con imágenes de 5 MB fabricadas con GD, y que si aun reducidas no caben se avise y **se corte el envío**. Las imágenes no se versionan: son megas de ruido, y el ruido es justo lo que hace falta —una imagen plana se comprime a nada y no probaría el límite— (**necesita Chrome**) |
+| `portada-movil.mjs` | que la portada se suba **en JPEG** aunque se elija un PNG (una ilustración de ~5 MB baja a ~230 KB, y lo transparente sale blanco), y que el envío del wizard desde un teléfono **termine con la subida limitada a 150 kbit/s**: con la portada en PNG no terminaba nunca. Crea una cuenta y una actividad (**necesita Chrome**; no contra producción) |
 | `invitacion-evaluacion.mjs` | el correo que invita a evaluar cuando la actividad ya pasó: que el momento lo decida la ONG, que el enlace lleve a la encuesta, que **una segunda pasada no vuelva a escribir**, y que con el ajuste en «no enviar» no salga nada. Necesita Mailpit en el 8025 (**necesita Chrome**) |
 | `acceso-wizard.mjs` | iniciar sesión a mitad del wizard **sin perder lo escrito**: rellena medio formulario, entra, comprueba campo por campo que nada se ha perdido y publica la actividad de verdad. Eso último es donde salía el 419 del token CSRF regenerado (**necesita Chrome**) |
 | `cupos.mjs` | cupos e inscripción previa, publicando de verdad por el wizard y por el editor de mi-cuenta: sin inscripción **no viajan ni se guardan cupos**, con inscripción el campo **sale vacío** con «Ej. 80» de marcador, y la ficha sólo enseña cupos si se pide inscripción (**necesita Chrome** y MySQL por consola) |
@@ -145,7 +166,7 @@ php artisan db:seed --class=UserSeeder
 | `difusion.mjs` | la imagen de difusión de cada actividad (1080×1350): la genera en Chrome y mira **lo que se dibujó** —cada texto dentro de su columna—, los casos límite (sin foto, titular y descripción al máximo, región larga, cupos agotados, en línea, sin fecha), las **iniciales sin logo**, el pie editable, que en revisión y la de otra organización no se pueda, los botones y el teléfono. Siembra y **limpia** `datos-difusion.php` (**necesita Chrome**; desde la raíz del repo) |
 | `mensaje-compartir.mjs` | el mensaje de WhatsApp editable en Configuración → General: con `{nombre}` y `{enlace}` los cambia, sin `{enlace}` lo añade al final y vacío usa el de siempre. Deja el ajuste como estaba (**necesita Chrome**) |
 | `correo-existente.mjs` | el aviso de «este usuario ya existe» del paso 3: que sale **al salir del campo** y no al enviar, que su «Inicia sesión» abre el acceso del wizard y **conserva lo escrito**, que el rebote del servidor tampoco manda a otra página, y que la consulta tiene **freno propio** y no gasta el de entrar. Vacía la caché de los frenos al empezar y al terminar (**necesita Chrome**; se corre desde la raíz del repo, llama a `artisan`) |
-| `direcciones-photon.mjs` | las sugerencias de dirección contra el Photon real: que las coordenadas no vengan cambiadas de orden, que caigan dentro de Chile, que **el campo siga admitiendo una dirección que no es una calle**, y que el enlace del mapa use el punto y no la cadena. Deja la actividad que toca como estaba (**necesita Chrome**) |
+| `direcciones-photon.mjs` | las sugerencias de dirección contra el Photon real: que las coordenadas no vengan cambiadas de orden, que caigan dentro de Chile, que **el campo siga admitiendo una dirección que no es una calle**, y que el enlace del mapa use el punto y no la cadena. Y con Photon caído: que un fallo **no se guarde en caché** y que el campo **lo diga** —servicio caído, red cortada, sin resultados—. Deja la actividad que toca como estaba (**necesita Chrome**) |
 | `duplicar-seccion.mjs` | duplicar una sección del home: que la copia nazca con el contenido de la original y **que editarla no toque a la original**, que se pinte en el home con el parcial de su base y con un ancla distinta, que se arrastre y se esconda como cualquier otra, que se pueda borrar, y que las ancladas no se dupliquen ni pidiéndolo a mano (**necesita Chrome**) |
 | `org-propia.mjs` | una cuenta de organizador **sin organización enlazada** (como las que crea Panel → Usuarios): su panel abre, en el wizard reclama la suya del listado o crea una nueva y publica, sin que su propio nombre rebote como repetido; y el buscador marca la organización propia (**necesita Chrome**; desde la raíz del repo) |
 | `conservar-al-entrar.mjs` | entrar desde el aviso de «este correo ya tiene cuenta» conserva **campo por campo** lo escrito en el wizard —compara el `FormData` entero antes y después, archivos incluidos— y lo enviado es lo que se guarda (**necesita Chrome**; desde la raíz del repo) |
@@ -314,7 +335,7 @@ Tres suites escriben de verdad y por eso tienen su gemela de sólo lectura:
 |---|---|
 | `hilo-moderacion.mjs` | `hilo-moderacion-lectura.mjs` |
 | `evaluaciones-fotos.mjs` | `evaluaciones-fotos-lectura.mjs` |
-| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs`, `difusion.mjs`, `mensaje-compartir.mjs`, `org-propia.mjs`, `conservar-al-entrar.mjs`, `inscritos-y-logo.mjs`, `soy-parte.mjs`, `fotos-seleccion.mjs`, `organizaciones-panel.mjs`, `correo-soy-parte.mjs`, `organizador-con-organizacion.mjs` | `tanda-produccion.mjs` |
+| `organizaciones-wizard.mjs`, `acceso-wizard.mjs`, `peso-imagenes.mjs`, `portada-movil.mjs`, `cupos.mjs`, `correo-existente.mjs`, `exportar-inscripciones.mjs`, `evaluaciones-preguntas.mjs`, `avisos-panel.mjs`, `guia-organizador.mjs`, `difusion.mjs`, `mensaje-compartir.mjs`, `org-propia.mjs`, `conservar-al-entrar.mjs`, `inscritos-y-logo.mjs`, `soy-parte.mjs`, `fotos-seleccion.mjs`, `organizaciones-panel.mjs`, `correo-soy-parte.mjs`, `organizador-con-organizacion.mjs` | `tanda-produccion.mjs` |
 
 El motivo no es la prudencia genérica: devolver una actividad a revisión avisa
 **por correo al buzón del equipo** (`avisos_email`, Configuración → General;

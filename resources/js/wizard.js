@@ -1,6 +1,9 @@
 import { guiaDeErrores } from './formularios';
 import { buscadorOrganizaciones } from './organizaciones';
 
+/** Photon no respondió: la dirección se guarda igual, sin el punto. */
+const AVISO_DIR_SIN_SERVICIO = 'Ahora no podemos sugerir direcciones. Escríbela completa —calle, número y comuna—: se guarda igual.';
+
 /*
  * El wizard público de «publicar actividad».
  *
@@ -614,6 +617,8 @@ export const wizard = (inicial) => ({
     sugerenciasDir: [],
     dirAbiertas: false,
     buscandoDir: false,
+    /* Lo que se dice cuando no hay sugerencias o el servicio no responde. */
+    avisoDir: '',
     latitud: inicial.latitud ?? '',
     longitud: inicial.longitud ?? '',
     temporizadorDir: null,
@@ -643,6 +648,7 @@ export const wizard = (inicial) => ({
          * no tener punto.
          */
         this.olvidarPunto();
+        this.avisoDir = '';
 
         clearTimeout(this.temporizadorDir);
 
@@ -674,9 +680,22 @@ export const wizard = (inicial) => ({
 
             this.sugerenciasDir = datos.direcciones ?? [];
             this.dirAbiertas = this.sugerenciasDir.length > 0;
+
+            /*
+             * Que no se quede callado. Antes un fallo del geocodificador y
+             * «no hay nada» se veían igual: desaparecía «Buscando…» y no
+             * pasaba nada más, así que quien escribía no sabía si esperar.
+             */
+            if (datos.disponible === false) {
+                this.avisoDir = AVISO_DIR_SIN_SERVICIO;
+            } else if (! this.sugerenciasDir.length) {
+                this.avisoDir = 'No encontramos sugerencias para esa dirección. Puedes dejarla tal cual.';
+            }
         } catch {
             this.sugerenciasDir = [];
             this.dirAbiertas = false;
+
+            if (valor === this.campoDireccion()?.value) this.avisoDir = AVISO_DIR_SIN_SERVICIO;
         } finally {
             this.buscandoDir = false;
         }

@@ -296,6 +296,10 @@
 
                     <span class="helper" x-show="buscandoDir" x-cloak>Buscando direcciones…</span>
 
+                    <span class="helper" x-show="avisoDir && ! buscandoDir" x-cloak x-text="avisoDir" role="status"
+
+                          style="color:var(--naranjo-600);"></span>
+
                     <span class="helper" x-show="tienePunto" x-cloak style="color:var(--naranjo-600);">
                         Ubicación exacta guardada: el enlace del mapa llevará justo aquí.
                     </span>
@@ -480,7 +484,7 @@
             {{-- P19: mismo campo que el wizard, que reduce antes de subir. --}}
             <div style="padding:30px;border-bottom:1px solid var(--linea);"
                  data-campo="imagen" data-etiqueta="Imagen de la actividad"
-                 x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de la actividad' })">
+                 x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de la actividad', comoJpeg: true })">
                 <div class="seclabel" style="margin-bottom:18px;">Imagen</div>
                 <div class="lbl" style="margin-bottom:10px;">Imagen de la actividad</div>
 

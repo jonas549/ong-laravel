@@ -183,6 +183,61 @@ await p.goto(`${B}/activity/${id}/${slug}`, { waitUntil: 'networkidle2' });
 di('Y la ficha avisa de que es aproximada',
   /búsqueda aproximada/.test(await p.evaluate(() => document.body.innerText)));
 
+/* ═══════════════ Cuando Photon no responde (04/10) ═══════════════ */
+
+// El log de producción enseñó timeouts de Photon los días 28 y 30 de septiembre.
+// Dos fallos que había detrás: un timeout se guardaba en caché un día entero
+// como «no hay sugerencias», y el formulario no decía nada.
+
+t('Photon caído: no se guarda en caché y el formulario lo dice');
+
+const caido = ultimaLinea(tinker(
+  "Illuminate\\Support\\Facades\\Http::fake(['*' => Illuminate\\Support\\Facades\\Http::failedConnection()]);"
+  + " $q = 'Calle sin servicio '.uniqid();"
+  + " $r = app(App\\Services\\Geocodificador::class)->sugerencias($q);"
+  + " echo (is_null($r) ? 'null' : 'lista').'|'.(Illuminate\\Support\\Facades\\Cache::has('photon:'.md5(mb_strtolower($q).'|6')) ? 'guardado' : 'sin-guardar');"
+));
+di('Un fallo de conexión devuelve null, no una lista vacía', caido.startsWith('null|'), caido);
+di('Y no se queda en caché', caido.endsWith('|sin-guardar'), caido);
+
+// En el navegador se fingen las tres respuestas posibles del endpoint.
+let modo = null, interceptando = true;
+await p.setRequestInterception(true);
+p.on('request', (r) => {
+  if (!interceptando) return;
+  if (!modo || !r.url().includes('/direcciones/buscar')) return r.continue();
+  if (modo === 'red') return r.abort('timedout');
+  return r.respond({ status: 200, contentType: 'application/json',
+    body: JSON.stringify({ direcciones: [], disponible: modo !== 'caido' }) });
+});
+
+const avisoVisible = () => p.evaluate(() => {
+  const n = [...document.querySelectorAll('[data-campo="direccion"] .helper[role="status"]')]
+    .find((x) => getComputedStyle(x).display !== 'none' && x.offsetHeight > 0);
+  return n ? n.innerText.trim() : '';
+});
+
+for (const [m, que, espera] of [
+  ['caido', 'El servidor dice que Photon no respondió', /no podemos sugerir direcciones/i],
+  ['red', 'La consulta ni siquiera vuelve (red)', /no podemos sugerir direcciones/i],
+  ['vacio', 'Photon responde sin resultados', /No encontramos sugerencias/i],
+]) {
+  modo = m;
+  await alPaso(4);
+  await p.type('input[name="direccion"]', `Pasaje ${m} 123`);
+  await esperar(1200);
+  const aviso = await avisoVisible();
+  di(`${que}: se avisa debajo del campo`, espera.test(aviso), aviso.slice(0, 70));
+}
+
+await p.type('input[name="direccion"]', 'x');
+await esperar(100);
+di('Al seguir escribiendo, el aviso se va', (await avisoVisible()) === '');
+
+modo = null;
+interceptando = false;
+await p.setRequestInterception(false);
+
 di('Sin errores de JavaScript', errores.length === 0, errores.slice(0, 2).join(' | '));
 
 // Y se deja la actividad como estaba.

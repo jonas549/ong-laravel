@@ -226,6 +226,10 @@
 
             <span class="helper" x-show="buscandoDir" x-cloak>Buscando direcciones…</span>
 
+            <span class="helper" x-show="avisoDir && ! buscandoDir" x-cloak x-text="avisoDir" role="status"
+
+                  style="color:var(--naranjo-600);"></span>
+
             <span class="helper" x-show="tienePunto" x-cloak style="color:var(--naranjo-600);">
                 Ubicación exacta guardada: el enlace del mapa llevará justo aquí.
             </span>
@@ -372,7 +376,7 @@
     --}}
     <div style="padding:30px;border-bottom:1px solid var(--linea);"
          data-campo="imagen" data-etiqueta="Imagen de portada"
-         x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de portada' })">
+         x-data="campoImagen({ maxKb: 2048, ladoMaximo: 1600, que: 'La imagen de portada', comoJpeg: true })">
         <div class="seclabel" style="margin-bottom:18px;">Imagen de portada</div>
 
         <div style="display:flex;align-items:center;gap:18px;">

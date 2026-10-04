@@ -236,8 +236,13 @@ class PublishController extends Controller
      */
     public function direcciones(Request $request, Geocodificador $geo)
     {
+        $direcciones = $geo->sugerencias(Filtro::texto($request, 'q'));
+
         return response()->json([
-            'direcciones' => $geo->sugerencias(Filtro::texto($request, 'q')),
+            'direcciones' => $direcciones ?? [],
+            // Falso si el servicio no contestó, para que el formulario lo
+            // diga en vez de quedarse callado.
+            'disponible' => $direcciones !== null,
         ]);
     }
 
