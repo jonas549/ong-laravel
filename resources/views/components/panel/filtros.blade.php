@@ -80,7 +80,7 @@
     @if ($exportar)
         <span class="panel-filtros-exportar">
             @foreach ($exportar as $formato => $url)
-                <a class="btn btn-outline btn-sm" href="{{ $url }}" data-cargando="Preparando…">
+                <a class="btn btn-outline btn-sm" href="{{ $url }}" data-descarga data-cargando="Preparando…">
                     {{ strtoupper($formato) }}
                 </a>
             @endforeach

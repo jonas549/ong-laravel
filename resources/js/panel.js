@@ -462,17 +462,96 @@ export const iniciarEstadosDeCarga = () => {
         // ocupado para siempre.
         if (!formulario.checkValidity?.()) return;
 
-        ocupar(e.submitter ?? formulario.querySelector('button[type=submit]'));
+        const boton = e.submitter ?? formulario.querySelector('button[type=submit]');
+
+        // Un formulario que termina en un archivo no navega: ver `esperarDescarga`.
+        if (formulario.hasAttribute('data-descarga')) {
+            const testigo = nuevoTestigo();
+            let campo = formulario.querySelector('input[name="_descarga"]');
+
+            if (!campo) {
+                campo = document.createElement('input');
+                campo.type = 'hidden';
+                campo.name = '_descarga';
+                formulario.appendChild(campo);
+            }
+
+            campo.value = testigo;
+            ocupar(boton);
+            esperarDescarga(testigo, boton);
+
+            return;
+        }
+
+        ocupar(boton);
     });
 
-    // Las descargas (exportar) no navegan, así que hay que soltarlas solas.
-    document.addEventListener('click', (e) => {
-        const enlace = e.target.closest('a[data-cargando]');
+    /*
+     * ── Las descargas ──
+     *
+     * Un enlace o un formulario que termina en un archivo NO navega: el
+     * navegador guarda el archivo y la página se queda donde estaba, con el
+     * botón ocupado. Antes los enlaces se soltaban a los 4 s, hubiera
+     * terminado o no, y el formulario de «Descargar seleccionadas» no se
+     * soltaba nunca (04/10).
+     *
+     * Ahora la petición lleva un testigo al azar en `_descarga`; cuando el
+     * archivo sale, el servidor devuelve una cookie con ese testigo
+     * (`AvisaDescargaLista`) y el botón se suelta en el acto. Si la cookie no
+     * llega nunca —el servidor respondió con otra cosa y la página no navegó,
+     * o el navegador la bloqueó—, se suelta igual a los dos minutos: un botón
+     * pegado para siempre es peor que uno que se suelta tarde.
+     */
+    const COOKIE_DESCARGA = 'dps_descarga';
+    const ESPERA_MAXIMA = 120000;
 
-        if (!enlace) return;
+    const nuevoTestigo = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+
+    const leerCookie = () => document.cookie.split('; ')
+        .find((c) => c.startsWith(COOKIE_DESCARGA + '='))
+        ?.slice(COOKIE_DESCARGA.length + 1);
+
+    const borrarCookie = () => {
+        document.cookie = `${COOKIE_DESCARGA}=; Max-Age=0; path=/`;
+    };
+
+    const esperarDescarga = (testigo, el) => {
+        const inicio = Date.now();
+
+        const mirar = setInterval(() => {
+            const llego = leerCookie() === testigo;
+
+            if (!llego && Date.now() - inicio < ESPERA_MAXIMA) return;
+
+            clearInterval(mirar);
+            if (llego) borrarCookie();
+            liberar(el);
+        }, 400);
+    };
+
+    const conTestigo = (href, testigo) => {
+        const url = new URL(href, window.location.href);
+        url.searchParams.set('_descarga', testigo);
+
+        return url.toString();
+    };
+
+    document.addEventListener('click', (e) => {
+        const enlace = e.target.closest('a[data-descarga], a[data-cargando]');
+
+        if (!enlace || enlace.dataset.ocupado === '1') return;
+
+        // Abrir en otra pestaña o con el botón del medio no ocupa nada aquí.
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
+        const testigo = nuevoTestigo();
+
+        // Cambiar el `href` en el propio clic es lo que vale: el navegador
+        // sigue el enlace con el valor que tenga al terminar el manejador.
+        enlace.href = conTestigo(enlace.href, testigo);
 
         ocupar(enlace);
-        setTimeout(() => liberar(enlace), 4000);
+        esperarDescarga(testigo, enlace);
     });
 
     /*

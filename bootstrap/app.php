@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplySmtpSettings;
+use App\Http\Middleware\AvisaDescargaLista;
 use App\Http\Middleware\AvisaSiLaSubidaEsDemasiadoGrande;
 use App\Http\Middleware\ConservaAvisosPendientes;
 use App\Http\Middleware\EnsureRole;
@@ -37,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', ApplySmtpSettings::class);
         // Ver la clase: una consulta de fondo no gasta los avisos pendientes.
         $middleware->appendToGroup('web', ConservaAvisosPendientes::class);
+        // Ver la clase: suelta el botón de una descarga cuando el archivo sale.
+        $middleware->appendToGroup('web', AvisaDescargaLista::class);
+        $middleware->encryptCookies(except: [AvisaDescargaLista::COOKIE]);
 
         $middleware->alias([
             'role' => EnsureRole::class,

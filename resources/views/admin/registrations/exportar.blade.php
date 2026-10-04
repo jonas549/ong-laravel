@@ -60,7 +60,7 @@
     </p>
 
     @if ($cuantos > 0)
-        <a class="btn btn-primary" href="{{ route('admin.registrations.descargar', request()->query()) }}">
+        <a class="btn btn-primary" href="{{ route('admin.registrations.descargar', request()->query()) }}" data-descarga>
             Descargar en Excel
         </a>
     @else

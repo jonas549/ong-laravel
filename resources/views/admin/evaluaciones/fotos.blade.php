@@ -14,7 +14,7 @@
          pero el botón decía lo mismo y no se notaba. Ahora la nombra. --}}
     @php $tituloFiltrado = $filtros['actividad'] ? ($actividades[$filtros['actividad']] ?? null) : null; @endphp
     <a href="{{ route('admin.evaluaciones.fotos.zip', request()->query() + ['estado' => $cual]) }}"
-       class="btn btn-outline btn-sm" data-descargar-todas>
+       class="btn btn-outline btn-sm" data-descargar-todas data-descarga>
         @if ($tituloFiltrado)
             Descargar las fotos de «{{ Str::limit($tituloFiltrado, 34) }}»
         @else
@@ -103,7 +103,7 @@
         nunca mezcla autorizadas con las que no lo están.
     --}}
     <div x-data="{ sel: [], todas: @js($fotos->pluck('id')->map(fn ($id) => (string) $id)->values()) }">
-    <form method="GET" action="{{ route('admin.evaluaciones.fotos.zip') }}" class="eval-seleccion" data-barra-seleccion>
+    <form method="GET" action="{{ route('admin.evaluaciones.fotos.zip') }}" class="eval-seleccion" data-barra-seleccion data-descarga>
         @foreach (request()->except(['page', 'fotos']) + ['estado' => $cual] as $clave => $valor)
             @if (is_scalar($valor))
                 <input type="hidden" name="{{ $clave }}" value="{{ $valor }}">
@@ -118,7 +118,8 @@
             Seleccionar todas las de esta página
         </label>
         <span class="helper" x-text="sel.length ? (sel.length === 1 ? '1 seleccionada' : sel.length + ' seleccionadas') : 'Marca las que quieras bajar'"></span>
-        <button type="submit" class="btn btn-primary btn-sm" x-bind:disabled="! sel.length" data-descargar-seleccion>
+        <button type="submit" class="btn btn-primary btn-sm" x-bind:disabled="! sel.length" data-descargar-seleccion
+                data-cargando="Preparando el zip…">
             Descargar seleccionadas
         </button>
     </form>
@@ -154,7 +155,7 @@
 
                     {{-- Punto 9: bajar las de su actividad sin pasar por el filtro. --}}
                     @if ($e?->activity_id && ! $filtros['actividad'])
-                        <a class="textlink eval-foto-actividad-zip" data-zip-actividad
+                        <a class="textlink eval-foto-actividad-zip" data-zip-actividad data-descarga
                            href="{{ route('admin.evaluaciones.fotos.zip', ['estado' => $cual, 'actividad' => $e->activity_id]) }}">Descargar las de esta actividad</a>
                     @endif
                 </div>

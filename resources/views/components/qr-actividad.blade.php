@@ -47,8 +47,8 @@
                      que para un pendón— y el PNG el cómodo para pegar en un
                      documento. Se dice cuál es cuál, porque «SVG» no significa
                      nada para quien va a llevar esto a una imprenta. --}}
-                <a class="btn btn-primary btn-sm" href="{{ $rutaSvg }}">Descargar para imprimir (SVG)</a>
-                <a class="btn btn-outline btn-sm" href="{{ $rutaPng }}">Descargar imagen (PNG)</a>
+                <a class="btn btn-primary btn-sm" href="{{ $rutaSvg }}" data-descarga>Descargar para imprimir (SVG)</a>
+                <a class="btn btn-outline btn-sm" href="{{ $rutaPng }}" data-descarga>Descargar imagen (PNG)</a>
             </span>
         </div>
     </div>

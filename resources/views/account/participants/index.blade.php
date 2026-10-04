@@ -34,7 +34,7 @@
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-            <a href="{{ route('account.participants.export', [$activity] + $filtroActual) }}" class="btn btn-outline">
+            <a href="{{ route('account.participants.export', [$activity] + $filtroActual) }}" class="btn btn-outline" data-descarga>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
                 Exportar lista
             </a>
