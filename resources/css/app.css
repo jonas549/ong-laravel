@@ -1674,6 +1674,10 @@ button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
     /* La píldora de estado es larga; deja de fijar el ancho de la tarjeta. */
     .col-acciones { flex: 1 1 100% !important; align-items: stretch !important; }
     .col-acciones > span { text-align: center; }
+
+    /* La insignia de estado se reparte en dos renglones si no cabe: con la
+       píldora de esquinas enteras, el texto quedaría pegado a las curvas. */
+    .insignia-estado { border-radius: 16px !important; line-height: 1.4; }
     .col-acciones > div { justify-content: flex-start !important; }
     .hero-kpi { display: none !important; }
 
@@ -1916,14 +1920,19 @@ button, a, .btn, .icon-btn, .chip, .tab, .sqbtn, .steplink, summary {
 
 .fila-eliminada td:not(.col-acciones) { text-decoration: line-through; text-decoration-color: var(--linea); }
 
-.col-acciones {
+/*
+ * Acotado a la celda: «Mis actividades» usa la misma clase para la columna de
+ * acciones de cada tarjeta, y el `nowrap` de la tabla le llegaba a la
+ * insignia de estado, que a 390 px se salía de la tarjeta cortada (04/10).
+ */
+td.col-acciones {
     text-align: right;
     white-space: nowrap;
 }
 
-.col-acciones > * { vertical-align: middle; }
+td.col-acciones > * { vertical-align: middle; }
 
-.col-acciones .helper { margin-right: 8px; }
+td.col-acciones .helper { margin-right: 8px; }
 
 /* ── Biblioteca de medios ───────────────────────────────── */
 

@@ -288,6 +288,12 @@ if (editar) {
   console.log('  (el organizador sembrado no tiene actividades que editar)');
 }
 
+// Punto 4 del 04/10: la insignia «Tu actividad ya es parte del Día del
+// Patrimonio Social» se salía de la tarjeta (heredaba un `nowrap` de las
+// tablas del panel).
+await p.goto(`${B}/mi-cuenta/actividades`, { waitUntil: 'networkidle2' });
+await revisar('Mis actividades');
+
 t('Sin errores de JavaScript');
 di('La consola quedó limpia', errores.length === 0, errores.slice(0, 2).join(' · '));
 
