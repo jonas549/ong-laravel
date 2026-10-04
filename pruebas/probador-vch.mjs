@@ -69,6 +69,16 @@ di('Y su message, sin traducir ni esconder', /API key/i.test(await texto('[data-
 di('La respuesta cruda se ve formateada', /"error": \{\n/.test(await texto('[data-probador-crudo]')));
 di('El revisor reconoce el error documentado', /formato documentado: HTTP 401/.test(await texto('[data-probador-informe]')));
 
+// Para la reunión (04/10): el resultado se lee de un vistazo, proyectado.
+di('Veredicto en una frase: «falta la credencial»',
+  (await texto('[data-probador-titular]')) === 'La API rechaza la petición: falta la credencial', await texto('[data-probador-titular]'));
+di('El 401 grande, arriba de todo',
+  await p.$eval('[data-probador-veredicto-codigo]', (n) => n.textContent.trim() === '401' && parseFloat(getComputedStyle(n).fontSize) >= 72));
+di('El mensaje literal de Voluntariados Chile', /«Missing or invalid API key\.»/.test(await texto('[data-probador-literal]')), await texto('[data-probador-literal]'));
+di('La hora de la consulta, en hora de Chile', /^\d{1,2} de [a-z]+ de \d{4}, a las \d{2}:\d{2}:\d{2}$/.test(await texto('[data-probador-hora]')), await texto('[data-probador-hora]'));
+di('El veredicto va antes que el detalle técnico', await p.evaluate(() =>
+  document.querySelector('[data-probador-veredicto]').compareDocumentPosition(document.querySelector('[data-probador-crudo]')) & Node.DOCUMENT_POSITION_FOLLOWING));
+
 t('Con una clave falsa y parámetros fuera de rango');
 await p.type('[data-probador-clave]', CLAVE_FALSA);
 await p.type('[data-probador-desde]', 'esto-no-es-una-fecha');
@@ -127,6 +137,37 @@ di('nuevo_campo: no documentado', /nuevo_campo/.test(inf2));
 di('organization.slug: no documentado, aunque esté anidado', /organization\.slug/.test(inf2));
 di('El formato «Virtual» sale como NUEVO', /Virtual — NUEVO/.test(inf2));
 di('El total de problemas ya no es 0', Number(await texto('[data-probador-problemas]')) >= 4, await texto('[data-probador-problemas]'));
+
+/*
+ * Cuando la API no contesta desde el servidor (04/10, en producción: el botón
+ * «parecía no hacer nada»). Hace falta un segundo `artisan serve` con la API
+ * apuntando a una IP sin salida:
+ *
+ *   VCH_API_URL=http://10.255.255.1/nada php artisan serve --port=8124
+ *   DPS_URL_SIN_SALIDA=http://127.0.0.1:8124 node pruebas/probador-vch.mjs
+ *
+ * La sesión vale en los dos puertos: las cookies son del host, no del puerto.
+ */
+const SIN_SALIDA = process.env.DPS_URL_SIN_SALIDA;
+if (SIN_SALIDA) {
+  t('La API no contesta desde el servidor');
+  await p.goto(`${SIN_SALIDA}/admin/voluntariados-chile/probador`, { waitUntil: 'networkidle2' });
+  const t0 = Date.now();
+  await p.click('[data-probador-consultar]');
+  await esperar(2200);
+  const espera = await p.evaluate(() => {
+    const n = document.querySelector('[data-probador-cargando]');
+    return n && getComputedStyle(n).display !== 'none' ? n.innerText.replace(/\s+/g, ' ') : null;
+  });
+  di('Mientras espera, se ve un aviso grande con los segundos', /Consultando a Voluntariados Chile/.test(espera ?? '') && /[12] s/.test(espera ?? ''), espera ?? '(nada)');
+  await p.waitForSelector('[data-probador-titular]', { timeout: 40000 });
+  di('Y termina diciendo qué pasó', /No se pudo contactar a Voluntariados Chile/.test(await texto('[data-probador-titular]')), await texto('[data-probador-titular]'));
+  di('Con el motivo técnico', /Detalle:/.test(await p.evaluate(() => document.querySelector('[data-probador-veredicto]').innerText)));
+  di('En menos de 25 s, no medio minuto', (Date.now() - t0) / 1000 < 25, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  di('El aviso de espera desaparece', await p.$eval('[data-probador-cargando]', (n) => getComputedStyle(n).display === 'none'));
+} else {
+  console.log('\n  (sin DPS_URL_SIN_SALIDA: no se prueba la API que no contesta)');
+}
 
 t('Sin errores de JavaScript');
 di('La consola quedó limpia', errores.length === 0, errores.slice(0, 2).join(' · '));

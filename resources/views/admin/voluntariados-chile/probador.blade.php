@@ -73,11 +73,54 @@
         </div>
     </form>
 
-    <div class="alert alert-error" x-show="falloLocal" x-cloak x-text="falloLocal" data-probador-fallo-local></div>
+    {{-- Mientras consulta: grande, con los segundos, para que nunca parezca que no hace nada. --}}
+    <div class="card" x-show="cargando" x-cloak data-probador-cargando
+         style="padding:26px 28px;display:flex;align-items:center;gap:18px;border-left:6px solid var(--naranjo);">
+        <span class="esta-cargando" aria-hidden="true" style="font-size:0;opacity:1;"></span>
+        <div>
+            <div style="font-size:22px;font-weight:800;color:var(--ink);">Consultando a Voluntariados Chile…</div>
+            <div class="helper" style="font-size:15px;margin-top:4px;"><span x-text="segundos"></span> s · la consulta sale desde nuestro servidor</div>
+        </div>
+    </div>
+
+    <div class="alert alert-error" x-show="falloLocal" x-cloak x-text="falloLocal" data-probador-fallo-local
+         style="font-size:16px;"></div>
 
     {{-- ── Resultado ── --}}
     <template x-if="resultado">
         <div style="display:flex;flex-direction:column;gap:18px;" data-probador-resultado>
+
+            {{--
+                El veredicto, para leerlo proyectado en una reunión: qué pasó en
+                una frase, el código grande, el mensaje literal de la API y la
+                hora. Lo técnico va debajo, para el desarrollador.
+            --}}
+            <template x-if="resultado.titular">
+                <div class="card" data-probador-veredicto
+                     x-bind:style="'padding:30px 34px;border-left:8px solid ' + tonoHttp() + ';display:grid;grid-template-columns:auto 1fr;gap:10px 32px;align-items:center;'">
+                    <div x-bind:style="'font-size:96px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums;color:' + tonoHttp()"
+                         x-text="resultado.http ?? '—'" data-probador-veredicto-codigo></div>
+                    <div>
+                        <div style="font-size:30px;line-height:1.2;font-weight:800;color:var(--ink);" x-text="resultado.titular" data-probador-titular></div>
+                        <div style="font-size:18px;line-height:1.5;color:var(--gris-700);margin-top:8px;" x-text="resultado.explicacion"></div>
+                    </div>
+                    <div style="grid-column:1 / -1;border-top:1px solid var(--linea);padding-top:16px;margin-top:8px;display:grid;gap:10px;">
+                        <div x-show="errorApi || resultado.fallo_de_red" style="font-size:18px;line-height:1.5;">
+                            <span style="color:var(--gris);">Respuesta literal de Voluntariados Chile:</span>
+                            <strong style="font-family:ui-monospace,monospace;font-size:19px;" x-text="errorApi ? '«' + errorApi.message + '»' : '—'" data-probador-literal></strong>
+                            <span x-show="errorApi" style="color:var(--gris);font-size:15px;" x-text="'(code: ' + (errorApi?.code ?? '') + ')'"></span>
+                        </div>
+                        <div x-show="resultado.fallo_de_red" style="font-size:16px;color:var(--rosa);" x-text="'Detalle: ' + resultado.fallo_de_red"></div>
+                        <div style="font-size:17px;color:var(--gris-700);">
+                            Consultado el <strong x-text="resultado.consultado_en" data-probador-hora></strong> (hora de Chile)
+                            <span x-show="resultado.ms !== undefined" x-text="'· respondió en ' + (resultado.ms / 1000).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' s'"></span>
+                            · <span x-text="resultado.con_clave ? 'con API Key' : 'sin API Key'"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <div class="seclabel" x-show="resultado.titular" style="margin-top:6px;">Detalle técnico, para el desarrollador</div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
                 <div class="kpi"><span class="v" x-bind:style="'color:' + tonoHttp()" x-text="resultado.http ?? '—'" data-probador-http></span><span class="l">código HTTP</span></div>

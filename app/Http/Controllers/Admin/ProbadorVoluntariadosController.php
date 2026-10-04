@@ -8,6 +8,8 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Pantalla para probar a mano la API de Voluntariados Chile.
@@ -65,7 +67,14 @@ class ProbadorVoluntariadosController extends Controller
         $clave = trim((string) ($datos['api_key'] ?? ''));
         $url = config('services.voluntariados_chile.url');
 
-        $peticion = Http::accept('application/json')->timeout(30)->connectTimeout(10);
+        /*
+         * Tiempos cortos a propósito (04/10). Con 30 s, una llamada que se
+         * cuelga desde el servidor —le pasa a Photon: «0 bytes received»—
+         * dejaba la pantalla medio minuto sin decir nada, y parecía que el
+         * botón no funcionaba. Quince segundos en total bastan para una API
+         * que contesta en uno, y lo que pase se dice.
+         */
+        $peticion = Http::accept('application/json')->timeout(15)->connectTimeout(8);
 
         // Sin clave también se consulta: la API responde 401 y eso es lo que
         // prueba que la pantalla funciona antes de tener la clave.
@@ -73,17 +82,35 @@ class ProbadorVoluntariadosController extends Controller
             $peticion = $peticion->withToken($clave);
         }
 
+        $base = [
+            'url' => $url.($parametros ? '?'.http_build_query($parametros) : ''),
+            'con_clave' => $clave !== '',
+            // La hora de Chile, para leerla proyectada sin hacer cuentas.
+            'consultado_en' => now()->timezone('America/Santiago')->locale('es')
+                ->isoFormat('D [de] MMMM [de] YYYY, [a las] HH:mm:ss'),
+        ];
+
         $inicio = hrtime(true);
 
         try {
             $respuesta = $peticion->get($url, $parametros);
-        } catch (ConnectionException $e) {
-            return response()->json([
+        } catch (Throwable $e) {
+            /*
+             * Cualquier fallo de la llamada, no sólo los de conexión: un
+             * certificado que el servidor no reconoce o una redirección rara
+             * acababan en un 500 sin explicación. Se dice qué fue, porque es
+             * justo lo que distingue «nuestro servidor no tiene salida» de
+             * «la API no contesta». El mensaje no lleva la clave: la cabecera
+             * no aparece en los errores de conexión de Guzzle.
+             */
+            return response()->json($base + [
                 'http' => null,
                 'ms' => (int) round((hrtime(true) - $inicio) / 1e6),
-                'url' => $url.($parametros ? '?'.http_build_query($parametros) : ''),
-                'con_clave' => $clave !== '',
-                'fallo_de_red' => 'No se pudo conectar con la API: '.$e->getMessage(),
+                'fallo_de_red' => Str::limit($e->getMessage(), 400),
+                'titular' => 'No se pudo contactar a Voluntariados Chile',
+                'explicacion' => $e instanceof ConnectionException
+                    ? 'La consulta salió de nuestro servidor y no obtuvo respuesta. No es un problema de la credencial: la petición no llegó a la API.'
+                    : 'La consulta falló antes de obtener una respuesta de la API.',
             ]);
         }
 
@@ -92,11 +119,13 @@ class ProbadorVoluntariadosController extends Controller
         $json = json_decode($cuerpo, true);
         $esJson = json_last_error() === JSON_ERROR_NONE;
 
-        return response()->json([
+        [$titular, $explicacion] = $this->veredicto($respuesta->status(), $clave !== '', $esJson ? $json : null);
+
+        return response()->json($base + [
             'http' => $respuesta->status(),
             'ms' => $ms,
-            'url' => $url.($parametros ? '?'.http_build_query($parametros) : ''),
-            'con_clave' => $clave !== '',
+            'titular' => $titular,
+            'explicacion' => $explicacion,
             'cabeceras' => collect($respuesta->headers())
                 ->only(['Content-Type', 'content-type', 'Retry-After', 'retry-after', 'X-RateLimit-Limit', 'x-ratelimit-limit', 'X-RateLimit-Remaining', 'x-ratelimit-remaining', 'x-sb-edge-region'])
                 ->map(fn ($v) => implode(', ', (array) $v)),
@@ -106,6 +135,42 @@ class ProbadorVoluntariadosController extends Controller
             'texto' => $esJson ? null : mb_substr($cuerpo, 0, 20000),
             'informe' => $revisor->revisar($respuesta->status(), $esJson ? $json : null),
         ]);
+    }
+
+    /**
+     * Qué pasó, dicho para alguien que no es técnico (la pantalla se proyecta
+     * en una reunión). El mensaje literal de la API va aparte, sin tocar.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function veredicto(int $http, bool $conClave, ?array $json): array
+    {
+        return match (true) {
+            $http === 401 && ! $conClave => [
+                'La API rechaza la petición: falta la credencial',
+                'Voluntariados Chile exige una API Key para entregar las oportunidades. Sin ella no se puede obtener ningún dato.',
+            ],
+            $http === 401 => [
+                'La API rechaza la petición: la credencial no es válida',
+                'La API Key enviada no es la correcta o ya no está vigente.',
+            ],
+            $http === 400 => [
+                'La API rechaza la petición: un parámetro no es válido',
+                'Revisa updated_since, page o page_size.',
+            ],
+            $http >= 200 && $http < 300 => [
+                'La API respondió: '.(int) data_get($json, 'pagination.total', count((array) data_get($json, 'data', []))).' oportunidades',
+                'La credencial es válida y la API entrega datos.',
+            ],
+            $http >= 500 => [
+                'Error en el servidor de Voluntariados Chile',
+                'La API recibió la petición pero falló al responder. No depende de nosotros.',
+            ],
+            default => [
+                "La API respondió con el código {$http}",
+                'Es un código que la documentación no menciona.',
+            ],
+        };
     }
 
     /**
