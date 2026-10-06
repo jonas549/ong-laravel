@@ -381,6 +381,10 @@ class PublishController extends Controller
                     'descripcion' => $datos['descripcion'],
                     'formato' => $datos['formato'],
                     'fecha_inicio' => $datos['fecha_inicio'] ?? null,
+                    // Sólo si dura varios días y tiene fecha (punto 5 del 05/10).
+                    'fecha_termino' => $request->boolean('varios_dias') && ! $request->boolean('sin_fecha_definida')
+                        ? ($datos['fecha_termino'] ?? null)
+                        : null,
                     'hora_inicio' => $datos['hora_inicio'] ?? null,
                     'hora_termino' => $datos['hora_termino'] ?? null,
                     'sin_fecha_definida' => $request->boolean('sin_fecha_definida'),

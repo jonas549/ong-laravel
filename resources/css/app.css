@@ -2391,6 +2391,46 @@ a.paginacion-enlace:hover { border-color: var(--naranjo); color: var(--naranjo);
 
 .campo-selector { position: relative; display: block; }
 
+/*
+ * Las fechas de una actividad (tanda del 05/10, `<x-fechas-actividad>`).
+ *
+ * El aviso de fecha pasada avisa y no frena: en naranjo, no en el rosa de los
+ * errores, porque cargar una actividad que ya se hizo está permitido.
+ */
+.aviso-fecha-pasada { color: var(--naranjo-600); font-weight: 600; }
+
+.fechas-bloqueadas {
+    box-sizing: border-box;
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    border: 1px solid var(--linea);
+    border-radius: 12px;
+    background: #f7f8f9;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--gris-700);
+}
+
+.casilla-varios-dias {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 16px 0 0;
+    cursor: pointer;
+    font-size: 14.5px;
+    color: var(--ink);
+}
+
+.casilla-varios-dias input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex: none;
+    accent-color: var(--naranjo);
+}
+
+.fechas-termino { margin-top: 14px; }
+
 .campo-selector > .fld { padding-right: 44px; }
 
 .campo-selector-boton {

@@ -27,6 +27,10 @@ export const editorActividad = (inicial) => ({
 
     formato: inicial.formato,
     sinFecha: inicial.sinFecha,
+    // Punto 5 del 05/10: «La actividad dura varios días» enseña la fecha de
+    // término. Y punto 4: si la actividad ya pasó, la fecha no se cambia.
+    varios: inicial.varios ?? false,
+    fechaBloqueada: inicial.fechaBloqueada ?? false,
     abierta: inicial.abierta,
     insc: inicial.insc,
     descLen: inicial.descLen,

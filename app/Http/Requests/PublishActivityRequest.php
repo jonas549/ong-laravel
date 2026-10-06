@@ -37,6 +37,7 @@ class PublishActivityRequest extends FormRequest
     {
         $this->merge([
             'fecha_inicio' => FechaEscrita::fecha($this->input('fecha_inicio')),
+            'fecha_termino' => FechaEscrita::fecha($this->input('fecha_termino')),
             'hora_inicio' => FechaEscrita::hora($this->input('hora_inicio')),
             'hora_termino' => FechaEscrita::hora($this->input('hora_termino')),
 
@@ -127,7 +128,21 @@ class PublishActivityRequest extends FormRequest
             'descripcion' => ['required', 'string', 'max:1000'],
             'formato' => ['required', Rule::in(Activity::FORMATOS)],
             'sin_fecha_definida' => ['nullable', 'boolean'],
-            'fecha_inicio' => ['nullable', 'required_without:sin_fecha_definida', 'date', 'after_or_equal:today'],
+            /*
+             * Tanda del 05/10: al CREAR se acepta una fecha ya pasada del año
+             * en curso —hay organizaciones que cargan lo que ya hicieron— y se
+             * rechaza la de años anteriores. El navegador avisa de la pasada
+             * sin cortar el envío. El año es el de Chile, no el de UTC.
+             */
+            'fecha_inicio' => ['nullable', 'required_without:sin_fecha_definida', 'date',
+                'after_or_equal:'.now(\App\Support\Fecha::zona())->startOfYear()->toDateString()],
+            /*
+             * Punto 5: la fecha de término sólo con «La actividad dura varios
+             * días» marcada. Sin marcar el campo va deshabilitado y no viaja;
+             * el controlador además la descarta.
+             */
+            'varios_dias' => ['nullable', 'boolean'],
+            'fecha_termino' => ['nullable', 'required_if_accepted:varios_dias', 'date', 'after_or_equal:fecha_inicio'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
@@ -189,7 +204,10 @@ class PublishActivityRequest extends FormRequest
             'publicos.required' => 'Indica a qué público está dirigida la actividad.',
             'fecha_inicio.required_without' => 'Indica la fecha, o marca que está disponible de forma permanente.',
             'fecha_inicio.date' => 'Escribe la fecha como día / mes / año.',
-            'fecha_inicio.after_or_equal' => 'La fecha no puede ser anterior a hoy.',
+            'fecha_inicio.after_or_equal' => 'La fecha no puede ser de un año anterior.',
+            'fecha_termino.required_if_accepted' => 'Indica cuándo termina, o desmarca «La actividad dura varios días».',
+            'fecha_termino.date' => 'Escribe la fecha como día / mes / año.',
+            'fecha_termino.after_or_equal' => 'La fecha de término no puede ser anterior a la de inicio.',
             'hora_inicio.date_format' => 'Escribe la hora como HH:MM, por ejemplo 09:00.',
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:00.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',

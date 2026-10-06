@@ -60,6 +60,23 @@ class UpdateActivityRequest extends FormRequest
             'hora_termino' => FechaEscrita::hora($this->input('hora_termino')),
         ]);
 
+        /*
+         * Punto 4 del 05/10: si la actividad ya se hizo, sus fechas no se
+         * cambian. En pantalla van bloqueadas —y un campo deshabilitado no
+         * viaja—, así que aquí se reponen las guardadas pase lo que pase: ni
+         * se pierden por no venir, ni se cambian con un envío hecho a mano.
+         */
+        $actividad = $this->route('activity');
+
+        if ($actividad instanceof Activity && $actividad->yaPaso()) {
+            $this->merge([
+                'sin_fecha_definida' => $actividad->sin_fecha_definida ? '1' : null,
+                'fecha_inicio' => $actividad->fecha_inicio?->toDateString(),
+                'fecha_termino' => $actividad->fecha_termino?->toDateString(),
+                'varios_dias' => $actividad->fecha_termino ? '1' : null,
+            ]);
+        }
+
             /*
              * Q3: los enlaces se completan antes de validar. Nadie escribe
              * `https://` al copiar la direccion de su Instagram, y rechazarlo
@@ -78,7 +95,9 @@ class UpdateActivityRequest extends FormRequest
 
             'sin_fecha_definida' => ['nullable', 'boolean'],
             'fecha_inicio' => ['nullable', 'required_without:sin_fecha_definida', 'date'],
-            'fecha_termino' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            // Punto 5 del 05/10: sólo con «La actividad dura varios días».
+            'varios_dias' => ['nullable', 'boolean'],
+            'fecha_termino' => ['nullable', 'required_if_accepted:varios_dias', 'date', 'after_or_equal:fecha_inicio'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
             'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
 
@@ -151,6 +170,7 @@ class UpdateActivityRequest extends FormRequest
             'fecha_inicio.required_without' => 'Indica la fecha, o marca que está disponible de forma permanente.',
             'fecha_inicio.date' => 'Escribe la fecha como día / mes / año.',
             'fecha_termino.date' => 'Escribe la fecha como día / mes / año.',
+            'fecha_termino.required_if_accepted' => 'Indica cuándo termina, o desmarca «La actividad dura varios días».',
             'fecha_termino.after_or_equal' => 'La fecha de término no puede ser anterior a la de inicio.',
             'hora_inicio.date_format' => 'Escribe la hora como HH:MM, por ejemplo 10:00.',
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:30.',

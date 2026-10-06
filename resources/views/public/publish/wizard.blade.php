@@ -35,6 +35,7 @@
         publicos: {{ Js::from(old('publicos', [])) }},
         formato: {{ Js::from(old('formato', $formatos[0])) }},
         sinFecha: {{ Js::from((bool) old('sin_fecha_definida')) }},
+        varios: {{ Js::from((bool) old('varios_dias')) }},
         acc: {{ Js::from((bool) old('tiene_accesibilidad')) }},
         insc: {{ Js::from((bool) old('inscripcion_habilitada', true)) }},
         {{-- El prototipo arranca con colab en true, con el bloque desplegado. --}}
@@ -240,7 +241,9 @@
 {{-- ══ MODAL — DESVÍO A VOLUNTARIADOS CHILE ══ --}}
 <div x-show="redirigir" x-cloak
      style="position:fixed;inset:0;z-index:80;background:rgba(51,54,58,.45);backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px;"
-     x-on:click.self="cerrarRedirigir()" x-on:keydown.escape.window="cerrarRedirigir()">
+     x-on:click.self="cerrarRedirigir()" x-on:keydown.escape.window="redirigir && cerrarRedirigir()">
+    {{-- Escape sólo con el aviso abierto: escucha en toda la ventana, y antes
+         sacaba del paso 4 a quien cerraba un desplegable con Escape (05/10). --}}
     <div style="background:#fff;border-radius:26px;padding:34px 32px;max-width:480px;width:100%;box-sizing:border-box;box-shadow:0 40px 80px -40px rgba(0,0,0,.5);text-align:center;"
          role="dialog" aria-modal="true" aria-labelledby="mv-t">
         <span style="display:grid;place-items:center;width:60px;height:60px;border-radius:999px;background:var(--naranjo-100);color:var(--naranjo);margin:0 auto 18px;">

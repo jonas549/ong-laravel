@@ -367,7 +367,13 @@ const slug = await p.evaluate(async (base) => {
     const html = await (await fetch(`${base}/actividades`)).text();
     // La ficha vive en /activity/{id}/{slug} desde el 18/09; el listado ya
     // no enlaza a /actividades/{slug}, que sólo queda como redirección.
-    return html.match(/\/activity\/(\d+\/[a-z0-9-]+)"/)?.[1] ?? null;
+    // La primera que admita inscritos: desde el 05/10 una que ya pasó no
+    // tiene formulario, y el listado las ordena por fecha, pasadas incluidas.
+    const fichas = [...new Set([...html.matchAll(/\/activity\/(\d+\/[a-z0-9-]+)"/g)].map((m) => m[1]))];
+    for (const f of fichas) {
+        if ((await (await fetch(`${base}/activity/${f}`)).text()).includes('inscribirse')) return f;
+    }
+    return null;
 }, B);
 
 if (! slug) {

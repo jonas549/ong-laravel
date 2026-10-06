@@ -46,6 +46,9 @@ export const wizard = (inicial) => ({
     tipo: inicial.tipo,
     formato: inicial.formato,
     sinFecha: inicial.sinFecha,
+    // Punto 5 del 05/10: «La actividad dura varios días» enseña la fecha de término.
+    varios: inicial.varios ?? false,
+    fechaBloqueada: false,
     acc: inicial.acc,
     insc: inicial.insc,
     colab: inicial.colab,

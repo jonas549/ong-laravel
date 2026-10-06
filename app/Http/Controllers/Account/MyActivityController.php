@@ -105,7 +105,11 @@ class MyActivityController extends Controller
                 'formato' => $datos['formato'],
                 'sin_fecha_definida' => $request->boolean('sin_fecha_definida'),
                 'fecha_inicio' => $datos['fecha_inicio'] ?? null,
-                'fecha_termino' => $datos['fecha_termino'] ?? null,
+                // Sólo si dura varios días (punto 5 del 05/10). Si la actividad
+                // ya pasó, el FormRequest ya repuso las fechas guardadas.
+                'fecha_termino' => $request->boolean('varios_dias') && ! $request->boolean('sin_fecha_definida')
+                    ? ($datos['fecha_termino'] ?? null)
+                    : null,
                 'hora_inicio' => $datos['hora_inicio'] ?? null,
                 'hora_termino' => $datos['hora_termino'] ?? null,
                 'region_id' => $comuna?->region_id,

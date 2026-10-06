@@ -62,15 +62,8 @@ class DatosDifusion
             return ['fecha' => 'Fecha por definir', 'horas' => ''];
         }
 
-        $ini = $a->fecha_inicio->locale('es');
-        $fin = $a->fecha_termino?->locale('es');
-
-        $fecha = match (true) {
-            ! $fin || $fin->isSameDay($ini) => $ini->isoFormat('D [de] MMMM [de] YYYY'),
-            $fin->isSameMonth($ini) => $ini->isoFormat('D').' al '.$fin->isoFormat('D [de] MMMM [de] YYYY'),
-            $fin->isSameYear($ini) => $ini->isoFormat('D [de] MMMM').' al '.$fin->isoFormat('D [de] MMMM [de] YYYY'),
-            default => $ini->isoFormat('D [de] MMMM [de] YYYY').' al '.$fin->isoFormat('D [de] MMMM [de] YYYY'),
-        };
+        // El mismo texto que la ficha y los correos (`RangoDeFechas`).
+        $fecha = \App\Support\RangoDeFechas::largo($a->fecha_inicio, $a->fecha_termino);
 
         $h = fn ($x) => $x ? substr((string) $x, 0, 5) : '';
         $horas = match (true) {

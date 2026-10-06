@@ -273,7 +273,7 @@ class Activity extends Model
             return 'Por definir';
         }
 
-        return Str::ucfirst($this->fecha_inicio->locale('es')->isoFormat('ddd D MMM'));
+        return \App\Support\RangoDeFechas::corto($this->fecha_inicio, $this->fecha_termino);
     }
 
     /** El formato del listado de "Mi cuenta": "26 julio 2026". */
@@ -283,7 +283,7 @@ class Activity extends Model
             return 'Fecha por definir';
         }
 
-        return $this->fecha_inicio->locale('es')->isoFormat('D MMMM YYYY');
+        return \App\Support\RangoDeFechas::lista($this->fecha_inicio, $this->fecha_termino);
     }
 
     public function getFechaLargaAttribute(): string
@@ -292,7 +292,9 @@ class Activity extends Model
             return 'Fecha por definir';
         }
 
-        return $this->fecha_inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
+        // Con varios días, el rango entero (tanda del 05/10): lo leen la
+        // ficha, el panel y los correos.
+        return \App\Support\RangoDeFechas::largo($this->fecha_inicio, $this->fecha_termino);
     }
 
     /** "Vie 4 dic · 09:00-13:00 · Recoleta", el resumen del paso 5 del wizard. */
@@ -445,10 +447,45 @@ class Activity extends Model
         return $ultimo?->de_estado === 'ajustes' && $ultimo->a_estado === 'revision';
     }
 
+    /**
+     * El último día de la actividad, como «AAAA-MM-DD»: el de término si es de
+     * varios días, y si no el de inicio. Null si no tiene fecha.
+     */
+    public function ultimoDia(): ?string
+    {
+        if ($this->sin_fecha_definida || ! $this->fecha_inicio) {
+            return null;
+        }
+
+        return ($this->fecha_termino ?? $this->fecha_inicio)->toDateString();
+    }
+
+    /**
+     * ¿Ya pasó? Es decir, su último día es anterior a hoy, en hora de Chile.
+     *
+     * El día de la actividad todavía no ha pasado: hasta medianoche se puede
+     * inscribir alguien que llega tarde. Una de varios días sigue viva hasta
+     * su último día. Las «disponibles de forma permanente» no pasan nunca.
+     *
+     * Tanda del 05/10: cierra la inscripción y bloquea la fecha en el editor.
+     */
+    public function yaPaso(): bool
+    {
+        $ultimo = $this->ultimoDia();
+
+        return $ultimo !== null && $ultimo < now(\App\Support\Fecha::zona())->toDateString();
+    }
+
+    /**
+     * Sólo decide si se puede inscribir alguien HOY. No toca
+     * `inscripcion_habilitada`: lo que el organizador marcó se queda como lo
+     * marcó, y las inscripciones ya hechas siguen ahí.
+     */
     public function puedeRecibirInscripciones(): bool
     {
         return $this->estado === 'publicada'
             && $this->inscripcion_habilitada
+            && ! $this->yaPaso()
             && ($this->cupos_disponibles === null || $this->cupos_disponibles > 0);
     }
 
@@ -472,6 +509,14 @@ class Activity extends Model
             return null;
         }
 
+        /*
+         * Primero que nada: una actividad que ya se hizo no puede decir «¡Te
+         * esperamos!» aunque no pidiera inscripción (tanda del 05/10).
+         */
+        if ($this->estado === 'publicada' && $this->yaPaso()) {
+            return 'ya_paso';
+        }
+
         if (! $this->inscripcion_habilitada) {
             return 'sin_inscripcion_previa';
         }
@@ -487,6 +532,7 @@ class Activity extends Model
     public function avisoSinInscripciones(): ?string
     {
         return match ($this->motivoSinInscripciones()) {
+            'ya_paso' => 'Esta actividad ya se realizó.',
             'sin_inscripcion_previa' => 'No es necesario inscripción previa. ¡Te esperamos en la actividad!',
             // Reservado para los cupos, por decisión del cliente del 11/09.
             'cupos_agotados', 'no_publicada' => 'Esta actividad no está recibiendo inscripciones.',

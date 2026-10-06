@@ -439,10 +439,39 @@ export const formularioGuiado = (errores = []) => ({
 export const campoFecha = () => ({
     entrada: null,
     calendario: null,
+    pasada: false,
 
     init() {
         this.entrada = this.$refs.fecha ?? null;
         this.calendario = this.$refs.calendario ?? null;
+
+        /*
+         * Tanda del 05/10: el aviso de «elegiste una fecha que ya pasó». Sólo
+         * en el campo que lo pide con `data-hoy` —el día de hoy en Chile, que
+         * pone el servidor para no depender del reloj del teléfono—. Avisa y
+         * nada más: no corta el envío, porque cargar una actividad que ya se
+         * hizo está permitido.
+         *
+         * Escucha los eventos del propio campo en vez de meterse en cada
+         * camino que lo escribe (teclear, pegar, el calendario, el de móvil):
+         * todos acaban disparando `input` o `change`.
+         */
+        if (this.entrada?.dataset.hoy) {
+            const revisar = () => { this.pasada = this.esPasada(); };
+            ['input', 'change', 'blur'].forEach((e) => this.entrada.addEventListener(e, revisar));
+            this.$nextTick(revisar);
+        }
+    },
+
+    /** ¿Lo escrito es una fecha completa anterior a hoy? */
+    esPasada() {
+        const d = this.entrada.value.replace(/\D/g, '');
+
+        if (this.entrada.disabled || d.length !== 8 || ! this.esPosible([d.slice(0, 2), d.slice(2, 4), d.slice(4, 8)])) {
+            return false;
+        }
+
+        return `${d.slice(4, 8)}-${d.slice(2, 4)}-${d.slice(0, 2)}` < this.entrada.dataset.hoy;
     },
 
     /**

@@ -103,39 +103,10 @@
             texto en lugar de sustituirlo. Ver `campoFecha` en
             resources/js/formularios.js.
         --}}
-        <div class="grid-2" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
-            <label class="lbl" data-campo="fecha_inicio" data-obligatorio
-                   data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_inicio') }}"
-                   x-data="campoFecha()">Fecha *
-                <span class="campo-selector">
-                    <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
-                           {{-- Sin maxlength: cortaría lo que se pegue antes de
-                                poder ordenarlo. Al teclear ya lo acota la máscara,
-                                que reescribe el campo con ocho dígitos como mucho. --}}
-                           x-ref="fecha" inputmode="numeric" autocomplete="off"
-                           placeholder="dd / mm / aaaa"
-                           x-on:input="alEscribir($event)" x-on:blur="normalizar()"
-                           x-bind:disabled="sinFecha" value="@viejo('fecha_inicio')">
-
-                    {{-- El botón es quien abre el desplegable; el input[type=date]
-                         está debajo, transparente y sin recibir clics, sólo para
-                         que el calendario del navegador salga anclado aquí. --}}
-                    <input type="date" class="campo-selector-nativo" x-ref="calendario"
-                           tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
-                           x-on:change="desdeCalendario()">
-
-                    <button type="button" class="campo-selector-boton"
-                            x-bind:disabled="sinFecha"
-                            x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
-                            aria-label="Elegir la fecha en un calendario">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
-                    </button>
-                </span>
-                <x-fecha-calendario-movil desactivar="sinFecha" />
-                <span class="helper">Ej. 04 / 12 / 2026</span>
-                @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
-            </label>
-
+        {{-- Fechas: el mismo bloque que el editor de mi-cuenta (tanda del 05/10). --}}
+        <x-fechas-actividad etiqueta="Fecha *"
+            :inicio="\App\Support\Formulario::viejo('fecha_inicio')"
+            :termino="\App\Support\Formulario::viejo('fecha_termino')">
             <label class="lbl" data-campo="hora_inicio"
                    data-etiqueta="{{ CamposDeActividad::etiqueta('hora_inicio') }}">Hora inicio
                 <x-selector-hora name="hora_inicio" :valor="\App\Support\Formulario::viejo('hora_inicio')" desactivar="sinFecha"
@@ -149,7 +120,7 @@
                     :class="$errors->has('hora_termino') ? 'is-invalid' : ''" />
                 @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
             </label>
-        </div>
+        </x-fechas-actividad>
 
         <div style="display:flex;align-items:center;gap:12px;margin:20px 0;">
             <span style="flex:1;height:1px;background:var(--linea);"></span>

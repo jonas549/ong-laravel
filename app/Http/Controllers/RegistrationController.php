@@ -18,7 +18,9 @@ class RegistrationController extends Controller
         }
 
         if (! $activity->puedeRecibirInscripciones()) {
-            return back()->with('error', 'Esta actividad no está recibiendo inscripciones.');
+            return back()->with('error', $activity->yaPaso()
+                ? 'Esta actividad ya se realizó: no recibe inscripciones.'
+                : 'Esta actividad no está recibiendo inscripciones.');
         }
 
         $datos = $request->validated();

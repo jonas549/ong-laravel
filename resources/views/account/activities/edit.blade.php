@@ -39,6 +39,8 @@
         accesos: {{ Js::from($seleccion('acceso', 'accesos')) }},
         formato: {{ Js::from(old('formato', $activity->formato)) }},
         sinFecha: {{ Js::from((bool) old('sin_fecha_definida', $activity->sin_fecha_definida)) }},
+        varios: {{ Js::from((bool) old('varios_dias', $activity->fecha_termino !== null)) }},
+        fechaBloqueada: {{ Js::from($activity->yaPaso()) }},
         abierta: {{ Js::from((bool) old('abierta_publico', $activity->abierta_publico)) }},
         insc: {{ Js::from((bool) old('inscripcion_habilitada', $activity->inscripcion_habilitada)) }},
         colaboradores: {{ Js::from(array_values($colaboradores)) }},
@@ -185,65 +187,11 @@
                     prototipo y además los navegadores no dejan pegar en los
                     campos nativos de fecha y hora.
                 --}}
-                <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                    <label class="lbl" data-campo="fecha_inicio" data-obligatorio
-                           data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_inicio') }}"
-                           x-data="campoFecha()">Fecha de inicio *
-                        <span class="campo-selector">
-                            <input class="fld @error('fecha_inicio') is-invalid @enderror" name="fecha_inicio"
-                                   x-ref="fecha" inputmode="numeric" autocomplete="off"
-                                   placeholder="dd / mm / aaaa"
-                                   x-on:input="alEscribir($event)" x-on:blur="normalizar()"
-                                   x-bind:disabled="sinFecha"
-                                   value="@viejo('fecha_inicio', $activity->fecha_inicio?->format('d / m / Y'))">
-                        {{-- El botón abre el desplegable; el input[type=date] está
-                             debajo, transparente y sin recibir clics, sólo para que
-                             el calendario salga anclado aquí. --}}
-                        <input type="date" class="campo-selector-nativo" x-ref="calendario"
-                               tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
-                               x-on:change="desdeCalendario()">
-
-                        <button type="button" class="campo-selector-boton"
-                                x-bind:disabled="sinFecha"
-                                x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
-                                aria-label="Elegir la fecha en un calendario">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
-                        </button>
-                </span>
-                        <x-fecha-calendario-movil desactivar="sinFecha" />
-                        <span class="helper">Ej. 04 / 12 / 2026</span>
-                        @error('fecha_inicio') <span class="field-error">{{ $message }}</span> @enderror
-                    </label>
-
-                    <label class="lbl" data-campo="fecha_termino"
-                           data-etiqueta="{{ CamposDeActividad::etiqueta('fecha_termino') }}"
-                           x-data="campoFecha()">Fecha de término
-                        <span class="campo-selector">
-                            <input class="fld @error('fecha_termino') is-invalid @enderror" name="fecha_termino"
-                                   x-ref="fecha" inputmode="numeric" autocomplete="off"
-                                   placeholder="dd / mm / aaaa"
-                                   x-on:input="alEscribir($event)" x-on:blur="normalizar()"
-                                   x-bind:disabled="sinFecha"
-                                   value="@viejo('fecha_termino', $activity->fecha_termino?->format('d / m / Y'))">
-                        {{-- El botón abre el desplegable; el input[type=date] está
-                             debajo, transparente y sin recibir clics, sólo para que
-                             el calendario salga anclado aquí. --}}
-                        <input type="date" class="campo-selector-nativo" x-ref="calendario"
-                               tabindex="-1" aria-hidden="true" x-bind:disabled="sinFecha"
-                               x-on:change="desdeCalendario()">
-
-                        <button type="button" class="campo-selector-boton"
-                                x-bind:disabled="sinFecha"
-                                x-on:click="sincronizarCalendario(); $refs.calendario.showPicker ? $refs.calendario.showPicker() : $refs.fecha.focus()"
-                                aria-label="Elegir la fecha en un calendario">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path></svg>
-                        </button>
-                </span>
-                        <x-fecha-calendario-movil desactivar="sinFecha" />
-                        <span class="helper">Opcional, si dura más de un día.</span>
-                        @error('fecha_termino') <span class="field-error">{{ $message }}</span> @enderror
-                    </label>
-
+                {{-- Fechas: el mismo bloque que el wizard (tanda del 05/10). Si la
+                     actividad ya pasó, salen bloqueadas y se dice por qué. --}}
+                <x-fechas-actividad etiqueta="Fecha de inicio *"
+                    :inicio="\App\Support\Formulario::viejo('fecha_inicio', $activity->fecha_inicio?->format('d / m / Y'))"
+                    :termino="\App\Support\Formulario::viejo('fecha_termino', $activity->fecha_termino?->format('d / m / Y'))">
                     <label class="lbl" data-campo="hora_inicio"
                            data-etiqueta="{{ CamposDeActividad::etiqueta('hora_inicio') }}">Hora de inicio (opcional)
                         <x-selector-hora name="hora_inicio" :valor="\App\Support\Formulario::viejo('hora_inicio', $hora($activity->hora_inicio))" desactivar="sinFecha"
@@ -257,7 +205,7 @@
                             :class="$errors->has('hora_termino') ? 'is-invalid' : ''" />
                         @error('hora_termino') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
-                </div>
+                </x-fechas-actividad>
 
                 <div style="display:flex;align-items:center;gap:12px;margin:20px 0;">
                     <span style="flex:1;height:1px;background:var(--linea);"></span>
@@ -267,6 +215,7 @@
 
                 <label style="display:flex;align-items:flex-start;gap:11px;cursor:pointer;margin-bottom:20px;">
                     <input type="checkbox" name="sin_fecha_definida" value="1" x-model="sinFecha"
+                           x-bind:disabled="fechaBloqueada"
                            x-on:change="$nextTick(() => repasar())"
                            style="width:18px;height:18px;accent-color:var(--naranjo);margin-top:2px;">
                     <span style="font-size:14.5px;color:var(--ink);">Disponible de forma permanente

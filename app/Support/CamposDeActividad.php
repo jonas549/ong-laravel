@@ -65,7 +65,7 @@ final class CamposDeActividad
         'colaboradores' => ['Organizaciones colaboradoras', 4],
 
         // Sólo en el editor de «Mi cuenta», que no tiene pasos.
-        'fecha_termino' => ['Fecha de término', null],
+        'fecha_termino' => ['Fecha de término', 4],
         'cupos_disponibles' => ['Cupos disponibles', null],
         'info_previa' => ['Qué deben saber antes de asistir', null],
         'accesos' => ['Accesibilidad', null],
