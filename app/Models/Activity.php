@@ -375,11 +375,27 @@ class Activity extends Model
             : 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($busqueda);
     }
 
+    /** El banner de siempre, para cuando no hay imagen predeterminada. */
+    public const IMAGEN_DE_RESERVA = 'img/dps-banner-2560x1080-010726.jpg';
+
+    /**
+     * La imagen de las actividades que no traen la suya (ajustes del 06/10):
+     * la de Configuración → General si hay, y si no el banner de siempre.
+     * Un solo sitio, que leen la ficha, las tarjetas, el carrusel, la imagen
+     * al compartir y la de difusión.
+     */
+    public static function imagenPorDefecto(): string
+    {
+        $ruta = trim((string) Setting::get('actividad_imagen_defecto'));
+
+        return asset($ruta !== '' ? $ruta : self::IMAGEN_DE_RESERVA);
+    }
+
     public function getImagenUrlAttribute(): string
     {
         return $this->imagen_portada
             ? asset($this->imagen_portada)
-            : asset('img/dps-banner-2560x1080-010726.jpg');
+            : static::imagenPorDefecto();
     }
 
     public function getInscritosCountAttribute(): int

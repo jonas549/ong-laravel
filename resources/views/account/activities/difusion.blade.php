@@ -23,7 +23,7 @@
     </x-cuenta.barra>
 
     <div class="difusion"
-         x-data="difusion(@js($datos), @js(asset('img/difusion')), @js(asset('img/dps-banner-2560x1080-010726.jpg')))">
+         x-data="difusion(@js($datos), @js(asset('img/difusion')), @js(\App\Models\Activity::imagenPorDefecto()))">
 
         <div class="difusion-texto">
             <h1 style="font-family:var(--font-title);font-size:32px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px;color:var(--ink);">

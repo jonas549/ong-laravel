@@ -55,6 +55,9 @@ class SettingController extends Controller
                     Rule::in(array_keys(CatalogoAjustes::opciones($ajuste->clave))),
                 ],
                 $ajuste->tipo === 'int' => ['required', 'integer', 'min:0', 'max:365'],
+                // Una ruta de la biblioteca de medios; vacía es «la de
+                // siempre». Se limpia al guardar, abajo.
+                $ajuste->tipo === 'imagen' => ['nullable', 'string', 'max:255'],
                 // Vacío vale: significa «el mensaje de siempre» (MensajeCompartir).
                 $ajuste->clave === 'compartir_mensaje' => ['nullable', 'string', 'max:300'],
                 str_contains($ajuste->clave, 'email') => ['required', 'email', 'max:255'],
@@ -82,9 +85,13 @@ class SettingController extends Controller
         $request->validate($reglas, [], $nombres);
 
         foreach ($ajustes as $ajuste) {
-            Setting::set($ajuste->clave, $ajuste->tipo === 'bool'
-                ? $request->boolean($ajuste->clave)
-                : $request->input($ajuste->clave));
+            Setting::set($ajuste->clave, match ($ajuste->tipo) {
+                'bool' => $request->boolean($ajuste->clave),
+                // Sólo rutas dentro de `public/`, como los campos de imagen
+                // del editor del home: ni dominios de fuera ni `..`.
+                'imagen' => app(\App\Services\SanitizadorHtml::class)->rutaImagen($request->input($ajuste->clave)),
+                default => $request->input($ajuste->clave),
+            });
         }
 
         return back()->with('ok', 'Configuración guardada.');

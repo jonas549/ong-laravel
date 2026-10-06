@@ -158,6 +158,13 @@ class SettingsSeeder extends Seeder
                     .'publicada que se editó y corregida tras ajustes. Vacío, van a los administradores.',
             ],
             [
+                // Ajustes del 06/10. Vacío es «el banner de siempre», que vive
+                // en `Activity::IMAGEN_DE_RESERVA`: quitarla vuelve a él.
+                'grupo' => 'general', 'clave' => 'actividad_imagen_defecto', 'tipo' => 'imagen', 'valor' => '',
+                'label' => 'Imagen predeterminada de las actividades',
+                'descripcion' => 'Se usa en las actividades sin imagen propia: ficha, tarjetas, carrusel e imagen de difusión, en escritorio y en móvil. Sin imagen, se usa el banner del Día del Patrimonio Social.',
+            ],
+            [
                 // Se siembra vacío a propósito: vacío es «el de siempre», que
                 // vive en `MensajeCompartir::POR_DEFECTO`. Así un cambio del
                 // texto por defecto llega a todas las bases sin migración.

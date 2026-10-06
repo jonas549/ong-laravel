@@ -269,6 +269,18 @@ class Biblioteca
             $usos[] = $uso;
         }
 
+        /*
+         * Los ajustes de tipo imagen (ajustes del 06/10: la imagen
+         * predeterminada de las actividades). Sin esto, la biblioteca la daría
+         * por «sin usar» y se podría borrar sin aviso, dejando a todas las
+         * actividades sin foto con una imagen rota.
+         */
+        $ajustes = \App\Models\Setting::where('tipo', 'imagen')->where('valor', $medio->ruta)->get(['label']);
+
+        foreach ($ajustes as $ajuste) {
+            $usos[] = ['que' => 'Configuración', 'rotulo' => (string) $ajuste->label, 'url' => route('admin.settings.general')];
+        }
+
         return $usos;
     }
 

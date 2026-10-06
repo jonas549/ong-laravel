@@ -19,6 +19,10 @@
                             <option value="{{ $valor }}" @selected(($valores[$a->clave] ?? null) === $valor)>{{ $texto }}</option>
                         @endforeach
                     </select>
+                @elseif ($a->tipo === 'imagen')
+                    {{-- La biblioteca de medios: se sube, se cambia y se quita
+                         desde aquí (ajustes del 06/10). --}}
+                    <x-panel.imagen :name="$a->clave" :label="$a->label" :value="$valores[$a->clave] ?? ''" :alto="120" />
                 @elseif ($a->tipo === 'bool')
                     <label style="display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--gris-700);cursor:pointer;">
                         <input type="checkbox" name="{{ $a->clave }}" value="1" @checked($valores[$a->clave] ?? false)>
