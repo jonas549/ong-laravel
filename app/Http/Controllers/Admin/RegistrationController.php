@@ -69,16 +69,34 @@ class RegistrationController extends Controller
         ]);
     }
 
-    /** La descarga en sí. */
+    /**
+     * La descarga en sí.
+     *
+     * Tanda del 05/10: SÓLO los participantes. Las columnas de la actividad
+     * que se le añadieron el 23/09 se fueron a su propia exportación
+     * (Actividades → Exportar); aquí queda lo justo para saber a qué se
+     * inscribió cada persona. El ID sigue primero, como en todas.
+     */
     public function descargar(Request $request): StreamedResponse
     {
         $inscritos = $this->consulta($request)
-            ->with(['activity.organization', 'activity.terms', 'activity.collaborators', 'activity.commune', 'activity.region'])
+            ->with(['activity.organization'])
             ->get();
+
+        /*
+         * «¿Respondió la evaluación?», cruzando por correo y por actividad: la
+         * encuesta no pide inscribirse, así que no hay otra llave. Se cargan
+         * una sola vez las parejas que respondieron, y cada fila sólo mira si
+         * la suya está. Sin tildes ni mayúsculas en el correo.
+         */
+        $evaluaron = \App\Models\ActivityEvaluation::query()
+            ->whereIn('activity_id', $inscritos->pluck('activity_id')->unique())
+            ->get(['activity_id', 'correo'])
+            ->mapWithKeys(fn ($e) => [$e->activity_id.'|'.mb_strtolower(trim($e->correo)) => true]);
 
         $archivo = 'inscripciones-'.\App\Support\Fecha::iso(now()).'.xlsx';
 
-        return response()->streamDownload(function () use ($inscritos) {
+        return response()->streamDownload(function () use ($inscritos, $evaluaron) {
             $writer = new Writer;
             $writer->openToFile('php://output');
 
@@ -89,20 +107,25 @@ class RegistrationController extends Controller
                  * «confirmado». Lo que sí importa —si se dio de baja— va en su
                  * propia columna, que se lee sola.
                  */
-                [...['ID', 'Nombre', 'Correo', 'Actividad', 'Organización', 'Fecha de inscripción', 'Baja'], ...self::COLUMNAS_ACTIVIDAD],
+                ['ID', 'Nombre', 'Correo', 'Mayor de edad', 'Actividad', 'Organización',
+                    'Fecha de inscripción', 'Fecha de la actividad', 'Respondió la evaluación', 'Baja'],
                 (new Style)->withFontBold(true),
             ));
 
             foreach ($inscritos as $i) {
+                $a = $i->activity;
+
                 $writer->addRow(Row::fromValues([
                     $i->id,
                     $i->nombre,
                     $i->correo,
-                    $i->activity?->titulo ?? '(actividad borrada)',
-                    $i->activity?->organization?->nombre ?? '',
+                    $i->es_mayor_edad ? 'Sí' : 'No',
+                    $a?->titulo ?? '(actividad borrada)',
+                    $a?->organization?->nombre ?? '',
                     \App\Support\Fecha::conHora($i->created_at),
+                    $a ? self::fechaDeActividad($a) : '',
+                    isset($evaluaron[$i->activity_id.'|'.mb_strtolower(trim($i->correo))]) ? 'Sí' : 'No',
                     $i->estado === 'cancelado' ? 'Cancelada' : '',
-                    ...self::datosDeActividad($i->activity),
                 ]));
             }
 
@@ -113,56 +136,22 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Punto 6 del 23/09: cada fila trae además la actividad entera, para que
-     * la hoja sirva sin tener que cruzarla con otra. Van detrás de las del
-     * participante, y el ID sigue siendo la primera columna.
+     * «04-12-2026», o «04-12-2026 al 06-12-2026» si dura varios días.
+     *
+     * Tal cual, sin pasar por `Fecha`: ésa convierte de zona horaria, y un día
+     * sin hora a medianoche podía acabar en el día anterior.
      */
-    private const COLUMNAS_ACTIVIDAD = [
-        'Fecha de inicio', 'Fecha de término', 'Hora de inicio', 'Hora de término',
-        'Dirección', 'Comuna', 'Región', 'Formato',
-        'Requiere inscripción previa', 'Cupos totales', 'Cupos disponibles',
-        'Descripción', 'Temas', 'Características', 'Dirigido a', 'Colaboración',
-        'Sitio web', 'Red social',
-    ];
-
-    /** @return list<string|int> Una celda por cada `COLUMNAS_ACTIVIDAD`. */
-    private static function datosDeActividad(?Activity $a): array
+    public static function fechaDeActividad(Activity $a): string
     {
-        if (! $a) {
-            return array_fill(0, count(self::COLUMNAS_ACTIVIDAD), '');
+        if ($a->sin_fecha_definida || ! $a->fecha_inicio) {
+            return 'Por definir';
         }
 
-        /*
-         * La fecha se escribe tal cual, sin pasar por `Fecha`: ésa convierte
-         * de zona horaria, y un día sin hora a medianoche podía acabar en el
-         * día anterior.
-         */
-        $dia = fn ($f) => $f ? $f->format('d-m-Y') : '';
-        $hora = fn ($h) => $h ? substr((string) $h, 0, 5) : '';
-        $terminos = fn (string $grupo) => $a->termsDe($grupo)->pluck('nombre')->implode(', ');
+        $ini = $a->fecha_inicio->format('d-m-Y');
 
-        $dirigido = collect([$terminos('publico'), $a->publico_otro])->filter()->implode(', ');
-
-        return [
-            $a->sin_fecha_definida ? 'Por definir' : $dia($a->fecha_inicio),
-            $a->sin_fecha_definida ? '' : $dia($a->fecha_termino),
-            $hora($a->hora_inicio),
-            $hora($a->hora_termino),
-            $a->direccion ?? '',
-            $a->commune?->nombre ?? '',
-            $a->region?->nombre ?? '',
-            $a->formato ?? '',
-            $a->inscripcion_habilitada ? 'Sí' : 'No',
-            $a->cupos_totales ?? '',
-            $a->cupos_disponibles ?? '',
-            $a->descripcion ?? '',
-            $terminos('tema'),
-            $terminos('caracteristica'),
-            $dirigido,
-            $a->collaborators->map(fn ($c) => $c->tipo ? "{$c->nombre} ({$c->tipo})" : $c->nombre)->implode(', '),
-            $a->organization?->enlace_web ?? '',
-            $a->organization?->enlace_red_social ?? '',
-        ];
+        return $a->fecha_termino && ! $a->fecha_termino->isSameDay($a->fecha_inicio)
+            ? $ini.' al '.$a->fecha_termino->format('d-m-Y')
+            : $ini;
     }
 
     /** @return array<string, string> */

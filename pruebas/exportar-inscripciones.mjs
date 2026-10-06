@@ -1,9 +1,15 @@
-// Punto 6 del 23/09 — «Exportar inscripciones» trae los datos de la actividad.
+// «Exportar inscripciones» del admin — tanda del 05/10, punto 7a.
+//
+// SÓLO los participantes: nombre, correo, mayor de edad, actividad,
+// organización, fecha de inscripción y fecha de la actividad, con el ID
+// primero y «Baja» al final. Las columnas de la actividad que se añadieron el
+// 23/09 se fueron a Actividades → Exportar (`exportar-actividades.mjs`).
+// Y «Respondió la evaluación», cruzando por correo y actividad.
 //
 // Se descarga el Excel como administrador, se lee con el mismo OpenSpout que
-// lo escribe (`leer-xlsx.php`) y cada celda de la actividad se compara con la
-// base. Para que la columna «Colaboración» tenga algo que comprobar, se le
-// añade un colaborador a la actividad y se quita al terminar.
+// lo escribe (`leer-xlsx.php`) y cada celda se compara con la base. Para la
+// columna de evaluación se siembra una respuesta —con el correo en otras
+// mayúsculas— y se borra al terminar.
 //
 //   node pruebas/exportar-inscripciones.mjs      (desde la raíz del repo)
 import puppeteer from 'puppeteer-core';
@@ -23,12 +29,15 @@ let ok = 0, mal = 0;
 const di = (q, bien, extra = '') => { bien ? ok++ : mal++; console.log(`  ${q.padEnd(62)} ${bien ? 'OK' : '*** MAL ***'} ${extra}`); };
 const t = (x) => { console.log(''); console.log(`=== ${x} ===`); console.log(''); };
 
-// Una inscripción cuya actividad tenga términos de los tres grupos.
-const [regId, actId] = sql(`select r.id, a.id from registrations r join activities a on a.id = r.activity_id
-    where a.deleted_at is null order by (select count(*) from activity_taxonomy_term t where t.activity_id = a.id) desc, r.id desc limit 1`).split('\t');
-
-const COLAB = `Colaborador de prueba ${Date.now()}`;
-sql(`insert into activity_collaborators (activity_id, nombre, tipo, orden, created_at, updated_at) values (${actId}, '${COLAB}', 'Institución educativa', 99, now(), now())`);
+// Una actividad con al menos dos inscripciones: una evaluará y la otra no.
+const actId = sql(`select activity_id from registrations r join activities a on a.id = r.activity_id
+    where a.deleted_at is null group by activity_id having count(*) >= 2 order by activity_id limit 1`);
+const [regSi, correoSi] = sql(`select id, correo from registrations where activity_id = ${actId} order by id limit 1`).split('\t');
+const regNo = sql(`select id from registrations where activity_id = ${actId} and lower(correo) <> lower('${correoSi}')
+    and lower(correo) not in (select lower(correo) from activity_evaluations where activity_id = ${actId}) order by id limit 1`);
+const EVAL = `eval-export-${Date.now()}`;
+sql(`insert into activity_evaluations (activity_id, nombre, correo, experiencia, significado, motivacion, ip_hash, created_at, updated_at)
+    values (${actId}, '${EVAL}', upper('${correoSi}'), 5, 'Prueba de exportación', 5, repeat('0', 64), now(), now())`);
 
 const nav = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
 const p = await nav.newPage();
@@ -39,7 +48,6 @@ try {
     await p.type('[name="password"]', CLAVE_ADMIN);
     await Promise.all([p.waitForNavigation(), p.click('button[type="submit"]')]);
 
-    // Filtrado por la actividad: menos filas y la nuestra dentro.
     const base64 = await p.evaluate(async (url) => {
         const r = await fetch(url, { credentials: 'same-origin' });
         const bytes = new Uint8Array(await r.arrayBuffer());
@@ -55,48 +63,39 @@ try {
 
     const [cab, ...datos] = filas;
     const col = (nombre) => cab.indexOf(nombre);
-    const fila = datos.find((f) => String(f[0]) === regId);
+    const fila = (id) => datos.find((f) => String(f[0]) === String(id));
 
     t('1 · Las columnas');
 
-    di('el ID sigue siendo la primera', cab[0] === 'ID', cab[0]);
-    di('siguen las del participante', ['Nombre', 'Correo', 'Actividad', 'Organización', 'Fecha de inscripción', 'Baja'].every((c) => cab.includes(c)));
-    const pedidas = ['Fecha de inicio', 'Hora de inicio', 'Hora de término', 'Dirección', 'Formato', 'Cupos totales',
-        'Requiere inscripción previa', 'Descripción', 'Temas', 'Características', 'Dirigido a', 'Colaboración', 'Sitio web', 'Red social'];
-    const faltan = pedidas.filter((c) => ! cab.includes(c));
-    di('y todas las de la actividad que pide el ticket', faltan.length === 0, faltan.join(', ') || `${cab.length} columnas`);
+    const esperadas = ['ID', 'Nombre', 'Correo', 'Mayor de edad', 'Actividad', 'Organización',
+        'Fecha de inscripción', 'Fecha de la actividad', 'Respondió la evaluación', 'Baja'];
+    di('**exactamente las pedidas**, con el ID primero', JSON.stringify(cab) === JSON.stringify(esperadas), cab.join(' | '));
+    di('sin las de la actividad (se fueron a su exportación)', ! ['Descripción', 'Temas', 'Dirección', 'Formato', 'Cupos totales'].some((c) => cab.includes(c)));
     di('todas las filas tienen las mismas celdas que la cabecera', datos.every((f) => f.length === cab.length));
+    di('una fila por inscripción de la actividad', datos.length === +sql(`select count(*) from registrations where activity_id = ${actId}`), `${datos.length}`);
 
     t('2 · Los datos, contra la base');
 
-    di('la inscripción está en el archivo', !! fila, `inscripción ${regId}`);
+    const r = JSON.parse(sql(`select json_object('nombre', r.nombre, 'correo', r.correo, 'mayor', if(r.es_mayor_edad, 'Sí', 'No'),
+        'act', a.titulo, 'org', o.nombre,
+        'fecha', if(a.sin_fecha_definida, 'Por definir', concat(date_format(a.fecha_inicio, '%d-%m-%Y'),
+            if(a.fecha_termino is not null and a.fecha_termino <> a.fecha_inicio, concat(' al ', date_format(a.fecha_termino, '%d-%m-%Y')), ''))))
+        from registrations r join activities a on a.id = r.activity_id join organizations o on o.id = a.organization_id where r.id = ${regSi}`));
+    const f = fila(regSi);
+    const v = (c) => String(f?.[col(c)] ?? '');
+    di('la inscripción está en el archivo', !! f, `inscripción ${regSi}`);
+    di('nombre y correo', v('Nombre') === r.nombre && v('Correo') === r.correo);
+    di('mayor de edad', v('Mayor de edad') === r.mayor, v('Mayor de edad'));
+    di('actividad y organización', v('Actividad') === r.act && v('Organización') === r.org, `${v('Actividad')} · ${v('Organización')}`);
+    di('fecha de la actividad', v('Fecha de la actividad') === r.fecha, `${v('Fecha de la actividad')} / ${r.fecha}`);
+    di('fecha de inscripción, con hora', /\d{2}:\d{2}/.test(v('Fecha de inscripción')), v('Fecha de inscripción'));
 
-    const a = JSON.parse(sql(`select json_object(
-        'fecha', if(a.sin_fecha_definida, 'Por definir', date_format(a.fecha_inicio, '%d-%m-%Y')),
-        'hi', ifnull(left(a.hora_inicio, 5), ''), 'ht', ifnull(left(a.hora_termino, 5), ''),
-        'dir', ifnull(a.direccion, ''), 'formato', ifnull(a.formato, ''),
-        'insc', if(a.inscripcion_habilitada, 'Sí', 'No'), 'cupos', ifnull(a.cupos_totales, ''),
-        'desc', ifnull(a.descripcion, ''), 'web', ifnull(o.enlace_web, ''), 'red', ifnull(o.enlace_red_social, ''))
-        from activities a join organizations o on o.id = a.organization_id where a.id = ${actId}`));
-    const nombres = (grupo) => sql(`select group_concat(t.nombre order by t.nombre separator '|') from activity_taxonomy_term x
-        join taxonomy_terms t on t.id = x.taxonomy_term_id where x.activity_id = ${actId} and t.grupo = '${grupo}'`).replace(/^NULL$/, '');
-    const mismos = (celda, grupo) => String(celda ?? '').split(', ').filter(Boolean).sort().join('|') === nombres(grupo).split('|').filter(Boolean).sort().join('|');
+    t('3 · Respondió la evaluación');
 
-    const v = (c) => String(fila?.[col(c)] ?? '');
-    di('fecha de inicio', v('Fecha de inicio') === a.fecha, `${v('Fecha de inicio')} / ${a.fecha}`);
-    di('horas de inicio y término', v('Hora de inicio') === a.hi && v('Hora de término') === a.ht, `${v('Hora de inicio')}-${v('Hora de término')}`);
-    di('dirección', v('Dirección') === a.dir, v('Dirección'));
-    di('formato', v('Formato') === a.formato, v('Formato'));
-    di('requiere inscripción previa', v('Requiere inscripción previa') === a.insc, v('Requiere inscripción previa'));
-    di('cupos', v('Cupos totales') === String(a.cupos), `${v('Cupos totales')} / ${a.cupos}`);
-    di('descripción completa', v('Descripción') === a.desc, `${v('Descripción').length} caracteres`);
-    di('temas', mismos(v('Temas'), 'tema'), v('Temas'));
-    di('características', mismos(v('Características'), 'caracteristica'), v('Características'));
-    di('dirigido a', v('Dirigido a').includes(nombres('publico').split('|')[0] ?? ''), v('Dirigido a'));
-    di('colaboración, con su tipo', v('Colaboración').includes(`${COLAB} (Institución educativa)`), v('Colaboración'));
-    di('sitio web y red social de la organización', v('Sitio web') === a.web && v('Red social') === a.red, `${v('Sitio web')} · ${v('Red social')}`);
+    di('**«Sí» para quien la respondió** (aunque escribiera el correo en mayúsculas)', v('Respondió la evaluación') === 'Sí', v('Respondió la evaluación'));
+    di('«No» para quien no', !! regNo && String(fila(regNo)?.[col('Respondió la evaluación')] ?? '') === 'No', `inscripción ${regNo || '—'}`);
 } finally {
-    sql(`delete from activity_collaborators where nombre = '${COLAB}'`);
+    sql(`delete from activity_evaluations where nombre = '${EVAL}'`);
     await nav.close();
 }
 

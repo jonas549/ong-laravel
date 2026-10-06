@@ -31,7 +31,9 @@ class ActivityController extends Controller
             ->when($estado, fn ($q) => $q->where('estado', $estado))
             ->when($soloAutomaticas, fn ($q) => $q->where('publicada_automaticamente', true))
             ->when($soloVueltas, fn ($q) => $q->vueltasDeAjustes())
-            ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('titulo', 'like', "%{$b}%"))
+            // 8b del 05/10: por nombre de actividad O de organización, con el
+            // mismo scope que el buscador del sitio público.
+            ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->byTexto($b))
             ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
             ->withExists('registrations as tiene_inscripciones')
             ->latest('updated_at')
@@ -57,6 +59,75 @@ class ActivityController extends Controller
             'actividades', 'conteos', 'estado', 'estadoFijo', 'soloAutomaticas', 'automaticas',
             'soloVueltas', 'vueltas', 'vuelvenDeAjustes',
         ));
+    }
+
+    /**
+     * Actividades → Exportar (7b del 05/10): TODAS las actividades, en
+     * cualquier estado, con sus datos completos. No sigue los filtros de la
+     * pantalla a propósito: lo que se pidió es la lista entera.
+     *
+     * Sin paginación ni tope: se leen de 200 en 200 (`lazyById`, que sí carga
+     * las relaciones de cada tanda) y se escriben según llegan. Las borradas
+     * a la papelera no salen, como no salen en ninguna pantalla.
+     */
+    public function exportar(Request $request, \App\Services\Exportador $exportador)
+    {
+        $formato = Filtro::texto($request, 'formato') === 'csv' ? 'csv' : 'xlsx';
+
+        $filas = (function () {
+            $consulta = Activity::with(['organization.user', 'commune', 'region', 'terms', 'collaborators']);
+
+            foreach ($consulta->lazyById(200) as $a) {
+                yield self::filaDeExportacion($a);
+            }
+        })();
+
+        return $exportador->descargar($formato, 'Actividades', self::COLUMNAS_EXPORTACION, $filas);
+    }
+
+    public const COLUMNAS_EXPORTACION = [
+        'ID', 'Actividad', 'Organización', 'Estado', 'Correo que registró la actividad', 'Fecha de registro',
+        'Fecha de la actividad', 'Fecha de término', 'Hora de inicio', 'Hora de término',
+        'Dirección', 'Comuna', 'Región', 'Formato', 'Cupos totales', 'Cupos disponibles',
+        'Requiere inscripción previa', 'Descripción', 'Temas', 'Características', 'Dirigido a', 'Colaboración',
+        'Red social', 'Sitio web',
+    ];
+
+    /** @return list<string|int> Una celda por cada `COLUMNAS_EXPORTACION`. */
+    public static function filaDeExportacion(Activity $a): array
+    {
+        // Las fechas tal cual: `Fecha` convierte de zona y un día sin hora a
+        // medianoche podía acabar en el anterior.
+        $dia = fn ($f) => $f ? $f->format('d-m-Y') : '';
+        $hora = fn ($h) => $h ? substr((string) $h, 0, 5) : '';
+        $terminos = fn (string $grupo) => $a->termsDe($grupo)->pluck('nombre')->implode(', ');
+
+        return [
+            $a->id,
+            $a->titulo,
+            $a->organization?->nombre ?? '',
+            $a->estado_label,
+            $a->organization?->user?->email ?? '',
+            \App\Support\Fecha::conHora($a->created_at),
+            $a->sin_fecha_definida ? 'Por definir' : $dia($a->fecha_inicio),
+            $a->sin_fecha_definida ? '' : $dia($a->fecha_termino),
+            $hora($a->hora_inicio),
+            $hora($a->hora_termino),
+            $a->direccion ?? '',
+            $a->commune?->nombre ?? '',
+            $a->region?->nombre ?? '',
+            $a->formato ?? '',
+            $a->cupos_totales ?? '',
+            $a->cupos_disponibles ?? '',
+            $a->inscripcion_habilitada ? 'Sí' : 'No',
+            $a->descripcion ?? '',
+            $terminos('tema'),
+            $terminos('caracteristica'),
+            collect([$terminos('publico'), $a->publico_otro])->filter()->implode(', '),
+            $a->collaborators->map(fn ($c) => $c->tipo ? "{$c->nombre} ({$c->tipo})" : $c->nombre)->implode(', '),
+            $a->organization?->enlace_red_social ?? '',
+            $a->organization?->enlace_web ?? '',
+        ];
     }
 
     public function show(Activity $activity)
