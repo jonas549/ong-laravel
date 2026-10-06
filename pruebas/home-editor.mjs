@@ -336,7 +336,9 @@ di('el acceso rapido a Usuarios lleva ?rol', panel.includes('usuarios?rol='));
 // El listado filtrado tiene que ensenar lo que dice el KPI.
 const kpiInscripciones = Number(sql("SELECT COUNT(*) FROM registrations WHERE estado<>'cancelado'"));
 const listado = await html('/admin/inscripciones?estado=activas');
-const canceladas = sql("SELECT COALESCE((SELECT correo FROM registrations WHERE estado='cancelado' LIMIT 1),'')");
+// Un correo con TODAS sus inscripciones canceladas: quien tiene una cancelada
+// y otra activa sale en el listado con razón, por la activa.
+const canceladas = sql("SELECT COALESCE((SELECT correo FROM registrations GROUP BY correo HAVING SUM(estado<>'cancelado')=0 LIMIT 1),'')");
 di('el listado filtrado no trae canceladas', !canceladas || !listado.includes(canceladas), canceladas ? `(${canceladas})` : '(no hay canceladas)');
 
 const orgsActivas = Number(sql("SELECT COUNT(DISTINCT o.id) FROM organizations o JOIN activities a ON a.organization_id=o.id AND a.estado='publicada' AND a.deleted_at IS NULL"));

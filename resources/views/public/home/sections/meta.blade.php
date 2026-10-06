@@ -16,9 +16,17 @@
         return $m > 0 ? (int) round(min(100, max(0, $n / $m * 100))) : 0;
     };
 
+    /*
+     * Tanda del 05/10: «va por» dejó de ser un número fijo. Lo del panel es la
+     * BASE de años anteriores y aquí se le suma lo que ya hay en la plataforma
+     * —actividades publicadas e inscripciones—. Ver `ContadoresHome`.
+     */
+    $actividadesHoy = \App\Support\ContadoresHome::actividades();
+    $inscripcionesHoy = \App\Support\ContadoresHome::inscripciones();
+
     $barras = [
-        ['label' => $seccion->texto('barra1_label', $b), 'actual' => $seccion->texto('barra1_actual', $b), 'meta' => $seccion->texto('barra1_meta', $b), 'color' => '#c63663', 'fondo' => 'rgba(198,54,99,.14)', 'margen' => '0 0 10px'],
-        ['label' => $seccion->texto('barra2_label', $b), 'actual' => $seccion->texto('barra2_actual', $b), 'meta' => $seccion->texto('barra2_meta', $b), 'color' => '#5cb8b2', 'fondo' => 'rgba(92,184,178,.16)', 'margen' => '26px 0 10px'],
+        ['label' => $seccion->texto('barra1_label', $b), 'actual' => \App\Support\ContadoresHome::sumar($seccion->texto('barra1_actual', $b), $actividadesHoy), 'meta' => $seccion->texto('barra1_meta', $b), 'color' => '#c63663', 'fondo' => 'rgba(198,54,99,.14)', 'margen' => '0 0 10px'],
+        ['label' => $seccion->texto('barra2_label', $b), 'actual' => \App\Support\ContadoresHome::sumar($seccion->texto('barra2_actual', $b), $inscripcionesHoy), 'meta' => $seccion->texto('barra2_meta', $b), 'color' => '#5cb8b2', 'fondo' => 'rgba(92,184,178,.16)', 'margen' => '26px 0 10px'],
     ];
 @endphp
 
