@@ -91,12 +91,27 @@ class RegistrationController extends Controller
          */
         $evaluaron = \App\Models\ActivityEvaluation::query()
             ->whereIn('activity_id', $inscritos->pluck('activity_id')->unique())
-            ->get(['activity_id', 'correo'])
-            ->mapWithKeys(fn ($e) => [$e->activity_id.'|'.mb_strtolower(trim($e->correo)) => true]);
+            ->get()
+            ->keyBy(fn ($e) => $e->activity_id.'|'.mb_strtolower(trim($e->correo)));
+
+        /*
+         * Ajustes del 06/10: con la casilla «Incluir también las respuestas
+         * de la evaluación», una columna por pregunta, con el texto que ve
+         * quien responde y en el orden del formulario. Van AL FINAL, detrás
+         * de «Baja»: sin la casilla, el Excel sale exactamente como antes.
+         * Mismo formato que Evaluaciones → Exportar: las escalas en número.
+         */
+        $conRespuestas = $request->boolean('respuestas');
+        $preguntas = $conRespuestas ? [
+            \App\Models\ActivityEvaluation::ESCALAS['experiencia']['pregunta'],
+            \App\Models\ActivityEvaluation::ESCALAS['motivacion']['pregunta'],
+            \App\Models\ActivityEvaluation::PREGUNTA_SIGNIFICADO,
+            \App\Models\ActivityEvaluation::PREGUNTA_ORIGEN,
+        ] : [];
 
         $archivo = 'inscripciones-'.\App\Support\Fecha::iso(now()).'.xlsx';
 
-        return response()->streamDownload(function () use ($inscritos, $evaluaron) {
+        return response()->streamDownload(function () use ($inscritos, $evaluaron, $conRespuestas, $preguntas) {
             $writer = new Writer;
             $writer->openToFile('php://output');
 
@@ -107,13 +122,14 @@ class RegistrationController extends Controller
                  * «confirmado». Lo que sí importa —si se dio de baja— va en su
                  * propia columna, que se lee sola.
                  */
-                ['ID', 'Nombre', 'Correo', 'Mayor de edad', 'Actividad', 'Organización',
-                    'Fecha de inscripción', 'Fecha de la actividad', 'Respondió la evaluación', 'Baja'],
+                [...['ID', 'Nombre', 'Correo', 'Mayor de edad', 'Actividad', 'Organización',
+                    'Fecha de inscripción', 'Fecha de la actividad', 'Respondió la evaluación', 'Baja'], ...$preguntas],
                 (new Style)->withFontBold(true),
             ));
 
             foreach ($inscritos as $i) {
                 $a = $i->activity;
+                $e = $evaluaron[$i->activity_id.'|'.mb_strtolower(trim($i->correo))] ?? null;
 
                 $writer->addRow(Row::fromValues([
                     $i->id,
@@ -124,8 +140,14 @@ class RegistrationController extends Controller
                     $a?->organization?->nombre ?? '',
                     \App\Support\Fecha::conHora($i->created_at),
                     $a ? self::fechaDeActividad($a) : '',
-                    isset($evaluaron[$i->activity_id.'|'.mb_strtolower(trim($i->correo))]) ? 'Sí' : 'No',
+                    $e ? 'Sí' : 'No',
                     $i->estado === 'cancelado' ? 'Cancelada' : '',
+                    ...($conRespuestas ? [
+                        $e?->experiencia ?? '',
+                        $e?->motivacion ?? '',
+                        $e?->significado ?? '',
+                        $e ? $e->origen_label : '',
+                    ] : []),
                 ]));
             }
 

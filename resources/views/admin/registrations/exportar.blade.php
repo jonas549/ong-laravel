@@ -44,6 +44,14 @@
         </div>
     </div>
 
+    {{-- Ajustes del 06/10: desmarcada, el Excel sale como siempre. Va en el
+         GET de esta pantalla, así que el enlace de descarga la lleva. --}}
+    <label style="display:flex;align-items:center;gap:10px;margin-top:18px;cursor:pointer;font-size:14.5px;color:var(--ink);">
+        <input type="checkbox" name="respuestas" value="1" @checked(request()->boolean('respuestas'))
+               style="width:18px;height:18px;margin:0;accent-color:var(--naranjo);">
+        Incluir también las respuestas de la evaluación
+    </label>
+
     <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;">
         <button type="submit" class="btn btn-outline">Ver cuántas son</button>
         @if (array_filter($filtros))

@@ -36,8 +36,8 @@ const [regSi, correoSi] = sql(`select id, correo from registrations where activi
 const regNo = sql(`select id from registrations where activity_id = ${actId} and lower(correo) <> lower('${correoSi}')
     and lower(correo) not in (select lower(correo) from activity_evaluations where activity_id = ${actId}) order by id limit 1`);
 const EVAL = `eval-export-${Date.now()}`;
-sql(`insert into activity_evaluations (activity_id, nombre, correo, experiencia, significado, motivacion, ip_hash, created_at, updated_at)
-    values (${actId}, '${EVAL}', upper('${correoSi}'), 5, 'Prueba de exportación', 5, repeat('0', 64), now(), now())`);
+sql(`insert into activity_evaluations (activity_id, nombre, correo, experiencia, significado, motivacion, como_se_entero, ip_hash, created_at, updated_at)
+    values (${actId}, '${EVAL}', upper('${correoSi}'), 4, 'Prueba de exportación', 5, 'redes', repeat('0', 64), now(), now())`);
 
 const nav = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
 const p = await nav.newPage();
@@ -103,6 +103,36 @@ try {
 
     di('**«Sí» para quien la respondió** (aunque escribiera el correo en mayúsculas)', v('Respondió la evaluación') === 'Sí', v('Respondió la evaluación'));
     di('«No» para quien no', !! regNo && String(fila(regNo)?.[col('Respondió la evaluación')] ?? '') === 'No', `inscripción ${regNo || '—'}`);
+
+    t('4 · Con «Incluir también las respuestas de la evaluación»');
+
+    await p.goto(`${B}/admin/inscripciones/exportar?actividad=${actId}`, { waitUntil: 'networkidle2' });
+    di('la casilla está y sale desmarcada', await p.$eval('input[name="respuestas"]', (i) => ! i.checked));
+    await p.click('input[name="respuestas"]');
+    await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle2' }), p.evaluate(() => [...document.querySelectorAll('button[type="submit"]')].find((b) => b.textContent.includes('Ver cuántas son')).click())]);
+    const hrefCon = await p.evaluate(() => [...document.querySelectorAll('a[data-descarga]')].find((a) => a.textContent.trim() === 'Descargar en Excel')?.href);
+    di('marcada, el enlace de descarga la lleva', /respuestas=1/.test(hrefCon ?? ''), hrefCon ?? '');
+    const b64 = await p.evaluate(async (url) => {
+        const r = await fetch(url, { credentials: 'same-origin' });
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        let s = '';
+        for (const b of bytes) s += String.fromCharCode(b);
+        return btoa(s);
+    }, hrefCon);
+    const archivo2 = join(tmpdir(), `inscripciones-${Date.now()}.xlsx`);
+    writeFileSync(archivo2, Buffer.from(b64, 'base64'));
+    const [cab2, ...datos2] = JSON.parse(execFileSync(PHP, ['pruebas/leer-xlsx.php', archivo2], { encoding: 'utf8' }));
+    unlinkSync(archivo2);
+    const preguntas = ['¿Cómo evaluarías tu experiencia en esta actividad?', '¿Qué tan dispuesto(a) estarías',
+        'Después de participar, ¿qué significa para ti el Patrimonio Social?', '¿Cómo te enteraste de esta actividad?'];
+    di('**las mismas columnas de antes, en su orden**', JSON.stringify(cab2.slice(0, esperadas.length)) === JSON.stringify(esperadas));
+    di('**y detrás, una por pregunta, con su texto**', cab2.length === esperadas.length + 4 && preguntas.every((q, i) => String(cab2[esperadas.length + i]).startsWith(q)), cab2.slice(esperadas.length).join(' | '));
+    const f2 = datos2.find((r) => String(r[0]) === String(regSi));
+    const resp = f2?.slice(esperadas.length).map(String);
+    di('**las respuestas de quien evaluó**', JSON.stringify(resp) === JSON.stringify(['4', '5', 'Prueba de exportación', 'Redes sociales']), JSON.stringify(resp));
+    di('«Respondió la evaluación» sigue igual', String(f2?.[cab2.indexOf('Respondió la evaluación')]) === 'Sí');
+    const g2 = datos2.find((r) => String(r[0]) === String(regNo));
+    di('vacías para quien no evaluó', !! g2 && g2.slice(esperadas.length).every((x) => String(x ?? '') === ''));
 } finally {
     sql(`delete from activity_evaluations where nombre = '${EVAL}'`);
     await nav.close();
