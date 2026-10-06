@@ -83,13 +83,18 @@ class HomeController extends Controller
 
         $base = fn () => Activity::published()->with(['commune', 'region', 'terms'])->ordered()->take($cuantas);
 
+        /*
+         * Lo que el carrusel elige SOLO deja fuera las cerradas (punto 6 del
+         * 05/10): invita a participar. Una destacada a mano sí sale: es una
+         * decisión explícita del panel.
+         */
         if ($seccion->texto('seleccion', $borrador) === 'proximas') {
-            return $base()->get();
+            return $base()->abiertasAlPublico()->get();
         }
 
         $destacadas = $base()->featured()->get();
 
-        return $destacadas->isNotEmpty() ? $destacadas : $base()->get();
+        return $destacadas->isNotEmpty() ? $destacadas : $base()->abiertasAlPublico()->get();
     }
 
     /**

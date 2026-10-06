@@ -125,8 +125,10 @@ class UpdateActivityRequest extends FormRequest
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_disponibles' => ['nullable', 'integer', 'min:0', 'max:100000'],
 
-            'abierta_publico' => ['nullable', 'boolean'],
             'inscripcion_habilitada' => ['nullable', 'boolean'],
+            // Punto 6 del 05/10: sustituye a «¿Esta actividad es abierta al
+            // público?», que salió del editor.
+            'cerrada' => ['nullable', 'boolean'],
 
             /*
              * El mensaje con el que el organizador acompaña una corrección.

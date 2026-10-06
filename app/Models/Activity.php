@@ -54,7 +54,7 @@ class Activity extends Model
         'fecha_inicio', 'fecha_termino', 'hora_inicio', 'hora_termino', 'sin_fecha_definida',
         'region_id', 'commune_id', 'direccion', 'latitud', 'longitud',
         'participantes_estimados', 'cupos_totales', 'cupos_disponibles',
-        'abierta_publico', 'inscripcion_habilitada', 'tiene_accesibilidad',
+        'abierta_publico', 'inscripcion_habilitada', 'cerrada', 'tiene_accesibilidad',
         'accesibilidad_detalle', 'publico_otro', 'info_previa',
         'imagen_portada', 'correo_contacto',
         'estado', 'observaciones_revision', 'destacada', 'orden', 'published_at',
@@ -72,6 +72,7 @@ class Activity extends Model
             'longitud' => 'float',
             'sin_fecha_definida' => 'boolean',
             'abierta_publico' => 'boolean',
+            'cerrada' => 'boolean',
             'inscripcion_habilitada' => 'boolean',
             'tiene_accesibilidad' => 'boolean',
             'destacada' => 'boolean',
@@ -185,6 +186,18 @@ class Activity extends Model
     public function scopePublished(Builder $q): Builder
     {
         return $q->where('estado', 'publicada')->whereNotNull('published_at');
+    }
+
+    /**
+     * Sin las cerradas (punto 6 del 05/10): las que se publicaron sólo para
+     * difusión, para un público específico. Es el filtro de todo lo que
+     * INVITA a participar —el listado, el calendario, «otras actividades
+     * cerca» y lo que el carrusel del home elige solo—. La ficha sigue
+     * abierta por enlace, y los contadores las cuentan: están publicadas.
+     */
+    public function scopeAbiertasAlPublico(Builder $q): Builder
+    {
+        return $q->where('cerrada', false);
     }
 
     public function scopeFeatured(Builder $q): Builder
@@ -308,6 +321,16 @@ class Activity extends Model
         return collect([$this->fecha_corta, $horas, $this->commune?->nombre])
             ->filter()
             ->implode(' · ');
+    }
+
+    /** «Sí», «No, solo asistir» o «No, es cerrada» (punto 6 del 05/10). */
+    public function getInscripcionLabelAttribute(): string
+    {
+        return match (true) {
+            (bool) $this->inscripcion_habilitada => 'Sí',
+            (bool) $this->cerrada => 'No, es cerrada',
+            default => 'No, solo asistir',
+        };
     }
 
     public function getLugarAttribute(): string
@@ -485,6 +508,7 @@ class Activity extends Model
     {
         return $this->estado === 'publicada'
             && $this->inscripcion_habilitada
+            && ! $this->cerrada
             && ! $this->yaPaso()
             && ($this->cupos_disponibles === null || $this->cupos_disponibles > 0);
     }
@@ -507,6 +531,12 @@ class Activity extends Model
     {
         if ($this->puedeRecibirInscripciones()) {
             return null;
+        }
+
+        // Una cerrada lo dice antes que nada: no invita a nadie, ni antes ni
+        // después de su fecha (punto 6 del 05/10).
+        if ($this->cerrada) {
+            return 'cerrada';
         }
 
         /*
@@ -532,6 +562,7 @@ class Activity extends Model
     public function avisoSinInscripciones(): ?string
     {
         return match ($this->motivoSinInscripciones()) {
+            'cerrada' => 'Esta es una actividad cerrada para un público específico. Fue publicada para difusión.',
             'ya_paso' => 'Esta actividad ya se realizó.',
             'sin_inscripcion_previa' => 'No es necesario inscripción previa. ¡Te esperamos en la actividad!',
             // Reservado para los cupos, por decisión del cliente del 11/09.

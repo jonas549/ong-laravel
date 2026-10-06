@@ -170,6 +170,9 @@ class PublishActivityRequest extends FormRequest
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
 
             'inscripcion_habilitada' => ['nullable', 'boolean'],
+            // Punto 6 del 05/10. Sólo cuenta sin inscripción previa: el
+            // controlador la descarta si la hay.
+            'cerrada' => ['nullable', 'boolean'],
             'tiene_accesibilidad' => ['nullable', 'boolean'],
             'accesibilidad_detalle' => ['nullable', 'string', 'max:2000'],
 

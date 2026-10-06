@@ -119,7 +119,7 @@ class ActivityController extends Controller
             $a->formato ?? '',
             $a->cupos_totales ?? '',
             $a->cupos_disponibles ?? '',
-            $a->inscripcion_habilitada ? 'Sí' : 'No',
+            $a->inscripcion_label,
             $a->descripcion ?? '',
             $terminos('tema'),
             $terminos('caracteristica'),

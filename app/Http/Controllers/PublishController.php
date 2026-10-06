@@ -404,6 +404,8 @@ class PublishController extends Controller
                     // El paso 4 no lo pregunta: si pide inscripción, es abierta.
                     'abierta_publico' => true,
                     'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
+                    // Cerrada sólo sin inscripción previa (punto 6 del 05/10).
+                    'cerrada' => ! $request->boolean('inscripcion_habilitada') && $request->boolean('cerrada'),
                     'tiene_accesibilidad' => $request->boolean('tiene_accesibilidad'),
                     'accesibilidad_detalle' => $request->boolean('tiene_accesibilidad')
                         ? ($datos['accesibilidad_detalle'] ?? null)

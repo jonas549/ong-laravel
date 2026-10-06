@@ -41,7 +41,7 @@
         sinFecha: {{ Js::from((bool) old('sin_fecha_definida', $activity->sin_fecha_definida)) }},
         varios: {{ Js::from((bool) old('varios_dias', $activity->fecha_termino !== null)) }},
         fechaBloqueada: {{ Js::from($activity->yaPaso()) }},
-        abierta: {{ Js::from((bool) old('abierta_publico', $activity->abierta_publico)) }},
+        cerrada: {{ Js::from((bool) old('cerrada', $activity->cerrada)) }},
         insc: {{ Js::from((bool) old('inscripcion_habilitada', $activity->inscripcion_habilitada)) }},
         colaboradores: {{ Js::from(array_values($colaboradores)) }},
         descLen: {{ mb_strlen(\App\Support\Formulario::viejo('descripcion', $activity->descripcion ?? '')) }},
@@ -358,19 +358,16 @@
 
                 <div class="seclabel" style="margin:26px 0 14px;color:var(--gris-700);letter-spacing:.08em;">Registro de asistentes</div>
 
-                <div class="lbl" style="margin-bottom:9px;">¿Esta actividad es abierta al público?</div>
-                <div style="display:flex;gap:8px;">
-                    <button type="button" x-bind:class="abierta ? 'chip on' : 'chip'" x-on:click="abierta = true">Sí</button>
-                    <button type="button" x-bind:class="abierta ? 'chip' : 'chip on'" x-on:click="abierta = false">No</button>
-                </div>
-                <input type="hidden" name="abierta_publico" x-bind:value="abierta ? 1 : 0">
-
-                <div class="lbl" style="margin:20px 0 9px;">¿Las personas deben inscribirse para asistir?</div>
+                {{-- «¿Esta actividad es abierta al público?» salió de aquí el 05/10:
+                     la sustituye la pregunta de actividad cerrada, debajo. --}}
+                <div class="lbl" style="margin:0 0 9px;">¿Las personas deben inscribirse para asistir?</div>
                 <div style="display:flex;gap:8px;">
                     <button type="button" x-bind:class="insc ? 'chip on' : 'chip'" x-on:click="insc = true">Sí</button>
                     <button type="button" x-bind:class="insc ? 'chip' : 'chip on'" x-on:click="insc = false">No</button>
                 </div>
                 <input type="hidden" name="inscripcion_habilitada" x-bind:value="insc ? 1 : 0">
+
+                <x-pregunta-cerrada clase="lbl" estilo="margin:20px 0 9px;" />
 
                 <div x-show="insc" x-cloak>
                     <label class="lbl" style="margin-top:16px;max-width:260px;">Cupos disponibles

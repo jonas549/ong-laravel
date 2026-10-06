@@ -92,6 +92,12 @@ class DatosDifusion
 
     private static function cupos(Activity $a): string
     {
+        // Una cerrada no invita a venir (punto 6 del 05/10): «Sin inscripción
+        // previa» se leería como «ven sin más».
+        if ($a->cerrada) {
+            return 'Actividad cerrada';
+        }
+
         if (! $a->inscripcion_habilitada) {
             return 'Sin inscripción previa';
         }

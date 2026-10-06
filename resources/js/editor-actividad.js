@@ -31,7 +31,8 @@ export const editorActividad = (inicial) => ({
     // término. Y punto 4: si la actividad ya pasó, la fecha no se cambia.
     varios: inicial.varios ?? false,
     fechaBloqueada: inicial.fechaBloqueada ?? false,
-    abierta: inicial.abierta,
+    // Punto 6 del 05/10: sustituye a «abierta», cuya pregunta salió del editor.
+    cerrada: inicial.cerrada ?? false,
     insc: inicial.insc,
     descLen: inicial.descLen,
 

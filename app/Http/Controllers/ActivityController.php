@@ -30,7 +30,10 @@ class ActivityController extends Controller
     {
         $vista = Filtro::texto($request, 'vista') === 'calendario' ? 'calendario' : 'lista';
 
+        // Sin las cerradas (punto 6 del 05/10): de aquí salen el listado y el
+        // calendario, así que quedan fuera de los dos con una sola línea.
         $filtradas = Activity::published()
+            ->abiertasAlPublico()
             ->byRegion($request->integer('region') ?: null)
             ->byCommune($request->integer('comuna') ?: null)
             ->byFormato(Filtro::texto($request, 'formato') ?: null)
@@ -90,6 +93,7 @@ class ActivityController extends Controller
         $activity->load(['organization', 'region', 'commune', 'terms', 'collaborators']);
 
         $relacionadas = Activity::published()
+            ->abiertasAlPublico()
             ->where('id', '!=', $activity->id)
             ->when($activity->region_id, fn ($q) => $q->where('region_id', $activity->region_id))
             ->with(['commune', 'region', 'terms'])

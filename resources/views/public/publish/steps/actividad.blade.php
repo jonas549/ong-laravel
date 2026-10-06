@@ -323,6 +323,8 @@
         </div>
         <input type="hidden" name="inscripcion_habilitada" x-bind:value="insc ? 1 : 0">
 
+        <x-pregunta-cerrada estilo="font-size:14.5px;font-weight:700;color:var(--ink);margin:20px 0 9px;" />
+
         {{--
             Con «No», el campo no viaja: `x-show` sólo lo esconde, y escondido
             seguía mandando su 80 de ejemplo, que acababa en la ficha como

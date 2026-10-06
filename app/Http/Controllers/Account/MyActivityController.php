@@ -127,8 +127,10 @@ class MyActivityController extends Controller
                 'cupos_totales' => $request->boolean('inscripcion_habilitada')
                     ? ($activity->cupos_totales ?? $datos['cupos_disponibles'] ?? null)
                     : null,
-                'abierta_publico' => $request->boolean('abierta_publico'),
+                // `abierta_publico` ya no se escribe: su pregunta salió del
+                // editor y la sustituye «cerrada» (punto 6 del 05/10).
                 'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
+                'cerrada' => ! $request->boolean('inscripcion_habilitada') && $request->boolean('cerrada'),
                 'info_previa' => $datos['info_previa'] ?? null,
                 'correo_contacto' => $datos['correo_contacto'] ?? null,
             ]);

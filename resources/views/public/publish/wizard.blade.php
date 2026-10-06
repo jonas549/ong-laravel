@@ -38,6 +38,7 @@
         varios: {{ Js::from((bool) old('varios_dias')) }},
         acc: {{ Js::from((bool) old('tiene_accesibilidad')) }},
         insc: {{ Js::from((bool) old('inscripcion_habilitada', true)) }},
+        cerrada: {{ Js::from((bool) old('cerrada')) }},
         {{-- El prototipo arranca con colab en true, con el bloque desplegado. --}}
         colab: {{ Js::from($errors->any() ? count(array_filter(old('colaboradores', []))) > 0 : true) }},
         colabs: {{ Js::from(array_values(array_filter(old('colaboradores', [])))) }},

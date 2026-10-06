@@ -151,6 +151,24 @@ t('El correo lleva los dos enlaces');
 await entrar(`${B}/admin/login`, ADMIN, CLAVE_ADMIN);
 
 const idPlantilla = sql("SELECT id FROM email_templates WHERE clave='inscripcion_confirmada'");
+
+/*
+ * Se simula una plantilla sembrada ANTES de que existiera el marcador: sin él
+ * en el cuerpo ni en su lista de variables. Antes la prueba lo daba por hecho
+ * de la base local, y una base sembrada después del 02/09 —o una plantilla
+ * resembrada— lo tiene. Se repone tal cual al terminar.
+ */
+const plantillaAntes = sql(`SELECT CONCAT(TO_BASE64(cuerpo_html), '|', TO_BASE64(variables)) FROM email_templates WHERE id=${idPlantilla}`)
+    .replace(/\\n/g, '');
+sql(`UPDATE email_templates SET cuerpo_html = REPLACE(cuerpo_html, '{{ bloque_calendario }}', ''),
+    variables = IFNULL(JSON_REMOVE(variables, JSON_UNQUOTE(JSON_SEARCH(variables, 'one', 'bloque_calendario'))), variables) WHERE id=${idPlantilla}`);
+const reponerPlantilla = () => {
+    const [cuerpo, variables] = plantillaAntes.split('|');
+    // CONVERT: FROM_BASE64 devuelve binario, y una columna JSON no lo acepta.
+    sql(`UPDATE email_templates SET cuerpo_html = CONVERT(FROM_BASE64('${cuerpo}') USING utf8mb4),
+        variables = CONVERT(FROM_BASE64('${variables}') USING utf8mb4) WHERE id=${idPlantilla}`);
+};
+
 await p.goto(`${B}/admin/plantillas/${idPlantilla}`, { waitUntil: 'networkidle2' });
 await p.waitForFunction(() => window.Alpine !== undefined);
 
@@ -385,6 +403,8 @@ try {
 t('Sin errores en la consola');
 
 di('ningún error de JavaScript', errores.length === 0, errores.slice(0, 2).join(' | '));
+
+reponerPlantilla();
 
 console.log('');
 console.log(`${ok} bien, ${mal} mal`);

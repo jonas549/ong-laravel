@@ -51,6 +51,8 @@ export const wizard = (inicial) => ({
     fechaBloqueada: false,
     acc: inicial.acc,
     insc: inicial.insc,
+    // Punto 6 del 05/10: actividad cerrada, sólo sin inscripción previa.
+    cerrada: inicial.cerrada ?? false,
     colab: inicial.colab,
     colabs: inicial.colabs,
     regionId: inicial.regionId ?? '',
