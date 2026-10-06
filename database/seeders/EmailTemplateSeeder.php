@@ -133,6 +133,45 @@ class EmailTemplateSeeder extends Seeder
                     '{{ enlace_guia }}',
                 ),
             ],
+
+            'equipo_actividad_en_revision' => [
+                'asunto' => 'Actividad para revisar: {{ actividad }}',
+                'cuerpo_html' => $this->cuerpo(
+                    'Hay una actividad esperando revisión',
+                    '<p style="margin:0 0 14px;"><strong>{{ organizacion }}</strong> ({{ correo_organizacion }}) envió <strong>{{ actividad }}</strong> y está esperando revisión.</p>
+                     <p style="margin:0 0 6px;"><strong>Cuándo:</strong> {{ fecha }}</p>
+                     <p style="margin:0 0 14px;"><strong>Dónde:</strong> {{ lugar }}</p>
+                     <p style="margin:0 0 14px;">Por qué pasa por revisión: {{ motivo }}</p>',
+                    'Revisar la actividad',
+                    '{{ enlace_revisar }}',
+                ),
+            ],
+
+            'equipo_actividad_autopublicada' => [
+                'asunto' => 'Publicada sin revisión: {{ actividad }}',
+                'cuerpo_html' => $this->cuerpo(
+                    'Se publicó una actividad sin revisión',
+                    '<p style="margin:0 0 14px;"><strong>{{ actividad }}</strong>, de <strong>{{ organizacion }}</strong> ({{ correo_organizacion }}), se publicó sola por la aprobación automática y ya está en el calendario.</p>
+                     <p style="margin:0 0 6px;"><strong>Cuándo:</strong> {{ fecha }}</p>
+                     <p style="margin:0 0 14px;"><strong>Dónde:</strong> {{ lugar }}</p>
+                     <p style="margin:0 0 14px;">Puedes verla publicada <a href="{{ enlace_actividad }}" style="color:#cc6600;">en el sitio</a> o revisarla desde el panel.</p>',
+                    'Revisar en el panel',
+                    '{{ enlace_revisar }}',
+                ),
+            ],
+
+            'equipo_actividad_editada' => [
+                'asunto' => 'Cambios en una actividad publicada: {{ actividad }}',
+                'cuerpo_html' => $this->cuerpo(
+                    'Una actividad publicada cambió',
+                    '<p style="margin:0 0 14px;"><strong>{{ organizacion }}</strong> ({{ correo_organizacion }}) guardó cambios en <strong>{{ actividad }}</strong>, que ya está publicada. Los cambios ya se ven en el sitio.</p>
+                     <p style="margin:0 0 6px;"><strong>Cuándo:</strong> {{ fecha }}</p>
+                     <p style="margin:0 0 14px;"><strong>Dónde:</strong> {{ lugar }}</p>
+                     <p style="margin:0 0 14px;">Este aviso sale una vez al día por actividad: si la siguen editando hoy, no llegarán más.</p>',
+                    'Revisar en el panel',
+                    '{{ enlace_revisar }}',
+                ),
+            ],
         ];
     }
 

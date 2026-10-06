@@ -154,8 +154,8 @@ class SettingsSeeder extends Seeder
                 'grupo' => 'general', 'clave' => 'avisos_email', 'tipo' => 'texto',
                 'valor' => 'diadelpatrimoniosocial@comunidad-org.cl',
                 'label' => 'Correo que recibe los avisos de actividades',
-                'descripcion' => 'A dónde llega el aviso de que una organización corrigió y reenvió su actividad. '
-                    .'Es el único correo que va de la plataforma hacia el equipo: los demás van a las organizaciones o a los inscritos.',
+                'descripcion' => 'A dónde llegan los avisos al equipo: actividad nueva en revisión, publicada sin revisión, '
+                    .'publicada que se editó y corregida tras ajustes. Vacío, van a los administradores.',
             ],
             [
                 // Se siembra vacío a propósito: vacío es «el de siempre», que

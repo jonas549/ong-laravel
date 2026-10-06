@@ -80,6 +80,31 @@ class EmailTemplate extends Model
                 .'El enlace se cambia en Configuración → General; si está vacío, este correo no sale.',
             'variables' => ['nombre', 'organizacion', 'actividad', 'enlace_guia', 'enlace_cuenta', 'sitio'],
         ],
+
+        /*
+         * Los tres avisos al equipo (tanda del 05/10). Van al buzón de
+         * Configuración → General (`avisos_email`) y, si está vacío, a los
+         * administradores activos. Sólo observan lo que ya pasó: no deciden
+         * nada sobre el estado de la actividad ni sobre la aprobación
+         * automática.
+         */
+        'equipo_actividad_en_revision' => [
+            'nombre' => 'Aviso al equipo: actividad nueva en revisión',
+            'descripcion' => 'Se envía al correo de avisos de Configuración → General cuando una organización envía una actividad y queda esperando revisión. '
+                .'No sale cuando la actividad vuelve corregida de «necesita ajustes»: ese caso tiene su propio aviso.',
+            'variables' => ['actividad', 'organizacion', 'correo_organizacion', 'fecha', 'lugar', 'motivo', 'enlace_revisar', 'sitio'],
+        ],
+        'equipo_actividad_autopublicada' => [
+            'nombre' => 'Aviso al equipo: actividad publicada automáticamente',
+            'descripcion' => 'Se envía al correo de avisos de Configuración → General cuando una actividad se publica sola por la aprobación automática, sin que nadie la revise.',
+            'variables' => ['actividad', 'organizacion', 'correo_organizacion', 'fecha', 'lugar', 'enlace_revisar', 'enlace_actividad', 'sitio'],
+        ],
+        'equipo_actividad_editada' => [
+            'nombre' => 'Aviso al equipo: actividad publicada que se editó',
+            'descripcion' => 'Se envía al correo de avisos de Configuración → General cuando una organización guarda cambios en una actividad ya publicada. '
+                .'Como mucho uno por actividad y día, aunque se guarde varias veces.',
+            'variables' => ['actividad', 'organizacion', 'correo_organizacion', 'fecha', 'lugar', 'enlace_revisar', 'enlace_actividad', 'sitio'],
+        ],
     ];
 
     protected $fillable = ['clave', 'nombre', 'descripcion', 'asunto', 'cuerpo_html', 'variables', 'activo'];

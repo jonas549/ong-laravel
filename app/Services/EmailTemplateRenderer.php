@@ -54,6 +54,9 @@ class EmailTemplateRenderer
             'enlace_cancelar' => url('/inscripcion/ejemplo/cancelar'),
             'enlace_participantes' => route('account.activities.index'),
             'enlace_qr' => route('account.activities.index'),
+            'correo_organizacion' => 'contacto@juntoalbarrio.cl',
+            'motivo' => 'es la primera actividad de esta organización',
+            'enlace_revisar' => route('admin.activities.index'),
             'bloque_calendario' => '<p style="margin:22px 0 0;font-size:14px;color:#63666A;">'
                 .'Añádelo a tu calendario: <a href="#" style="color:#cc6600;font-weight:600;">Google Calendar</a>'
                 .' &nbsp;·&nbsp; <a href="#" style="color:#cc6600;font-weight:600;">Apple, Outlook y otros</a></p>',

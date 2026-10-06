@@ -95,6 +95,7 @@ class MyActivityController extends Controller
 
         // De dónde venía, antes de que la transacción toque nada.
         $veniaDeAjustes = $activity->estado === 'ajustes';
+        $estabaPublicada = $activity->estado === 'publicada';
         $comuna = Commune::find($datos['commune_id'] ?? null);
 
         DB::transaction(function () use ($request, $activity, $datos, $comuna) {
@@ -191,6 +192,12 @@ class MyActivityController extends Controller
                 $request->user(),
                 trim((string) ($datos['mensaje_ajustes'] ?? '')) ?: null,
             );
+        }
+
+        // Aviso al equipo de que cambió algo que ya se ve en el sitio (tanda
+        // del 05/10). Uno por actividad y día: lo cuenta el propio aviso.
+        if ($estabaPublicada) {
+            app(\App\Services\CorreoTransaccional::class)->equipoActividadEditada($activity);
         }
 
         return redirect()->route('account.activities.saved', $activity);

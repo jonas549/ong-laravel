@@ -238,6 +238,103 @@ class CorreoTransaccional
     }
 
     /**
+     * Aviso al equipo de que una actividad quedó esperando revisión.
+     *
+     * @param  string|null  $motivo  el que dejó escrito la aprobación automática
+     *                               en el historial («es la primera actividad…»)
+     */
+    public function equipoActividadEnRevision(Activity $actividad, ?string $motivo = null): bool
+    {
+        return $this->avisarAlEquipo('equipo_actividad_en_revision', $actividad, [
+            'motivo' => $motivo ?: 'no consta',
+        ]);
+    }
+
+    /** Aviso al equipo de que una actividad se publicó sola, sin revisión. */
+    public function equipoActividadAutopublicada(Activity $actividad): bool
+    {
+        return $this->avisarAlEquipo('equipo_actividad_autopublicada', $actividad);
+    }
+
+    /**
+     * Aviso al equipo de que se editó una actividad ya publicada.
+     *
+     * Como mucho uno por actividad y día —el día de Chile, no el de UTC—: una
+     * organización que corrige su ficha guarda varias veces seguidas, y diez
+     * correos iguales en una mañana acaban haciendo que nadie lea ninguno.
+     * Cuenta lo que ya consta en el registro de correos, que es lo que guarda
+     * a qué actividad fue cada uno, igual que la guía para organizadores.
+     */
+    public function equipoActividadEditada(Activity $actividad): bool
+    {
+        $desde = now(\App\Support\Fecha::zona())->startOfDay()->utc();
+
+        $yaAvisada = \App\Models\EmailLog::where('plantilla', 'equipo_actividad_editada')
+            ->where('related_type', Activity::class)
+            ->where('related_id', $actividad->getKey())
+            ->where('created_at', '>=', $desde)
+            ->exists();
+
+        if ($yaAvisada) {
+            return false;
+        }
+
+        return $this->avisarAlEquipo('equipo_actividad_editada', $actividad);
+    }
+
+    /**
+     * A quién van los avisos al equipo: el buzón de Configuración → General
+     * (`avisos_email`) y, sólo si está vacío o no es un correo, los
+     * administradores activos. Un aviso que no llega a nadie es peor que uno
+     * que llega a quien no era.
+     *
+     * Es el mismo criterio que el aviso de vuelta de ajustes, y lo usan los dos.
+     *
+     * @return array<int, string>
+     */
+    public function destinosDelEquipo(): array
+    {
+        $buzon = trim((string) Setting::get('avisos_email'));
+
+        return filter_var($buzon, FILTER_VALIDATE_EMAIL)
+            ? [$buzon]
+            : User::where('role', 'admin')
+                ->where('is_active', true)
+                ->whereNotNull('email')
+                ->pluck('email')
+                ->all();
+    }
+
+    /** @param  array<string, string>  $extra */
+    private function avisarAlEquipo(string $clave, Activity $actividad, array $extra = []): bool
+    {
+        $destinos = $this->destinosDelEquipo();
+
+        if (! $destinos) {
+            return false;
+        }
+
+        $datos = [
+            'actividad' => $actividad->titulo,
+            'organizacion' => $actividad->organization?->nombre ?? '',
+            'correo_organizacion' => $actividad->organization?->user?->email ?? '',
+            'fecha' => $actividad->fecha_larga,
+            'lugar' => trim(($actividad->direccion ? $actividad->direccion.', ' : '').$actividad->lugar, ', '),
+            'enlace_revisar' => route('admin.activities.show', $actividad),
+            'enlace_actividad' => route('activities.show', $actividad),
+            'sitio' => config('app.name'),
+        ] + $extra;
+
+        $alguno = false;
+
+        foreach ($destinos as $destino) {
+            $alguno = $this->enviar($clave, $destino, $datos, $actividad) || $alguno;
+        }
+
+        return $alguno;
+    }
+
+    /**
      * El bloque del QR, montado aquí y no dejado a la plantilla.
      *
      * Mismo motivo que el `bloque_calendario`: las plantillas las edita la ONG

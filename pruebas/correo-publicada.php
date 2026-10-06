@@ -46,6 +46,14 @@ $vaciar = fn () => app('mailer')->getSymfonyTransport()->flush();
 
 /** Lo que se puede decir de un correo recién salido. */
 $mirar = function ($mensajes) {
+    /*
+     * El de publicación, no el último que salió: detrás van la guía para
+     * organizadores (desde el 23/09) y, si se publicó sola, el aviso al
+     * equipo (05/10). Se reconoce por la cabecera de su plantilla.
+     */
+    $mensajes = $mensajes->filter(fn ($m) => $m->getOriginalMessage()->getHeaders()
+        ->get(App\Mail\PlantillaMail::CAB_PLANTILLA)?->getBodyAsString() === 'actividad_publicada');
+
     if ($mensajes->isEmpty()) {
         return null;
     }

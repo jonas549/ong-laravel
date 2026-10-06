@@ -72,6 +72,15 @@ class LogSentMail
                 'subject' => $this->asuntoDe($mailable),
                 'mailable' => $mailable::class,
                 'plantilla' => $mailable instanceof PlantillaMail ? $mailable->plantilla->clave : null,
+                /*
+                 * A qué se refiere, ya al encolar y no sólo al enviar (tanda
+                 * del 05/10). Los avisos que salen «una vez» —la guía para
+                 * organizadores, el de actividad editada— lo consultan, y
+                 * mientras el worker no pasara, dos envíos seguidos no veían
+                 * el primero. Es el mismo valor que escribe después `sending()`.
+                 */
+                'related_type' => $mailable instanceof PlantillaMail && $mailable->relacionado ? $mailable->relacionado::class : null,
+                'related_id' => $mailable instanceof PlantillaMail && $mailable->relacionado ? $mailable->relacionado->getKey() : null,
                 'status' => EmailLog::EN_COLA,
                 'error' => null,
                 'encolado_at' => now(),

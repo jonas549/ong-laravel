@@ -99,6 +99,27 @@ class ActivityModerationService
             }
 
             /*
+             * Los avisos al equipo de la tanda del 05/10. Sólo miran lo que
+             * acaba de pasar —el estado de antes, el de ahora y si lo decidió
+             * la aprobación automática, que ya llega calculado de quien
+             * llama—; no deciden nada ni tocan esas reglas.
+             *
+             * Una que llega a revisión desde «ajustes» no cuenta como nueva:
+             * ese caso ya tiene su aviso justo arriba, y mandar dos por la
+             * misma vuelta sería ruido.
+             */
+            if ($nuevoEstado === 'revision' && $anterior !== 'ajustes') {
+                app(CorreoTransaccional::class)->equipoActividadEnRevision(
+                    $actividad,
+                    $comentario ? preg_replace('/^A revisión:\s*/u', '', rtrim($comentario, '.')) : null,
+                );
+            }
+
+            if ($nuevoEstado === 'publicada' && $automatica) {
+                app(CorreoTransaccional::class)->equipoActividadAutopublicada($actividad);
+            }
+
+            /*
              * D1, corregido el 23/09 (punto 11): la guía para organizadores
              * sale al PUBLICAR, como dice el ticket, no al registrar. Aquí
              * pasan los dos caminos —la revisión a mano y la aprobación
@@ -131,15 +152,8 @@ class ActivityModerationService
      */
     private function avisarDeVueltaDeAjustes(Activity $actividad, ?string $mensaje): void
     {
-        $buzon = trim((string) \App\Models\Setting::get('avisos_email'));
-
-        $destinos = filter_var($buzon, FILTER_VALIDATE_EMAIL)
-            ? [$buzon]
-            : User::where('role', 'admin')
-                ->where('is_active', true)
-                ->whereNotNull('email')
-                ->pluck('email')
-                ->all();
+        // El mismo criterio que los avisos al equipo, escrito en un solo sitio.
+        $destinos = app(CorreoTransaccional::class)->destinosDelEquipo();
 
         if (! $destinos) {
             return;
