@@ -95,4 +95,21 @@ final class FechaEscrita
 
         return sprintf('%02d:%02d', $hora, $minuto);
     }
+
+    /**
+     * ¿Termina otro día distinto del que empieza?
+     *
+     * Sólo entonces deja de tener sentido exigir que la hora de término sea
+     * posterior a la de inicio: en una actividad del 7 al 28, la hora de
+     * término es la del 28 y puede ser anterior a la de inicio del 7 (fallo
+     * reproducido en producción tras la tanda del 05/10). Con un solo día —o
+     * con «varios días» marcado y el mismo día de término— la regla sigue.
+     *
+     * Recibe las fechas ya normalizadas a «AAAA-MM-DD», que se comparan como
+     * texto.
+     */
+    public static function terminaOtroDia(bool $variosDias, ?string $inicio, ?string $termino): bool
+    {
+        return $variosDias && $inicio && $termino && $termino > $inicio;
+    }
 }

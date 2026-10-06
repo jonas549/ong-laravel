@@ -192,6 +192,43 @@ try {
   const a4 = nueva(T4);
   di('marcada y desmarcada: se crea sin término', !! a4 && a4.fecha_termino === null, JSON.stringify(a4));
 
+  /*
+   * Fallo reproducido en producción tras la tanda: «La hora de término debe
+   * ser posterior a la de inicio» saltaba también con varios días. Del 20 al
+   * 22, empezar a las 18:00 y terminar a las 10:00 es perfectamente posible.
+   */
+  t('5a bis · Las horas en una actividad de varios días');
+  const horas = async (ini, fin) => {
+    await p.select('select[name="hora_inicio"]', ini);
+    await p.select('select[name="hora_termino"]', fin);
+  };
+  const T5 = `Varios días hora temprana ${SELLO}`;
+  await abrirWizard(T5);
+  await escribirFecha('input[name="fecha_inicio"]', F.mas20);
+  await p.click('.casilla-varios-dias input');
+  await escribirFecha('input[name="fecha_termino"]', F.mas22);
+  await horas('18:00', '10:00');
+  await enviarWizard();
+  di('**varios días: término a las 10:00 tras empezar a las 18:00, se crea**', !! nueva(T5),
+    (await p.evaluate(() => document.body.innerText)).includes('posterior a la de inicio') ? 'rebotó por la hora' : '');
+
+  const T6 = `Un día hora temprana ${SELLO}`;
+  await abrirWizard(T6);
+  await escribirFecha('input[name="fecha_inicio"]', F.mas20);
+  await horas('18:00', '10:00');
+  await enviarWizard();
+  di('un solo día: la misma hora se sigue rechazando', ! nueva(T6));
+  di('con su mensaje', (await p.evaluate(() => document.body.innerText)).includes('La hora de término debe ser posterior a la de inicio.'));
+
+  const T7 = `Varios días mismo día ${SELLO}`;
+  await abrirWizard(T7);
+  await escribirFecha('input[name="fecha_inicio"]', F.mas20);
+  await p.click('.casilla-varios-dias input');
+  await escribirFecha('input[name="fecha_termino"]', F.mas20);
+  await horas('18:00', '10:00');
+  await enviarWizard();
+  di('«varios días» pero el mismo día de término: se sigue rechazando', ! nueva(T7));
+
   t('5b · El rango se lee en la ficha, las tarjetas y mi-cuenta');
 
   const fv = await (await fetch(ficha(ids.varios))).text();
@@ -223,6 +260,14 @@ try {
   await escribirFecha('input[name="fecha_termino"]', F.mas22);
   await Promise.all([p.waitForNavigation({ timeout: 20000 }), p.click(`form[action$="/${ids.futura}"] button[type="submit"]`)]);
   di('marcarla y poner término lo guarda', actividad(ids.futura).fecha_termino?.startsWith(F.mas22));
+
+  // El mismo fallo de las horas, en el editor: ahora es de varios días.
+  await p.goto(`${B}/mi-cuenta/actividades/${ids.futura}/editar`, { waitUntil: 'networkidle2' });
+  await p.select('select[name="hora_inicio"]', '18:00');
+  await p.select('select[name="hora_termino"]', '10:00');
+  await Promise.all([p.waitForNavigation({ timeout: 20000 }), p.click(`form[action$="/${ids.futura}"] button[type="submit"]`)]);
+  const horasGuardadas = ultima(tinker(`$a = App\\Models\\Activity::find(${ids.futura}); echo substr($a->hora_inicio, 0, 5).'-'.substr($a->hora_termino, 0, 5);`));
+  di('**editor, varios días: término antes que el inicio se guarda**', horasGuardadas === '18:00-10:00', horasGuardadas);
 
   t('5d · Los dos formularios se ven igual');
 

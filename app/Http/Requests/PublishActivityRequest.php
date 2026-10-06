@@ -144,7 +144,18 @@ class PublishActivityRequest extends FormRequest
             'varios_dias' => ['nullable', 'boolean'],
             'fecha_termino' => ['nullable', 'required_if_accepted:varios_dias', 'date', 'after_or_equal:fecha_inicio'],
             'hora_inicio' => ['nullable', 'date_format:H:i'],
-            'hora_termino' => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
+            /*
+             * «Posterior a la de inicio» sólo si empieza y termina el mismo
+             * día: en una de varios días, la hora de término es la del último.
+             */
+            'hora_termino' => ['nullable', 'date_format:H:i', Rule::when(
+                fn () => ! FechaEscrita::terminaOtroDia(
+                    $this->boolean('varios_dias'),
+                    $this->input('fecha_inicio'),
+                    $this->input('fecha_termino'),
+                ),
+                ['after:hora_inicio'],
+            )],
             'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
             'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
             'direccion' => ['nullable', Rule::requiredIf(
