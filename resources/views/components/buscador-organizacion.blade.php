@@ -69,7 +69,7 @@
     <span class="helper" x-show="reclamando" x-cloak style="color:var(--naranjo-600);">
         Encontramos tu organización en nuestro listado. No hace falta que vuelvas a cargar sus datos.
         <button type="button" class="textlink" style="background:none;border:0;padding:0;cursor:pointer;font:inherit;"
-                x-on:click="soltarOrg()">No es ésta</button>
+                x-on:click="soltarOrg()">¿No es la que buscas? Haz clic aquí</button>
     </span>
 
     {{-- Y la otra cara: la organización ya tiene cuenta. --}}

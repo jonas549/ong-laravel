@@ -131,7 +131,7 @@ for (const pantalla of PANTALLAS) {
   di('Se le dice que la encontramos', (await texto()).includes('Encontramos tu organización en nuestro listado'));
 
   /* ── Deshacerlo ── */
-  await p.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('No es ésta'))?.click());
+  await p.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('¿No es la que buscas? Haz clic aquí'))?.click());
   await esperar(300);
   di('Y puede deshacerlo: vuelven a pedirse', await p.evaluate((sel) => {
     const campo = document.querySelector(sel);

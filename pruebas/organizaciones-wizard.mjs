@@ -160,9 +160,9 @@ di('**Ya no se le pide el logo**', await p.evaluate(() => {
   return ! caja || caja.getBoundingClientRect().height === 0;
 }));
 di('Se le dice que la encontramos', (await texto()).includes('Encontramos tu organización en nuestro listado'));
-di('Y puede deshacerlo', (await texto()).includes('No es ésta'));
+di('Y puede deshacerlo', (await texto()).includes('¿No es la que buscas? Haz clic aquí'));
 
-await p.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('No es ésta'))?.click());
+await p.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('¿No es la que buscas? Haz clic aquí'))?.click());
 await esperar(250);
 di('Al deshacerlo vuelve a pedirse el logo', await p.evaluate(() => {
   const caja = document.querySelector('input[name="org_logo"]')?.closest('[x-show]');

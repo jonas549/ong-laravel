@@ -5,7 +5,12 @@
 @section('content')
 @php $t = $activity->estado_color; @endphp
 
-<a href="{{ route('admin.activities.index') }}" class="textlink" style="font-size:14px;">← Volver al listado</a>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
+    <a href="{{ route('admin.activities.index') }}" class="textlink" style="font-size:14px;">← Volver al listado</a>
+    {{-- 8d del 05/10: la ficha pública, como la abre el organizador desde su
+         editor. Sin publicar también se ve: el panel tiene permiso. --}}
+    <a href="{{ route('activities.show', $activity) }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" data-ver-actividad>Ver actividad</a>
+</div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;margin-top:18px;align-items:start;">
 

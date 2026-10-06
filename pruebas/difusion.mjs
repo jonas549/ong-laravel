@@ -132,7 +132,13 @@ try {
     di('cortado con «…» en palabra entera', titulo.at(-1)?.t.endsWith('…') && ! / …$/.test(titulo.at(-1)?.t), titulo.at(-1)?.t);
     // El navegador normaliza la fuente y el peso 400 no aparece: se busca por familia.
     const desc = larga.textos.filter((x) => /Inter/.test(x.fuente) && x.y > 700 && x.y < 860);
-    di('la descripción, con la línea que queda', desc.length === 1 && desc[0].t.endsWith('…'), desc[0]?.t);
+    // 8c del 05/10: ya no se queda con «la línea que deja el titular»; son
+    // siempre sus primeros 120 caracteres, en dos líneas, aunque el titular
+    // ocupe dos. Y sin salirse del hueco (y < 846).
+    const descLarga = sql(`select descripcion from activities where id = ${ids.larga}`).replace(/\s+/g, ' ').trim();
+    const esperada = Array.from(descLarga).length > 120 ? Array.from(descLarga).slice(0, 120).join('').trimEnd() + '…' : descLarga;
+    di('la descripción, sus primeros 120 caracteres aunque el titular ocupe dos líneas',
+        desc.map((x) => x.t).join(' ') === esperada && desc.every((x) => x.y < 846), `${desc.length} línea(s): ${desc.map((x) => x.t).join(' / ')}`);
     di('los cupos agotados', hay(larga.textos, /^Cupos agotados$/));
     di('la región larga no se sale', fueraDeSitio(larga.textos).length === 0, fueraDeSitio(larga.textos).join(' · '));
     di('ni la fecha de varios meses', ! larga.textos.some((x) => x.y > 900 && x.x === 162 && x.t.endsWith('…')));

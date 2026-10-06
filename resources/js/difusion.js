@@ -114,6 +114,17 @@ function ajustar(ctx, texto, ancho, max, tam, min, peso, familia) {
     return { lineas: repartirHasta(ctx, texto, ancho, max), tam: min };
 }
 
+/**
+ * Los primeros 120 caracteres, contando espacios, con «…» si había más.
+ * Por caracteres de verdad (`Array.from`), no por unidades de UTF-16, para no
+ * partir un emoji por la mitad.
+ */
+export function recortarA120(texto) {
+    const letras = Array.from(String(texto ?? '').trim());
+
+    return letras.length > 120 ? `${letras.slice(0, 120).join('').trimEnd()}…` : letras.join('');
+}
+
 function recortar(ctx, texto, ancho) {
     let t = texto;
     while (t.length > 1 && ctx.measureText(`${t}…`).width > ancho) t = t.slice(0, -1);
@@ -154,22 +165,34 @@ function encajar(ctx, img, x, y, w, h) {
 
 /**
  * Titular y descripción entre y=668 y y=846, centrados en ese hueco. El
- * titular prueba de 54 a 40 px hasta caber en dos líneas; la descripción se
- * queda con las líneas que sobren de tres.
+ * titular prueba de 54 a 40 px hasta caber en dos líneas; la descripción,
+ * siempre sus primeros 120 caracteres, en dos líneas debajo.
  */
 function textosPrincipales(ctx, datos) {
-    // En una línea, el titular a 54 px; si no cabe, baja hasta 40 en dos.
+    /*
+     * La descripción: SIEMPRE los primeros 120 caracteres, contando espacios,
+     * pase lo que pase con el titular (8c del 05/10). Antes se quedaba con las
+     * líneas que el titular dejara libres, así que un titular largo se comía
+     * la mitad de la descripción. Dos líneas.
+     */
+    const desc = recortarA120(datos.descripcion);
+
+    // En una línea, el titular a 54 px; si no cabe, baja hasta 40 en dos. Con
+    // descripción, el de dos líneas no pasa de 45: a 50 no queda alto para las
+    // dos líneas de descripción dentro del hueco de 178 px.
     let t = ajustar(ctx, datos.titulo, 940, 1, 54, 46, 800, TITULO);
     if (ctx.measureText(t.lineas[0]).width > 940 || t.lineas[0].endsWith('…')) {
-        t = ajustar(ctx, datos.titulo, 940, 2, 50, 40, 800, TITULO);
+        t = ajustar(ctx, datos.titulo, 940, 2, desc ? 45 : 50, 40, 800, TITULO);
     }
     const titulo = t.lineas;
     const tam = t.tam;
     const altoTitulo = Math.round(tam * 1.12);
 
-    // La descripción se queda con las líneas que dejen libres: tres en total.
-    const d = datos.descripcion
-        ? ajustar(ctx, datos.descripcion, 940, 3 - titulo.length, 29, 26, 400, TEXTO)
+    // La descripción baja de tamaño hasta caber en ANCHO y en ALTO: lo que
+    // deja el titular, menos el respiro de 12 px, para dos líneas de 1,45.
+    const cabe = Math.floor((178 - titulo.length * altoTitulo - 12) / (2 * 1.45));
+    const d = desc
+        ? ajustar(ctx, desc, 940, 2, Math.max(22, Math.min(29, cabe)), 22, 400, TEXTO)
         : { lineas: [], tam: 29 };
     const altoDesc = Math.round(d.tam * 1.45);
 

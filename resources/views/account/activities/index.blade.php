@@ -156,6 +156,20 @@
                                 </span>
                             @endif
 
+                            {{-- 8e del 05/10: volver a bajar el QR de la encuesta sin
+                                 entrar a editar. Sólo publicada, como el bloque del
+                                 editor: antes no hay encuesta a la que llevar. El PNG,
+                                 que abre en cualquier equipo; el SVG para imprenta
+                                 sigue en la ficha de edición. --}}
+                            @if ($a->estado === 'publicada')
+                                <a href="{{ route('account.activities.qr.png', $a) }}" class="sqbtn" data-descarga data-qr-evaluacion
+                                   style="width:auto;padding:0 16px;gap:8px;font-size:14px;font-weight:600;"
+                                   title="Descargar el código QR de la encuesta de evaluación">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"></path></svg>
+                                    QR evaluación
+                                </a>
+                            @endif
+
                             @if ($a->estado !== 'cancelada')
                                 <button type="button" class="sqbtn sqbtn-danger" aria-label="Cancelar actividad" title="Cancelar actividad"
                                         x-on:click="cancelar = {{ Js::from([
