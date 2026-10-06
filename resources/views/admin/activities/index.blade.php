@@ -40,19 +40,13 @@
     @endif
 </div>
 
-<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:20px;">
-<form method="GET" style="display:flex;gap:10px;flex:1 1 320px;max-width:420px;">
+<form method="GET" style="display:flex;gap:10px;margin-bottom:20px;max-width:420px;">
     <input type="hidden" name="estado" value="{{ $estado }}">
     @if ($soloAutomaticas) <input type="hidden" name="auto" value="1"> @endif
     @if ($soloVueltas) <input type="hidden" name="vueltas" value="1"> @endif
     <input class="fld" type="search" name="q" value="{{ \App\Support\Filtro::texto(request(), 'q') }}" placeholder="Buscar por actividad u organización…">
     <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
 </form>
-{{-- 7b del 05/10: TODAS las actividades, sin seguir los filtros de arriba.
-     `data-descarga` suelta el botón cuando llega el archivo (04/10). --}}
-<a class="btn btn-outline btn-sm" href="{{ route('admin.activities.exportar') }}" data-descarga data-cargando="Preparando…"
-   title="Descarga todas las actividades, en cualquier estado, en Excel">Exportar</a>
-</div>
 
 <div class="tabla-wrap">
     <table class="tabla">

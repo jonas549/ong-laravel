@@ -335,6 +335,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('activities.canceladas');
         // Antes que `/{activity}`: si no, el comodin se traga «exportar» (05/10).
         Route::get('/actividades/exportar', [Admin\ActivityController::class, 'exportar'])->name('activities.exportar');
+        Route::get('/actividades/exportar/descargar', [Admin\ActivityController::class, 'descargar'])->name('activities.descargar');
         Route::get('/actividades/{activity}', [Admin\ActivityController::class, 'show'])->name('activities.show');
         Route::post('/actividades/{activity}/publicar', [Admin\ActivityController::class, 'approve'])->name('activities.approve');
         Route::post('/actividades/{activity}/ajustes', [Admin\ActivityController::class, 'requestChanges'])->name('activities.changes');

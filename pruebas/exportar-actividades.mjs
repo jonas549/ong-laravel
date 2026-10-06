@@ -1,8 +1,10 @@
 // Actividades → Exportar — tanda del 05/10, punto 7b.
 //
-// TODAS las actividades, en cualquier estado y sin seguir los filtros de la
-// pantalla: el cliente veía cortarse la lista en 33 de 39. Se descarga por el
-// botón del listado, se lee con OpenSpout (`leer-xlsx.php`) y se compara:
+// Una pantalla propia, en el menú bajo Actividades, como la de Exportar
+// inscripciones (ajustes del 06/10): buscador, estado y Desde / Hasta, el
+// conteo de «Ver cuántas son» contra la base, y la descarga siguiendo los
+// filtros. Sin filtros salen TODAS, en cualquier estado: el cliente veía
+// cortarse la lista en 33 de 39. Se lee con OpenSpout (`leer-xlsx.php`):
 //   - la lista de IDs, entera, contra la base (no sólo cuántas);
 //   - la cabecera, con el ID primero;
 //   - una actividad completa, celda por celda, con un colaborador añadido para
@@ -42,32 +44,75 @@ try {
     await p.type('[name="password"]', CLAVE_ADMIN);
     await Promise.all([p.waitForNavigation(), p.click('button[type="submit"]')]);
 
-    t('0 · El botón');
+    // Descarga un Excel y lo devuelve leído, fila a fila.
+    const bajar = async (url) => {
+        const base64 = await p.evaluate(async (u) => {
+            const r = await fetch(u, { credentials: 'same-origin' });
+            const bytes = new Uint8Array(await r.arrayBuffer());
+            let s = '';
+            for (const b of bytes) s += String.fromCharCode(b);
+            return btoa(s);
+        }, url);
+        const archivo = join(tmpdir(), `actividades-${Date.now()}.xlsx`);
+        writeFileSync(archivo, Buffer.from(base64, 'base64'));
+        const leidas = JSON.parse(execFileSync(PHP, ['pruebas/leer-xlsx.php', archivo], { encoding: 'utf8' }));
+        unlinkSync(archivo);
+        return leidas;
+    };
+    const cuantasEnPantalla = () => p.$eval('[data-cuantas]', (e) => +e.textContent.trim());
+    const ver = async (query) => {
+        await p.goto(`${B}/admin/actividades/exportar?${new URLSearchParams(query)}`, { waitUntil: 'networkidle2' });
+        return cuantasEnPantalla();
+    };
 
-    // Con un filtro puesto, para ver que la descarga NO lo sigue.
-    await p.goto(`${B}/admin/actividades?estado=publicada`, { waitUntil: 'networkidle2' });
-    // El del contenido, no el «Exportar» del menú lateral (que es el de inscripciones).
-    const href = await p.evaluate(() => [...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Exportar' && a.href.includes('/admin/actividades/exportar'))?.getAttribute('href'));
-    di('«Exportar» está en el listado de actividades', !! href, href ?? '');
-    di('y lleva la marca de descarga, para soltarse al terminar', await p.evaluate(() => !! [...document.querySelectorAll('a[data-descarga]')].find((a) => a.textContent.trim() === 'Exportar' && a.href.includes('/admin/actividades/exportar'))));
+    t('0 · La pantalla, desde el menú');
 
-    const base64 = await p.evaluate(async (url) => {
-        const r = await fetch(url, { credentials: 'same-origin' });
-        const bytes = new Uint8Array(await r.arrayBuffer());
-        let s = '';
-        for (const b of bytes) s += String.fromCharCode(b);
-        return btoa(s);
-    }, href);
+    await p.goto(`${B}/admin/actividades`, { waitUntil: 'networkidle2' });
+    di('el listado ya no tiene el botón suelto', ! (await p.evaluate(() => [...document.querySelectorAll('main a, .panel-contenido a')]
+        .some((a) => a.textContent.trim() === 'Exportar' && a.href.includes('/admin/actividades/exportar') && ! a.closest('nav, aside')))));
+    // En el menú lateral hay dos «Exportar»: el de Inscripciones y éste.
+    const enMenu = await p.evaluate(() => [...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Exportar'
+        && a.getAttribute('href')?.includes('/admin/actividades/exportar') && a.closest('nav, aside'))?.getAttribute('href'));
+    di('**«Exportar» está en el menú, bajo Actividades**', !! enMenu, enMenu ?? '');
+    await p.goto(enMenu, { waitUntil: 'networkidle2' });
+    const texto = await p.evaluate(() => document.body.innerText);
+    di('con «Qué exportar» y «Descargar», como la de inscripciones', /Qué exportar/i.test(texto) && /Descargar en Excel/.test(texto) && /Ver cuántas son/.test(texto));
+    di('y sus cuatro filtros', await p.evaluate(() => ['q', 'estado', 'desde', 'hasta'].every((n) => document.querySelector(`[name="${n}"]`))));
+    di('el menú marca ese nodo', await p.evaluate(() => [...document.querySelectorAll('nav a, aside a')]
+        .some((a) => a.getAttribute('href')?.includes('/admin/actividades/exportar') && (a.classList.contains('on') || a.getAttribute('aria-current') === 'page' || a.closest('.on')))));
 
-    const archivo = join(tmpdir(), `actividades-${Date.now()}.xlsx`);
-    writeFileSync(archivo, Buffer.from(base64, 'base64'));
-    const filas = JSON.parse(execFileSync(PHP, ['pruebas/leer-xlsx.php', archivo], { encoding: 'utf8' }));
-    unlinkSync(archivo);
+    t('1 · Los filtros, contra la base');
+
+    const total = +sql('select count(*) from activities where deleted_at is null');
+    di('**sin filtros: todas**', await cuantasEnPantalla() === total, `${await cuantasEnPantalla()} de ${total}`);
+    di('sólo publicadas', await ver({ estado: 'publicada' }) === +sql("select count(*) from activities where deleted_at is null and estado = 'publicada'"));
+    di('sólo borradores', await ver({ estado: 'borrador' }) === +sql("select count(*) from activities where deleted_at is null and estado = 'borrador'"));
+    const org = sql(`select o.nombre from activities a join organizations o on o.id = a.organization_id where a.id = ${actId}`);
+    const deLaOrg = +sql(`select count(*) from activities a join organizations o on o.id = a.organization_id where a.deleted_at is null
+        and (o.nombre like '%${org.replace(/'/g, "''")}%' or a.titulo like '%${org.replace(/'/g, "''")}%')`);
+    di('por el nombre de la organización', await ver({ q: org }) === deLaOrg, `${deLaOrg} · ${org}`);
+    const dia = sql(`select date(created_at) from activities where id = ${actId}`);
+    const delDia = +sql(`select count(*) from activities where deleted_at is null and date(created_at) = '${dia}'`);
+    di('desde / hasta, por la fecha de registro', await ver({ desde: dia, hasta: dia }) === delDia, `${delDia} el ${dia}`);
+    di('con un recorte vacío no ofrece descargar', await ver({ desde: '2000-01-01', hasta: '2000-01-02' }) === 0
+        && ! (await p.evaluate(() => [...document.querySelectorAll('a')].some((a) => a.textContent.trim() === 'Descargar en Excel'))));
+
+    // La descarga sigue los filtros: sólo publicadas.
+    await ver({ estado: 'publicada' });
+    const hrefPublicadas = await p.evaluate(() => [...document.querySelectorAll('a[data-descarga]')].find((a) => a.textContent.trim() === 'Descargar en Excel')?.href);
+    const [, ...soloPublicadas] = await bajar(hrefPublicadas);
+    di('**la descarga sigue los filtros**', soloPublicadas.length === +sql("select count(*) from activities where deleted_at is null and estado = 'publicada'"), `${soloPublicadas.length} filas`);
+
+    // Y sin filtros, la entera.
+    await ver({});
+    const href = await p.evaluate(() => [...document.querySelectorAll('a[data-descarga]')].find((a) => a.textContent.trim() === 'Descargar en Excel')?.href);
+    di('el botón de descarga lleva la marca, para soltarse al terminar', !! href);
+    const filas = await bajar(href);
 
     const [cab, ...datos] = filas;
     const col = (nombre) => cab.indexOf(nombre);
 
-    t('1 · TODAS las actividades');
+    t('2 · Sin filtros, TODAS las actividades');
 
     // `\r?\n`: en Windows la salida de mysql trae `\r` al final de cada línea.
     const enBase = sql('select id from activities where deleted_at is null order by id').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
@@ -80,7 +125,7 @@ try {
     di('en todos los estados, no sólo las publicadas', new Set(datos.map((f) => f[col('Estado')])).size === +estados, [...new Set(datos.map((f) => f[col('Estado')]))].join(', '));
     di('las de la papelera no salen', ! datos.some((f) => sql(`select count(*) from activities where id = ${+f[0]} and deleted_at is not null`) !== '0'));
 
-    t('2 · Las columnas');
+    t('3 · Las columnas');
 
     const pedidas = ['ID', 'Actividad', 'Organización', 'Estado', 'Correo que registró la actividad', 'Fecha de registro',
         'Fecha de la actividad', 'Fecha de término', 'Hora de inicio', 'Hora de término', 'Dirección', 'Comuna', 'Región',
@@ -91,7 +136,7 @@ try {
     di('están todas las pedidas', faltan.length === 0, faltan.join(', ') || `${cab.length} columnas`);
     di('todas las filas tienen las mismas celdas que la cabecera', datos.every((f) => f.length === cab.length));
 
-    t('3 · Una actividad, contra la base');
+    t('4 · Una actividad, contra la base');
 
     const fila = datos.find((f) => String(f[0]) === actId);
     const v = (c) => String(fila?.[col(c)] ?? '');

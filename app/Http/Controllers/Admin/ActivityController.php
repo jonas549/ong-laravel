@@ -62,27 +62,65 @@ class ActivityController extends Controller
     }
 
     /**
-     * Actividades → Exportar (7b del 05/10): TODAS las actividades, en
-     * cualquier estado, con sus datos completos. No sigue los filtros de la
-     * pantalla a propósito: lo que se pidió es la lista entera.
+     * Actividades → Exportar: la pantalla. Replica la de Exportar
+     * inscripciones (ajustes del 06/10): se elige el recorte, se ve cuántas
+     * saldrían y se descarga. Sin filtros, salen TODAS, en cualquier estado.
+     */
+    public function exportar(Request $request)
+    {
+        return view('admin.activities.exportar', [
+            'filtros' => $this->filtrosDeExportacion($request),
+            'estados' => Activity::ESTADOS,
+            'cuantas' => $this->consultaDeExportacion($request)->count(),
+        ]);
+    }
+
+    /**
+     * La descarga, con los mismos filtros que la pantalla.
      *
      * Sin paginación ni tope: se leen de 200 en 200 (`lazyById`, que sí carga
      * las relaciones de cada tanda) y se escriben según llegan. Las borradas
      * a la papelera no salen, como no salen en ninguna pantalla.
      */
-    public function exportar(Request $request, \App\Services\Exportador $exportador)
+    public function descargar(Request $request, \App\Services\Exportador $exportador)
     {
-        $formato = Filtro::texto($request, 'formato') === 'csv' ? 'csv' : 'xlsx';
+        $consulta = $this->consultaDeExportacion($request)
+            ->with(['organization.user', 'commune', 'region', 'terms', 'collaborators']);
 
-        $filas = (function () {
-            $consulta = Activity::with(['organization.user', 'commune', 'region', 'terms', 'collaborators']);
-
+        $filas = (function () use ($consulta) {
             foreach ($consulta->lazyById(200) as $a) {
                 yield self::filaDeExportacion($a);
             }
         })();
 
-        return $exportador->descargar($formato, 'Actividades', self::COLUMNAS_EXPORTACION, $filas);
+        return $exportador->xlsx('Actividades', self::COLUMNAS_EXPORTACION, $filas);
+    }
+
+    /** @return array<string, string> */
+    private function filtrosDeExportacion(Request $request): array
+    {
+        return [
+            'q' => mb_substr(Filtro::texto($request, 'q'), 0, 100),
+            'estado' => Filtro::texto($request, 'estado'),
+            'desde' => Filtro::texto($request, 'desde'),
+            'hasta' => Filtro::texto($request, 'hasta'),
+        ];
+    }
+
+    /**
+     * El buscador es el del sitio público (actividad u organización); el
+     * estado, uno de los cinco; y el rango, sobre la FECHA DE REGISTRO de la
+     * actividad, que es lo que en inscripciones es la fecha de inscripción.
+     */
+    private function consultaDeExportacion(Request $request)
+    {
+        $f = $this->filtrosDeExportacion($request);
+
+        return Activity::query()
+            ->when($f['q'], fn ($q, $b) => $q->byTexto($b))
+            ->when(array_key_exists($f['estado'], Activity::ESTADOS), fn ($q) => $q->where('estado', $f['estado']))
+            ->when($f['desde'], fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($f['hasta'], fn ($q, $d) => $q->whereDate('created_at', '<=', $d));
     }
 
     public const COLUMNAS_EXPORTACION = [

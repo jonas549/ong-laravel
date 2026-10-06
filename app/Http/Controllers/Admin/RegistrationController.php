@@ -178,7 +178,12 @@ class RegistrationController extends Controller
                     $w->where('nombre', 'like', "%{$b}%")->orWhere('correo', 'like', "%{$b}%");
                 });
             })
-            ->when($f['estado'], fn ($q, $e) => $q->where('estado', $e))
+            /*
+             * «Sin las canceladas» llega como `activas`, que no es un estado
+             * de la tabla: buscarlo tal cual devolvía cero (visto el 06/10).
+             */
+            ->when($f['estado'] === 'activas', fn ($q) => $q->where('estado', '!=', 'cancelado'))
+            ->when($f['estado'] && $f['estado'] !== 'activas', fn ($q) => $q->where('estado', $f['estado']))
             ->when($f['actividad'], fn ($q, $a) => $q->where('activity_id', $a))
             ->when($f['desde'], fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($f['hasta'], fn ($q, $d) => $q->whereDate('created_at', '<=', $d))

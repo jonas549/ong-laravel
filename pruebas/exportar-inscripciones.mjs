@@ -65,6 +65,15 @@ try {
     const col = (nombre) => cab.indexOf(nombre);
     const fila = (id) => datos.find((f) => String(f[0]) === String(id));
 
+    t('0 · El filtro «Sin las canceladas»');
+
+    // Mandaba `estado=activas` y la consulta lo buscaba tal cual: daba cero.
+    await p.goto(`${B}/admin/inscripciones/exportar?estado=activas`, { waitUntil: 'networkidle2' });
+    const activas = await p.evaluate(() => +document.querySelector('.card strong')?.textContent.trim());
+    di('**cuenta las inscripciones sin cancelar**, no cero', activas === +sql("select count(*) from registrations where estado <> 'cancelado'"), `${activas}`);
+    await p.goto(`${B}/admin/inscripciones/exportar?estado=cancelado`, { waitUntil: 'networkidle2' });
+    di('y «Sólo las canceladas» sigue igual', await p.evaluate(() => +document.querySelector('.card strong')?.textContent.trim()) === +sql("select count(*) from registrations where estado = 'cancelado'"));
+
     t('1 · Las columnas');
 
     const esperadas = ['ID', 'Nombre', 'Correo', 'Mayor de edad', 'Actividad', 'Organización',

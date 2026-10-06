@@ -36,6 +36,8 @@ class MenuPanel
                 self::nodo('Pendientes de revisión', 'admin.activities.pendientes'),
                 self::nodo('Publicadas', 'admin.activities.publicadas'),
                 self::nodo('Canceladas', 'admin.activities.canceladas'),
+                // Igual que el de Inscripciones (ajustes del 06/10).
+                self::nodo('Exportar', 'admin.activities.exportar', [], [], 'admin.activities.descargar'),
             ], 'admin.activities.show'),
 
             self::nodo('Inscripciones', null, [], [
