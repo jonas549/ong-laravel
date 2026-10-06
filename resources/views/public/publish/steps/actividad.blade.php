@@ -238,7 +238,7 @@
             <ul class="org-sugerencias" x-show="dirAbiertas" x-cloak role="listbox">
                 <template x-for="d in sugerenciasDir" x-bind:key="d.etiqueta">
                     <li>
-                        <button type="button" class="org-sugerencia" x-on:click="elegirDireccion(d)">
+                        <button type="button" class="org-sugerencia org-sugerencia-dir" x-on:click="elegirDireccion(d)">
                             <span class="org-sugerencia-nombre" x-text="d.direccion"></span>
                             <span class="org-sugerencia-estado" x-text="d.ciudad"></span>
                         </button>

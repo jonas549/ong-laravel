@@ -1092,6 +1092,19 @@ a.textlink:hover { color: var(--naranjo-600); }
 
 .org-sugerencia-estado-tomada { color: var(--rosa); }
 
+/*
+ * Las sugerencias de DIRECCIÓN usan las mismas piezas, pero su columna
+ * derecha es la ciudad y la región, que puede ser larguísima («Santiago,
+ * Región Metropolitana de Santiago»). Con el `flex:none` y el `nowrap` de
+ * arriba se quedaba con todo el ancho y el nombre salía letra por letra en el
+ * teléfono (tanda del 05/10). Aquí la fila se parte en dos: el nombre en su
+ * línea y la región al lado si cabe, o debajo si no. Acotado a este
+ * modificador para no tocar el buscador de organizaciones.
+ */
+.org-sugerencia-dir { flex-wrap: wrap; row-gap: 2px; }
+.org-sugerencia-dir .org-sugerencia-nombre { overflow-wrap: break-word; }
+.org-sugerencia-dir .org-sugerencia-estado { flex: 0 1 auto; min-width: 0; white-space: normal; }
+
 /* ── El hilo de moderacion ──────────────────────────────────── */
 
 /*
