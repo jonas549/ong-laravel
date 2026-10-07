@@ -6,7 +6,7 @@
     Los filtros se envían por GET a esta misma pantalla: así se ve cuántas
     filas saldrían antes de descargar nada, que es lo que uno quiere saber.
 --}}
-<form method="GET" class="card" style="padding:26px;max-width:820px;margin-bottom:20px;">
+<form method="GET" id="filtros-exportar" class="card" style="padding:26px;max-width:820px;margin-bottom:20px;">
     <div class="seclabel" style="margin-bottom:16px;">Qué exportar</div>
 
     <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -44,10 +44,10 @@
         </div>
     </div>
 
-    {{-- Ajustes del 06/10: desmarcada, el Excel sale como siempre. Va en el
-         GET de esta pantalla, así que el enlace de descarga la lleva. --}}
+    {{-- Ajustes del 06/10: desmarcada, el Excel sale como siempre. No cambia
+         cuántas salen, así que tocarla no deja viejo el número de abajo. --}}
     <label style="display:flex;align-items:center;gap:10px;margin-top:18px;cursor:pointer;font-size:14.5px;color:var(--ink);">
-        <input type="checkbox" name="respuestas" value="1" @checked(request()->boolean('respuestas'))
+        <input type="checkbox" name="respuestas" value="1" data-no-cuenta @checked(request()->boolean('respuestas'))
                style="width:18px;height:18px;margin:0;accent-color:var(--naranjo);">
         Incluir también las respuestas de la evaluación
     </label>
@@ -62,13 +62,19 @@
 
 <div class="card" style="padding:26px;max-width:820px;">
     <div class="seclabel" style="margin-bottom:6px;">Descargar</div>
-    <p style="font-size:15.5px;line-height:1.6;margin:0 0 18px;color:var(--ink);">
+    <p data-cuenta="filtros-exportar" style="font-size:15.5px;line-height:1.6;margin:0 0 18px;color:var(--ink);">
         Con estos filtros saldrían
         <strong>{{ $cuantos }}</strong> {{ $cuantos === 1 ? 'inscripción' : 'inscripciones' }}.
     </p>
+    <p data-cuenta-vieja="filtros-exportar" hidden style="font-size:15.5px;line-height:1.6;margin:0 0 18px;color:var(--ink);">
+        Cambiaste los filtros: pulsa «Ver cuántas son» para saber cuántas saldrían.
+    </p>
 
+    {{-- La descarga lee el formulario en el momento del clic (`data-filtros`,
+         en panel.js): lo marcado sin pasar por «Ver cuántas son» también
+         cuenta. El href de aquí es sólo lo que había al cargar. --}}
     @if ($cuantos > 0)
-        <a class="btn btn-primary" href="{{ route('admin.registrations.descargar', request()->query()) }}" data-descarga>
+        <a class="btn btn-primary" href="{{ route('admin.registrations.descargar', request()->query()) }}" data-descarga data-filtros="filtros-exportar">
             Descargar en Excel
         </a>
     @else

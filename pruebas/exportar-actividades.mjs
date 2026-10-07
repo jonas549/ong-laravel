@@ -17,6 +17,7 @@ import { writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ADMIN, CLAVE_ADMIN } from './credenciales.mjs';
+import * as clicDescarga from './clic-descarga.mjs';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const B = process.env.DPS_URL ?? 'http://127.0.0.1:8123';
@@ -102,6 +103,16 @@ try {
     const hrefPublicadas = await p.evaluate(() => [...document.querySelectorAll('a[data-descarga]')].find((a) => a.textContent.trim() === 'Descargar en Excel')?.href);
     const [, ...soloPublicadas] = await bajar(hrefPublicadas);
     di('**la descarga sigue los filtros**', soloPublicadas.length === +sql("select count(*) from activities where deleted_at is null and estado = 'publicada'"), `${soloPublicadas.length} filas`);
+
+    // El camino natural (07/10): cambiar el filtro y pulsar «Descargar en
+    // Excel» sin pasar por «Ver cuántas son».
+    await ver({});
+    await p.select('select[name="estado"]', 'borrador');
+    di('al cambiar un filtro, el número de arriba avisa que ya no vale', await clicDescarga.avisoCuentaVieja(p));
+    const hrefNatural = await clicDescarga.urlDelClic(p);
+    di('**sin contar antes, el clic lleva el filtro elegido**', !! hrefNatural && new URL(hrefNatural).searchParams.get('estado') === 'borrador', hrefNatural ?? '(sin clic)');
+    const [, ...soloBorradores] = hrefNatural ? await bajar(hrefNatural) : [[]];
+    di('**y el Excel trae sólo esas**', soloBorradores.length === +sql("select count(*) from activities where deleted_at is null and estado = 'borrador'"), `${soloBorradores.length} filas`);
 
     // Y sin filtros, la entera.
     await ver({});

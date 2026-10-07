@@ -536,10 +536,54 @@ export const iniciarEstadosDeCarga = () => {
         return url.toString();
     };
 
+    /*
+     * ── Descargas que siguen a un formulario ──
+     *
+     * En las pantallas de Exportar, el enlace de descarga se pintaba con los
+     * filtros que traía la URL al cargar, así que lo tocado después —la
+     * casilla de las respuestas, un filtro— no se descargaba si antes no se
+     * pulsaba «Ver cuántas son» (07/10). Con `data-filtros="<id>"`, el enlace
+     * se rehace en el clic con lo que diga ese formulario en ese momento.
+     * Los campos vacíos no viajan: el servidor los trata igual que ausentes.
+     */
+    const conFiltros = (href, formulario) => {
+        const url = new URL(href, window.location.href);
+        url.search = '';
+
+        for (const [clave, valor] of new FormData(formulario)) {
+            if (typeof valor === 'string' && valor.trim() !== '') url.searchParams.append(clave, valor);
+        }
+
+        return url.toString();
+    };
+
+    /*
+     * Y el número de «Con estos filtros saldrían…» se calculó al cargar: si
+     * se cambia un filtro, deja de ser verdad. Se cambia por un aviso en vez
+     * de dejar un número equivocado al lado del botón. Un campo con
+     * `data-no-cuenta` (la casilla de las respuestas) no cambia cuántas salen.
+     */
+    const cuentaVieja = (e) => {
+        const formulario = e.target?.form;
+
+        if (!formulario?.id || e.target.hasAttribute('data-no-cuenta')) return;
+
+        document.querySelectorAll(`[data-cuenta="${formulario.id}"]`).forEach((el) => { el.hidden = true; });
+        document.querySelectorAll(`[data-cuenta-vieja="${formulario.id}"]`).forEach((el) => { el.hidden = false; });
+    };
+
+    document.addEventListener('input', cuentaVieja);
+    document.addEventListener('change', cuentaVieja);
+
     document.addEventListener('click', (e) => {
         const enlace = e.target.closest('a[data-descarga], a[data-cargando]');
 
         if (!enlace || enlace.dataset.ocupado === '1') return;
+
+        // Antes de lo demás, para que también lo abierto en otra pestaña
+        // descargue lo que se ve en el formulario.
+        const formulario = enlace.dataset.filtros && document.getElementById(enlace.dataset.filtros);
+        if (formulario instanceof HTMLFormElement) enlace.href = conFiltros(enlace.href, formulario);
 
         // Abrir en otra pestaña o con el botón del medio no ocupa nada aquí.
         if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;

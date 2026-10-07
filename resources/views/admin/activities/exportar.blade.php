@@ -7,7 +7,7 @@
     filtros van por GET a esta misma pantalla, para ver cuántas saldrían antes
     de descargar nada. Sin filtros salen TODAS, en cualquier estado.
 --}}
-<form method="GET" class="card" style="padding:26px;max-width:820px;margin-bottom:20px;">
+<form method="GET" id="filtros-exportar" class="card" style="padding:26px;max-width:820px;margin-bottom:20px;">
     <div class="seclabel" style="margin-bottom:16px;">Qué exportar</div>
 
     <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -47,13 +47,18 @@
 
 <div class="card" style="padding:26px;max-width:820px;">
     <div class="seclabel" style="margin-bottom:6px;">Descargar</div>
-    <p style="font-size:15.5px;line-height:1.6;margin:0 0 18px;color:var(--ink);">
+    <p data-cuenta="filtros-exportar" style="font-size:15.5px;line-height:1.6;margin:0 0 18px;color:var(--ink);">
         Con estos filtros saldrían
         <strong data-cuantas>{{ $cuantas }}</strong> {{ $cuantas === 1 ? 'actividad' : 'actividades' }}.
     </p>
+    <p data-cuenta-vieja="filtros-exportar" hidden style="font-size:15.5px;line-height:1.6;margin:0 0 18px;color:var(--ink);">
+        Cambiaste los filtros: pulsa «Ver cuántas son» para saber cuántas saldrían.
+    </p>
 
+    {{-- La descarga lee el formulario en el momento del clic (`data-filtros`,
+         en panel.js), como en Exportar inscripciones. --}}
     @if ($cuantas > 0)
-        <a class="btn btn-primary" href="{{ route('admin.activities.descargar', request()->query()) }}" data-descarga>
+        <a class="btn btn-primary" href="{{ route('admin.activities.descargar', request()->query()) }}" data-descarga data-filtros="filtros-exportar">
             Descargar en Excel
         </a>
     @else
