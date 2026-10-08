@@ -133,7 +133,7 @@
                         <span class="insignia-estado" style="font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:999px;background:{{ $tono['bg'] }};color:{{ $tono['ink'] }};border:1.5px solid {{ $tono['borde'] }};">{{ $a->estado_label }}</span>
 
                         <div style="display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end;opacity:{{ $a->estado === 'cancelada' ? '.45' : '1' }};">
-                            <a href="{{ route('account.activities.edit', $a) }}" class="sqbtn" aria-label="Editar actividad" title="Editar actividad">
+                            <a href="{{ route('account.activities.edit', $a) }}" class="sqbtn con-tooltip" aria-label="Editar actividad" data-tooltip="Editar actividad">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"></path><path d="M18.4 2.6a2 2 0 0 1 2.8 2.8L12 14.6l-4 1 1-4z"></path></svg>
                             </a>
 

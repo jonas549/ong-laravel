@@ -178,6 +178,41 @@ a.textlink:hover { color: var(--naranjo-600); }
     box-shadow: 0 10px 22px -14px rgba(229, 114, 0, .5);
 }
 
+/*
+ * Tooltip de un botón que sólo es icono (punto 7 del 08/10). El `title`
+ * nativo tarda cerca de un segundo en salir y nunca sale al enfocar con el
+ * teclado: se pinta con el texto de `data-tooltip`, al pasar por encima y al
+ * enfocar. El nombre accesible sigue siendo el `aria-label`.
+ */
+.con-tooltip { position: relative; }
+
+.con-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translate(-50%, 4px);
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 5;
+}
+
+.con-tooltip:hover::after,
+.con-tooltip:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 .sqbtn-danger { color: var(--rosa); }
 
 .sqbtn-danger:hover {
