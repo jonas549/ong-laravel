@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\ControlDeAcceso;
 use App\Services\SesionesActivas;
 use App\Services\SmtpConfigService;
+use App\Support\CuentaDeAcceso;
 use App\Support\Filtro;
 use App\Support\Listado;
 use App\Support\Papelera;
@@ -67,24 +68,18 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $datos = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
-            // El tope de 72 no es capricho: bcrypt ignora lo que pase de ahí, y
-            // sin él se puede elegir una de 100 y entrar luego con los primeros 72.
-            'password' => ['required', 'string', 'min:8', 'max:72'],
+        // Las reglas de la cuenta son las mismas que al crearla junto a su
+        // organización (punto 1 del 08/10): viven en `CuentaDeAcceso`.
+        $datos = $request->validate(CuentaDeAcceso::reglas() + [
             'role' => ['required', Rule::in([User::ROL_ADMIN, User::ROL_ORGANIZER])],
-        ], [], [
-            'name' => 'el nombre',
-            'email' => 'el correo',
-            'password' => 'la contraseña',
+        ], CuentaDeAcceso::mensajes(), CuentaDeAcceso::atributos() + [
             'role' => 'rol',
         ]);
 
         $organizacion = $datos['role'] === User::ROL_ORGANIZER ? $this->organizacionPedida($request) : null;
 
         DB::transaction(function () use ($datos, $organizacion) {
-            $usuario = User::create($datos + ['is_active' => true, 'email_verified_at' => now()]);
+            $usuario = CuentaDeAcceso::crear($datos, $datos['role']);
 
             if ($organizacion) {
                 $this->enlazar($usuario, $organizacion);

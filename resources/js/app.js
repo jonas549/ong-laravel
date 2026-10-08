@@ -6,7 +6,7 @@ import { difusion } from './difusion';
 import { soyParte } from './soy-parte';
 import { encuestaEvaluacion } from './evaluacion';
 import { campoImagen } from './imagenes';
-import { organizacionDeUsuario, registroOrganizador } from './organizaciones';
+import { cuentaDeOrganizacion, organizacionDeUsuario, registroOrganizador } from './organizaciones';
 import { campoFecha, formularioGuiado } from './formularios';
 // Visor de contraseña y «https://» automático. Ver resources/js/campos.js.
 import './campos';
@@ -178,6 +178,7 @@ Alpine.data('campoImagen', campoImagen);
 // organizaciones que el paso 3 del wizard. Ver resources/js/organizaciones.js.
 Alpine.data('registroOrganizador', registroOrganizador);
 Alpine.data('organizacionDeUsuario', organizacionDeUsuario);
+Alpine.data('cuentaDeOrganizacion', cuentaDeOrganizacion);
 Alpine.data('editorActividad', editorActividad);
 Alpine.data('formularioGuiado', formularioGuiado);
 Alpine.data('campoFecha', campoFecha);

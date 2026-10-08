@@ -47,16 +47,17 @@
 
 <x-panel.tabla
     :filas="$organizaciones"
-    :columnas="7"
+    :columnas="8"
     :vacio="request()->hasAny(['q', 'estado', 'papelera']) ? 'Ninguna organización coincide con el filtro.' : 'Todavía no hay organizaciones.'">
 
     <x-slot:cabecera>
         <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>
         <x-panel.columna campo="nombre">Organización</x-panel.columna>
         <x-panel.columna campo="tipo">Tipo</x-panel.columna>
-        <th>Contacto</th>
+        <th>Cuenta y correos</th>
         <th class="num">Actividades</th>
         <x-panel.columna campo="verificada">Verificada</x-panel.columna>
+        <x-panel.columna campo="created_at">Creada</x-panel.columna>
         <th></th>
     </x-slot:cabecera>
 
@@ -71,7 +72,18 @@
                 @endunless
             </td>
             <td>{{ $o->tipo_label }}</td>
-            <td>{{ $o->user?->email ?? '—' }}</td>
+            {{-- Punto 2 del 08/10: la cuenta de acceso y, debajo, los demás
+                 correos de contacto usados en su ficha y sus actividades. --}}
+            <td data-correos-organizacion>
+                @if ($o->user)
+                    <div title="Cuenta de acceso{{ $o->user->name ? ': '.$o->user->name : '' }}">{{ $o->user->email }}</div>
+                @else
+                    <div class="helper">Sin cuenta</div>
+                @endif
+                @foreach ($o->correosDeContacto() as $correo)
+                    <div class="helper" title="Correo de contacto usado en la ficha o en sus actividades">{{ $correo }}</div>
+                @endforeach
+            </td>
             <td class="num">
                 @if ($o->activities_count)
                     <a class="textlink" href="{{ route('admin.activities.index', ['q' => $o->nombre]) }}">{{ $o->activities_count }}</a>
@@ -81,6 +93,7 @@
                 @endif
             </td>
             <td><span class="insignia insignia-{{ $o->verificada ? 'si' : 'no' }}">{{ $o->verificada ? 'Sí' : 'No' }}</span></td>
+            <td style="white-space:nowrap;">{{ \App\Support\Fecha::corta($o->created_at) }}</td>
 
             <td class="col-acciones">
                 @if ($o->trashed())

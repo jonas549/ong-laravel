@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
+use App\Models\User;
 use App\Services\Exportador;
+use App\Support\CuentaDeAcceso;
 use App\Support\Enlace;
 use App\Support\Fecha;
 use App\Support\Filtro;
@@ -12,6 +14,8 @@ use App\Support\Listado;
 use App\Support\Papelera;
 use App\Support\Texto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -36,7 +40,9 @@ class OrganizationController extends Controller
     {
         $estado = Filtro::texto($request, 'estado');
 
-        $consulta = Organization::with('user')
+        // Las actividades, sólo con su correo: lo pide la columna de correos
+        // (punto 2 del 08/10) sin una consulta por fila.
+        $consulta = Organization::with(['user', 'activities:id,organization_id,correo_contacto'])
             ->withCount(['activities', 'activities as publicadas_count' => fn ($q) => $q->where('estado', 'publicada')])
             ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('nombre', 'like', '%'.Filtro::like($b).'%'))
             ->when($soloPendientes, fn ($q) => $q->where('verificada', false))
@@ -71,12 +77,15 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Sumar una organización al listado, sin cuenta (punto 11 del 30/09).
+     * Sumar una organización al listado (punto 11 del 30/09).
      *
-     * Queda exactamente como las del listado importado: libre, sin verificar y
-     * activa. Sale en el buscador del wizard y quien la represente la reclama
-     * poniéndose su contraseña. Lo que no se le pone aquí —el tipo, por
-     * ejemplo— se le pregunta entonces.
+     * Sin cuenta queda exactamente como las del listado importado: libre, sin
+     * verificar y activa. Sale en el buscador del wizard y quien la represente
+     * la reclama poniéndose su contraseña. Lo que no se le pone aquí —el tipo,
+     * por ejemplo— se le pregunta entonces.
+     *
+     * Desde el punto 1 del 08/10 se le puede crear también su cuenta de acceso
+     * en el mismo paso (ver `store()`).
      */
     public function create()
     {
@@ -91,7 +100,15 @@ class OrganizationController extends Controller
         $request->merge(Enlace::normalizarCampos($request->all(), ['enlace_web', 'enlace_red_social']));
         $request->merge(['nombre' => preg_replace('/\s+/u', ' ', trim((string) $request->input('nombre')))]);
 
-        $datos = $request->validate([
+        /*
+         * La cuenta de acceso, opcional (punto 1 del 08/10). Con la casilla
+         * marcada se crea en el mismo paso, con las reglas de Panel →
+         * Usuarios (`CuentaDeAcceso`), y la organización nace con ella como
+         * dueña. Sin marcar, queda como hasta ahora: libre y reclamable.
+         */
+        $conCuenta = $request->boolean('crear_cuenta');
+
+        $validados = $request->validate([
             // El mismo criterio que el wizard: sin repetir, salvo las borradas.
             'nombre' => ['required', 'string', 'max:255', Rule::unique('organizations', 'nombre')->whereNull('deleted_at')],
             'tipo' => ['nullable', Rule::in(Organization::TIPOS)],
@@ -103,24 +120,36 @@ class OrganizationController extends Controller
             'enlace_red_social' => Enlace::reglas(),
             'logo_path' => ['nullable', 'string', 'max:255'],
             'anios_participacion' => ['nullable', 'string', 'max:100'],
-        ], [
+        ] + ($conCuenta ? CuentaDeAcceso::reglas() : []), [
             'nombre.unique' => 'Ya hay una organización con ese nombre en el listado. Búscala antes de crear otra.',
-        ], [
+        ] + CuentaDeAcceso::mensajes(), [
             'nombre' => 'el nombre',
             'tipo' => 'el tipo',
             'correo_contacto' => 'el correo de contacto',
-        ]);
+        ] + CuentaDeAcceso::atributos());
 
-        $organizacion = Organization::create($datos + [
-            // Sin dueño: eso es lo que la deja reclamable en el wizard.
-            'user_id' => null,
-            'verificada' => false,
-            'activo' => true,
-        ]);
+        $cuenta = $conCuenta ? Arr::only($validados, ['name', 'email', 'password']) : null;
+        $datos = Arr::except($validados, ['name', 'email', 'password']);
+
+        $organizacion = DB::transaction(function () use ($datos, $cuenta) {
+            $usuario = $cuenta ? CuentaDeAcceso::crear($cuenta, User::ROL_ORGANIZER) : null;
+
+            return Organization::create(array_merge($datos, [
+                // Sin dueño es lo que la deja reclamable en el wizard.
+                'user_id' => $usuario?->id,
+                // Como al crearla desde Panel → Usuarios: sin correo de
+                // contacto escrito, el de la cuenta.
+                'correo_contacto' => ($datos['correo_contacto'] ?? null) ?: $usuario?->email,
+                'verificada' => false,
+                'activo' => true,
+            ]));
+        });
 
         return redirect()
             ->route('admin.organizations.edit', $organizacion)
-            ->with('ok', "«{$organizacion->nombre}» ya está en el listado, sin cuenta: quien la represente puede reclamarla al publicar una actividad.");
+            ->with('ok', $cuenta
+                ? "«{$organizacion->nombre}» creada, con la cuenta de acceso {$cuenta['email']}. Ya puede entrar y publicar."
+                : "«{$organizacion->nombre}» ya está en el listado, sin cuenta: quien la represente puede reclamarla al publicar una actividad.");
     }
 
     public function edit(Organization $organization)

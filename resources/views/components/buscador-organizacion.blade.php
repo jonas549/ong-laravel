@@ -29,7 +29,7 @@
     copies el comportamiento.
 
     Necesita, en el ámbito de Alpine: `buscarOrg`, `sugerencias`, `buscando`,
-    `sugerenciasAbiertas`, `orgElegida`, `orgTomada`, `reclamando`,
+    `sugerenciasAbiertas`, `orgElegida`, `orgTomada`, `reclamando`, `sinCoincidencias`,
     `escribirOrg()`, `elegirOrg()` y `soltarOrg()`.
 
     La lista se cierra con Escape y al salir del campo, con un respiro para que
@@ -51,6 +51,12 @@
            x-on:keydown.escape.prevent="sugerenciasAbiertas = false">
 
     <span class="helper" x-show="buscando" x-cloak>Buscando…</span>
+
+    {{-- Cero coincidencias (punto 5 del 08/10): la salida de seguir con un
+         nombre nuevo tiene que verse, no adivinarse. --}}
+    <span class="helper" x-show="sinCoincidencias" x-cloak data-org-sin-coincidencias>
+        No está en nuestro listado. Escribe el nombre completo y sigue: se registrará como una organización nueva.
+    </span>
 
     <ul class="org-sugerencias" x-show="sugerenciasAbiertas" x-cloak role="listbox">
         <template x-for="o in sugerencias" x-bind:key="o.id">

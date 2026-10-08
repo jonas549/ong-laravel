@@ -220,6 +220,34 @@ class Organization extends Model
     }
 
     /**
+     * Los correos de contacto que se han usado con esta organización, sin el
+     * de la cuenta de acceso: el de su ficha y los de cada una de sus
+     * actividades, sin repetir (sin distinguir mayúsculas). Punto 2 del 08/10.
+     *
+     * Hoy una organización tiene una sola cuenta (`user_id`), así que esto es
+     * lo que deja ver si detrás hay más personas. Usa las actividades ya
+     * cargadas si vienen, para no consultar fila a fila en el listado.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function correosDeContacto()
+    {
+        $actividades = $this->relationLoaded('activities')
+            ? $this->activities
+            : $this->activities()->get(['id', 'organization_id', 'correo_contacto']);
+
+        $cuenta = mb_strtolower((string) $this->user?->email);
+
+        return collect([$this->correo_contacto])
+            ->merge($actividades->pluck('correo_contacto'))
+            ->map(fn ($c) => trim((string) $c))
+            ->filter()
+            ->unique(fn ($c) => mb_strtolower($c))
+            ->reject(fn ($c) => mb_strtolower($c) === $cuenta)
+            ->values();
+    }
+
+    /**
      * Las inscripciones de todas sus actividades.
      *
      * Existe para poder decir en pantalla que se llevaria por delante un

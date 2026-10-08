@@ -62,9 +62,27 @@
         <div class="seclabel" style="margin-bottom:14px;">Qué cuelga de aquí</div>
 
         <dl style="display:flex;flex-direction:column;gap:12px;margin:0;font-size:14px;">
-            <div>
-                <dt class="helper">Cuenta</dt>
-                <dd style="margin:0;">{{ $organizacion->user?->email ?? '—' }}</dd>
+            {{-- Punto 2 del 08/10: la cuenta con su nombre y su alta, y los
+                 correos de contacto usados en la ficha y en sus actividades. --}}
+            <div data-cuenta-ficha>
+                <dt class="helper">Cuenta de acceso</dt>
+                @if ($organizacion->user)
+                    <dd style="margin:0;">
+                        {{ $organizacion->user->name }}<br>
+                        {{ $organizacion->user->email }}<br>
+                        <span class="helper">Alta: {{ \App\Support\Fecha::corta($organizacion->user->created_at) }}</span>
+                    </dd>
+                @else
+                    <dd style="margin:0;">Sin cuenta</dd>
+                @endif
+            </div>
+            <div data-correos-ficha>
+                <dt class="helper">Otros correos de contacto usados</dt>
+                @forelse ($organizacion->correosDeContacto() as $correo)
+                    <dd style="margin:0;">{{ $correo }}</dd>
+                @empty
+                    <dd style="margin:0;">—</dd>
+                @endforelse
             </div>
             <div>
                 <dt class="helper">Actividades</dt>
@@ -75,7 +93,7 @@
                 <dd style="margin:0;font-weight:700;">{{ $organizacion->registrations_count }}</dd>
             </div>
             <div>
-                <dt class="helper">Alta</dt>
+                <dt class="helper">Organización creada</dt>
                 <dd style="margin:0;">{{ \App\Support\Fecha::corta($organizacion->created_at) }}</dd>
             </div>
         </dl>

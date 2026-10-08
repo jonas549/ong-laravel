@@ -42,6 +42,16 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
     temporizadorOrg: null,
 
     /*
+     * La búsqueda terminó y no hay ninguna con ese nombre (punto 5 del 08/10).
+     * Sin esto, el tercer desenlace —«nada: escribe un nombre nuevo y
+     * sigue»— no se veía: la lista se cerraba y no aparecía nada, y quien
+     * escribía el nombre de una organización nueva creía que el buscador
+     * estaba roto. Sólo se enciende con una respuesta de verdad vacía; si el
+     * buscador falla no se sabe si está o no, y no se dice nada.
+     */
+    sinCoincidencias: false,
+
+    /*
      * Si se está reclamando una organización que ya existía.
      *
      * **Es una propiedad y no un getter, y eso importa.** Este objeto se monta
@@ -75,6 +85,7 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
         if (valor.trim().length < 2) {
             this.sugerencias = [];
             this.sugerenciasAbiertas = false;
+            this.sinCoincidencias = false;
 
             return;
         }
@@ -99,6 +110,7 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
 
             this.sugerencias = datos.organizaciones ?? [];
             this.sugerenciasAbiertas = this.sugerencias.length > 0;
+            this.sinCoincidencias = this.sugerencias.length === 0;
         } catch {
             /*
              * Un fallo del buscador no puede bloquear el formulario: es una
@@ -107,6 +119,7 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
              */
             this.sugerencias = [];
             this.sugerenciasAbiertas = false;
+            this.sinCoincidencias = false;
         } finally {
             this.buscando = false;
         }
@@ -241,5 +254,54 @@ export const registroOrganizador = (inicial = {}) => ({
         evento.preventDefault();
         this.logoError = 'Sube el logo de tu organización.';
         entrada?.closest('[data-campo]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    },
+});
+
+/**
+ * La cuenta de acceso que Panel → Organizaciones → Nueva puede crear en el
+ * mismo paso (punto 1 del 08/10).
+ *
+ * Con la casilla sin marcar, los campos van desactivados y no viajan: la
+ * organización queda libre, como antes. El correo se comprueba al salir del
+ * campo contra la misma ruta que usa el wizard (`publish.correo`), que mira lo
+ * mismo que la regla `unique` del envío; el envío lo vuelve a comprobar.
+ */
+export const cuentaDeOrganizacion = (inicial = {}) => ({
+    crearCuenta: inicial.crearCuenta ?? false,
+    rutaCorreo: inicial.rutaCorreo ?? '/publicar-actividad/correo',
+    correoExiste: false,
+    correoComprobado: '',
+
+    async comprobarCorreo(valor) {
+        const correo = (valor ?? '').trim();
+
+        if (correo === this.correoComprobado) return;
+
+        this.correoComprobado = correo;
+        this.correoExiste = false;
+
+        // A medio escribir no se pregunta: el formato lo revisa el envío.
+        if (! /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return;
+
+        try {
+            const respuesta = await fetch(this.rutaCorreo, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ email: correo }),
+            });
+
+            if (! respuesta.ok) return;
+
+            const datos = await respuesta.json();
+
+            if (this.correoComprobado === correo) this.correoExiste = datos.existe === true;
+        } catch {
+            // Sin respuesta no se dice nada: el envío lo sigue comprobando.
+        }
     },
 });
