@@ -8,6 +8,7 @@ use App\Models\Registration;
 use App\Models\Setting;
 use App\Services\CorreoTransaccional;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class RegistrationController extends Controller
 {
@@ -43,14 +44,46 @@ class RegistrationController extends Controller
                 abort(409, 'Se acabaron los cupos.');
             }
 
-            $inscripcion = Registration::create([
-                'activity_id' => $bloqueada->id,
+            $campos = [
                 'nombre' => $datos['nombre'],
-                'correo' => $datos['correo'],
                 'telefono' => $datos['telefono'] ?? null,
                 'es_mayor_edad' => $request->boolean('es_mayor_edad'),
                 'estado' => 'pendiente',
-            ]);
+            ];
+
+            /*
+             * Volver a inscribirse tras darse de baja (punto 6 del 08/10).
+             *
+             * Se reactiva la fila cancelada en vez de crear otra: la base no
+             * admite dos con el mismo correo en la misma actividad (el
+             * `unique` daba un 500), y una sola fila por persona es lo que
+             * cuentan el panel y las exportaciones. Vuelve como recién hecha:
+             * fecha de inscripción de hoy, token nuevo —el enlace de cancelar
+             * del correo viejo ya no sirve— y sin recordatorio ni invitación a
+             * evaluar dados por enviados.
+             */
+            $cancelada = Registration::where('activity_id', $bloqueada->id)
+                ->where('correo', $datos['correo'])
+                ->where('estado', 'cancelado')
+                ->lockForUpdate()
+                ->first();
+
+            if ($cancelada) {
+                $cancelada->forceFill($campos + [
+                    'token' => Str::random(48),
+                    'confirmed_at' => null,
+                    'recordatorio_encolado_at' => null,
+                    'invitacion_evaluacion_encolada_at' => null,
+                    'created_at' => now(),
+                ])->save();
+
+                $inscripcion = $cancelada;
+            } else {
+                $inscripcion = Registration::create($campos + [
+                    'activity_id' => $bloqueada->id,
+                    'correo' => $datos['correo'],
+                ]);
+            }
 
             if ($bloqueada->cupos_disponibles !== null) {
                 $bloqueada->decrement('cupos_disponibles');
