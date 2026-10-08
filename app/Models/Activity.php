@@ -192,7 +192,8 @@ class Activity extends Model
      * Sin las cerradas (punto 6 del 05/10): las que se publicaron sólo para
      * difusión, para un público específico. Es el filtro de todo lo que
      * INVITA a participar —el listado, el calendario, «otras actividades
-     * cerca» y lo que el carrusel del home elige solo—. La ficha sigue
+     * cerca» y el carrusel del home, destacadas a mano incluidas desde el
+     * 08/10—. La ficha sigue
      * abierta por enlace, y los contadores las cuentan: están publicadas.
      */
     public function scopeAbiertasAlPublico(Builder $q): Builder
@@ -207,8 +208,8 @@ class Activity extends Model
      * que no tienen fecha no pasan nunca.
      *
      * Es el filtro del bloque de actividades del home (puntos 3 y 8 del 08/10),
-     * también para las destacadas a mano: el panel decide cuál de las
-     * próximas se destaca, no si se salta la fecha.
+     * también para las destacadas a mano, junto con `abiertasAlPublico`: el
+     * panel decide cuál de las que cumplen se destaca, no saltarse el filtro.
      */
     public function scopeSinPasadas(Builder $q): Builder
     {

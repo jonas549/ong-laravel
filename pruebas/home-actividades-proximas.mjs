@@ -1,9 +1,9 @@
 // Puntos 3, 8 y 9 del 08/10 — el home.
 //
 //   3 · El bloque de actividades sólo enseña las que no han pasado.
-//   8 · Destacadas: fuera las que ya pasaron, AUNQUE estén destacadas a mano
-//       (la fecha manda). Lo que el home elige solo deja fuera también las
-//       cerradas; una cerrada destacada a mano sí sale (eso no cambia).
+//   8 · Destacadas: fuera las que ya pasaron y las cerradas, AUNQUE estén
+//       destacadas a mano. El panel decide cuál de las que cumplen se
+//       destaca, no saltarse el filtro.
 //   9 · El botón de «¿Qué es el Patrimonio Social?» lleva al sitio del DPS,
 //       en otra pestaña.
 //
@@ -31,7 +31,7 @@ const slug = (k) => `home-${k}-${SELLO}`;
 /*
  * Las cinco, con fechas relativas a hoy en Chile:
  *   pasada-dest   — pasó hace 10 días, destacada a mano      → nunca
- *   cerrada-dest  — dentro de 5 días, cerrada, destacada     → sí en «destacadas»
+ *   cerrada-dest  — dentro de 5 días, cerrada, destacada     → nunca
  *   varios-dest   — empezó hace 3 días y termina en 3, dest. → sí (no ha pasado)
  *   proxima       — dentro de 7 días, abierta, sin destacar  → sí en el automático
  *   pasada        — pasó ayer, abierta, sin destacar         → nunca
@@ -77,17 +77,18 @@ try {
   let c = await carrusel();
   di('**una destacada a mano que ya pasó NO sale**', ! c['pasada-dest']);
   di('una destacada de varios días que sigue en curso sí sale', c['varios-dest']);
-  di('una cerrada destacada a mano sí sale (el panel manda)', c['cerrada-dest']);
+  di('**una cerrada destacada a mano NO sale**', ! c['cerrada-dest']);
   di('las no destacadas no salen mientras haya destacadas', ! c.proxima && ! c.pasada);
 
   t('Modo «destacadas», sin ninguna vigente: cae a las próximas');
 
-  tinker(`App\\Models\\Activity::whereIn('slug', ['${slug('cerrada-dest')}', '${slug('varios-dest')}'])->update(['destacada' => false]); echo 'OK';`);
+  // Quedan destacadas sólo la pasada y la cerrada: ninguna cumple.
+  tinker(`App\\Models\\Activity::whereIn('slug', ['${slug('varios-dest')}'])->update(['destacada' => false]); echo 'OK';`);
   c = await carrusel();
-  di('**con sólo una destacada pasada, cae a las próximas**', c.proxima, JSON.stringify(c));
+  di('**con sólo una pasada y una cerrada destacadas, cae a las próximas**', c.proxima, JSON.stringify(c));
   di('sin la pasada destacada', ! c['pasada-dest']);
   di('sin la que pasó ayer', ! c.pasada);
-  di('sin la cerrada (no destacada)', ! c['cerrada-dest']);
+  di('sin la cerrada destacada', ! c['cerrada-dest']);
   di('con la de varios días en curso', c['varios-dest']);
 
   t('Modo «próximas»');

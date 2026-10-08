@@ -82,24 +82,22 @@ class HomeController extends Controller
         $cuantas = $this->entre($seccion->numero('cuantas', $borrador), 1, 24);
 
         /*
-         * Las que ya pasaron no salen nunca, ni destacadas a mano (puntos 3 y
-         * 8 del 08/10): la fecha manda, y una actividad vencida en portada
-         * queda mal pase lo que pase. El listado y el calendario no cambian.
+         * Sólo las que invitan a participar: ni las que ya pasaron ni las
+         * cerradas, tampoco destacadas a mano (puntos 3 y 8 del 08/10). El
+         * panel decide cuál de las que cumplen se destaca, no saltarse el
+         * filtro: una actividad vencida o cerrada en portada no invita a
+         * nadie. El listado y el calendario no cambian.
          */
-        $base = fn () => Activity::published()->sinPasadas()->with(['commune', 'region', 'terms'])->ordered()->take($cuantas);
+        $base = fn () => Activity::published()->sinPasadas()->abiertasAlPublico()
+            ->with(['commune', 'region', 'terms'])->ordered()->take($cuantas);
 
-        /*
-         * Lo que el carrusel elige SOLO deja fuera las cerradas (punto 6 del
-         * 05/10): invita a participar. Una destacada a mano sí sale aunque sea
-         * cerrada: es una decisión explícita del panel.
-         */
         if ($seccion->texto('seleccion', $borrador) === 'proximas') {
-            return $base()->abiertasAlPublico()->get();
+            return $base()->get();
         }
 
         $destacadas = $base()->featured()->get();
 
-        return $destacadas->isNotEmpty() ? $destacadas : $base()->abiertasAlPublico()->get();
+        return $destacadas->isNotEmpty() ? $destacadas : $base()->get();
     }
 
     /**
