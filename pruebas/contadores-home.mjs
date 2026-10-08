@@ -2,10 +2,12 @@
 // más lejos!», dinámicas.
 //
 // Lo que se ve tiene que ser la base del panel MÁS lo contado en la base:
-// actividades publicadas en la primera, inscripciones sin las canceladas en la
-// segunda. Se comprueba leyendo el home, y luego moviendo la base —publicar,
-// inscribir, cancelar— y mirando otra vez: un número escrito a mano puede
-// coincidir por casualidad, uno que se mueve con la base no.
+// actividades publicadas en la primera y, desde el 08/10 (punto 4), la suma de
+// los participantes estimados de las publicadas —abiertas y cerradas— en la
+// segunda; las inscripciones ya no cuentan. Se comprueba leyendo el home, y
+// luego moviendo la base —publicar, declarar participantes, cerrar, inscribir,
+// cancelar— y mirando otra vez: un número escrito a mano puede coincidir por
+// casualidad, uno que se mueve con la base no.
 //
 // Cambiar la base desde el panel también tiene que notarse. Al terminar deja
 // todo como estaba.
@@ -29,7 +31,7 @@ const ultima = (s) => s.split('\n').filter((l) => l.trim()).pop().trim();
 const num = (s) => parseInt(String(s).replace(/\D+/g, ''), 10);
 
 const contar = () => JSON.parse(ultima(tinker(
-  `echo json_encode(['act' => App\\Models\\Activity::where('estado','publicada')->count(), 'ins' => App\\Models\\Registration::activas()->count()]);`)));
+  `echo json_encode(['act' => App\\Models\\Activity::where('estado','publicada')->count(), 'est' => (int) App\\Models\\Activity::where('estado','publicada')->sum('participantes_estimados')]);`)));
 
 // Lo que pinta el servidor, antes de que el JavaScript lo anime.
 const leerHome = async () => {
@@ -55,7 +57,7 @@ try {
   let h = await leerHome();
   di('se pintan las dos barras', h.barras.length === 2, JSON.stringify(h.barras));
   di(`actividades: ${base1} + ${c.act} publicadas`, h.barras[0]?.actual === base1 + c.act, `${h.barras[0]?.actual}`);
-  di(`personas: ${base2} + ${c.ins} inscripciones`, h.barras[1]?.actual === base2 + c.ins, `${h.barras[1]?.actual}`);
+  di(`personas: ${base2} + ${c.est} participantes estimados`, h.barras[1]?.actual === base2 + c.est, `${h.barras[1]?.actual}`);
   di('las metas siguen siendo las del panel', h.barras[0]?.meta === 1000 && h.barras[1]?.meta === 100000, JSON.stringify(h.barras.map((b) => b.meta)));
   const pct = (b) => Math.round(Math.min(100, b.actual / b.meta * 100));
   di('el largo de cada barra sale del total y la meta', h.anchos[0] === pct(h.barras[0]) && h.anchos[1] === pct(h.barras[1]), JSON.stringify(h.anchos));
@@ -65,25 +67,34 @@ try {
   // Una actividad en borrador de la organización sembrada, que se publica.
   actividadPrueba = ultima(tinker(
     `$o = App\\Models\\Activity::where('estado','publicada')->firstOrFail();`
-    + ` $a = $o->replicate(); $a->forceFill(['titulo' => 'Contador ${SELLO}', 'slug' => 'contador-${SELLO}', 'estado' => 'borrador', 'published_at' => null])->save(); echo $a->id;`));
+    + ` $a = $o->replicate(); $a->forceFill(['titulo' => 'Contador ${SELLO}', 'slug' => 'contador-${SELLO}', 'estado' => 'borrador', 'published_at' => null, 'participantes_estimados' => 37, 'cerrada' => false])->save(); echo $a->id;`));
 
   const antes = (await leerHome()).barras;
+  h = await leerHome();
+  di('en borrador, sus 37 estimados no cuentan', h.barras[1].actual === antes[1].actual, `${h.barras[1].actual}`);
+
   tinker(`App\\Models\\Activity::whereKey(${actividadPrueba})->update(['estado' => 'publicada', 'published_at' => now()]); echo 'OK';`);
   h = await leerHome();
   di('publicar una actividad suma 1 a la primera barra', h.barras[0].actual === antes[0].actual + 1, `${antes[0].actual} → ${h.barras[0].actual}`);
+  di('**y sus 37 participantes estimados a la segunda**', h.barras[1].actual === antes[1].actual + 37, `${antes[1].actual} → ${h.barras[1].actual}`);
+
+  tinker(`App\\Models\\Activity::whereKey(${actividadPrueba})->update(['cerrada' => true]); echo 'OK';`);
+  h = await leerHome();
+  di('cerrada (sólo difusión), sigue contando', h.barras[1].actual === antes[1].actual + 37, `${h.barras[1].actual}`);
 
   const reg = ultima(tinker(
     `$r = App\\Models\\Registration::create(['activity_id' => ${actividadPrueba}, 'nombre' => 'Contador', 'correo' => 'contador.${SELLO}@ejemplo.cl', 'estado' => 'confirmado', 'token' => Illuminate\\Support\\Str::random(40)]); echo $r->id;`));
   h = await leerHome();
-  di('una inscripción suma 1 a la segunda', h.barras[1].actual === antes[1].actual + 1, `${antes[1].actual} → ${h.barras[1].actual}`);
+  di('una inscripción ya NO mueve la segunda barra', h.barras[1].actual === antes[1].actual + 37, `${h.barras[1].actual}`);
+  tinker(`App\\Models\\Registration::whereKey(${reg})->delete(); echo 'OK';`);
 
-  tinker(`App\\Models\\Registration::whereKey(${reg})->update(['estado' => 'cancelado']); echo 'OK';`);
+  tinker(`App\\Models\\Activity::whereKey(${actividadPrueba})->update(['participantes_estimados' => null]); echo 'OK';`);
   h = await leerHome();
-  di('cancelarla la descuenta', h.barras[1].actual === antes[1].actual, `${h.barras[1].actual}`);
+  di('sin el dato, cuenta cero', h.barras[1].actual === antes[1].actual, `${h.barras[1].actual}`);
 
-  tinker(`App\\Models\\Activity::whereKey(${actividadPrueba})->update(['estado' => 'cancelada']); echo 'OK';`);
+  tinker(`App\\Models\\Activity::whereKey(${actividadPrueba})->update(['estado' => 'cancelada', 'participantes_estimados' => 37]); echo 'OK';`);
   h = await leerHome();
-  di('una actividad cancelada deja de contar', h.barras[0].actual === antes[0].actual, `${h.barras[0].actual}`);
+  di('una actividad cancelada deja de contar en las dos', h.barras[0].actual === antes[0].actual && h.barras[1].actual === antes[1].actual, `${h.barras[0].actual} / ${h.barras[1].actual}`);
 
   t('3 · La base y la meta se cambian desde el panel');
 
@@ -119,7 +130,7 @@ try {
   await new Promise((r) => setTimeout(r, 3500));
   const visto = await p.evaluate(() => [...document.querySelectorAll('.barfill')].length === 2
     && [...document.querySelectorAll('.count')].filter((e) => e.closest('section')?.querySelector('.barfill')).map((e) => e.textContent));
-  di('el contador termina en el total, con puntos de miles', Array.isArray(visto) && num(visto[0]) === 700 + c.act && num(visto[1]) === base2 + c.ins, JSON.stringify(visto));
+  di('el contador termina en el total, con puntos de miles', Array.isArray(visto) && num(visto[0]) === 700 + c.act && num(visto[1]) === base2 + c.est, JSON.stringify(visto));
   await nav.close();
 } finally {
   if (actividadPrueba) {

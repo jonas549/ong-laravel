@@ -200,6 +200,26 @@ class Activity extends Model
         return $q->where('cerrada', false);
     }
 
+    /**
+     * Sin las que ya pasaron: la misma regla que `yaPaso()`, en SQL. Su último
+     * día (el de término, o el de inicio si es de un solo día) es hoy o
+     * después, en hora de Chile; las «disponibles de forma permanente» y las
+     * que no tienen fecha no pasan nunca.
+     *
+     * Es el filtro del bloque de actividades del home (puntos 3 y 8 del 08/10),
+     * también para las destacadas a mano: el panel decide cuál de las
+     * próximas se destaca, no si se salta la fecha.
+     */
+    public function scopeSinPasadas(Builder $q): Builder
+    {
+        $hoy = now(\App\Support\Fecha::zona())->toDateString();
+
+        return $q->where(fn ($w) => $w
+            ->where('sin_fecha_definida', true)
+            ->orWhereNull('fecha_inicio')
+            ->orWhereRaw('COALESCE(fecha_termino, fecha_inicio) >= ?', [$hoy]));
+    }
+
     public function scopeFeatured(Builder $q): Builder
     {
         return $q->where('destacada', true);

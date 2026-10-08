@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Activity;
-use App\Models\Registration;
 
 /**
  * Las dos barras de «¡Súmate y juntos llegaremos más lejos!» (tanda del 05/10).
@@ -18,9 +17,11 @@ use App\Models\Registration;
  *  - actividades: las que están publicadas ahora. Una cancelada deja de
  *    contar; una cerrada (sólo para difusión) sigue contando, porque está
  *    publicada.
- *  - personas: inscripciones sin las canceladas. Son inscripciones, no
- *    personas distintas: quien se apunta a dos actividades cuenta dos veces,
- *    que es lo que pidió el cliente («suma las inscripciones»).
+ *  - personas (desde el 08/10, sustituye a «inscripciones sin las
+ *    canceladas»): la suma de los participantes estimados que el organizador
+ *    declara al publicar, en las publicadas, abiertas y cerradas por igual.
+ *    Una sin el dato cuenta cero. Es el mismo conjunto que la barra de
+ *    actividades: lo que se publicó, se cuenta.
  */
 class ContadoresHome
 {
@@ -29,9 +30,9 @@ class ContadoresHome
         return Activity::where('estado', 'publicada')->count();
     }
 
-    public static function inscripciones(): int
+    public static function participantesEstimados(): int
     {
-        return Registration::activas()->count();
+        return (int) Activity::where('estado', 'publicada')->sum('participantes_estimados');
     }
 
     /**

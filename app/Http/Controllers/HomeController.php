@@ -81,12 +81,17 @@ class HomeController extends Controller
     {
         $cuantas = $this->entre($seccion->numero('cuantas', $borrador), 1, 24);
 
-        $base = fn () => Activity::published()->with(['commune', 'region', 'terms'])->ordered()->take($cuantas);
+        /*
+         * Las que ya pasaron no salen nunca, ni destacadas a mano (puntos 3 y
+         * 8 del 08/10): la fecha manda, y una actividad vencida en portada
+         * queda mal pase lo que pase. El listado y el calendario no cambian.
+         */
+        $base = fn () => Activity::published()->sinPasadas()->with(['commune', 'region', 'terms'])->ordered()->take($cuantas);
 
         /*
          * Lo que el carrusel elige SOLO deja fuera las cerradas (punto 6 del
-         * 05/10): invita a participar. Una destacada a mano sí sale: es una
-         * decisión explícita del panel.
+         * 05/10): invita a participar. Una destacada a mano sí sale aunque sea
+         * cerrada: es una decisión explícita del panel.
          */
         if ($seccion->texto('seleccion', $borrador) === 'proximas') {
             return $base()->abiertasAlPublico()->get();

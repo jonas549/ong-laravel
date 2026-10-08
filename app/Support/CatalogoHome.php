@@ -92,7 +92,7 @@ class CatalogoHome
                     'cta_enlace' => ['label' => 'A dónde lleva el botón', 'tipo' => 'enlace', 'defecto' => '#kit'],
                     'nota' => ['label' => 'Nota bajo el botón', 'tipo' => 'texto', 'defecto' => 'Imágenes, stickers y textos para compartir en tus redes'],
                 ],
-                'ayuda' => 'El número que se ve en cada barra es la base de años anteriores más lo de esta edición, que se cuenta solo: la primera suma las actividades publicadas y la segunda las inscripciones (sin las canceladas). El largo de la barra sale de ese total y de la meta. Se admiten puntos de miles: «1.000» cuenta como mil.',
+                'ayuda' => 'El número que se ve en cada barra es la base de años anteriores más lo de esta edición, que se cuenta solo: la primera suma las actividades publicadas y la segunda los participantes estimados que declara cada organizador al publicar (en las publicadas, abiertas y cerradas). El largo de la barra sale de ese total y de la meta. Se admiten puntos de miles: «1.000» cuenta como mil.',
             ],
 
             'actividades' => [
@@ -123,7 +123,8 @@ class CatalogoHome
                     'cuerpo' => ['label' => 'Texto', 'tipo' => 'rico', 'defecto' => '<p>Es todo aquello que construimos cuando nos unimos para cuidar, compartir y colaborar con otras personas.</p><p>Es un patrimonio vivo que se fortalece con cada acción solidaria y que nos pertenece a todas y todos.</p>'],
                     'remate' => ['label' => 'Frase destacada del final', 'tipo' => 'texto', 'defecto' => 'Nuestro mayor Patrimonio Social es la solidaridad.'],
                     'cta_texto' => ['label' => 'Botón', 'tipo' => 'texto', 'defecto' => 'Conoce más'],
-                    'cta_enlace' => ['label' => 'A dónde lleva el botón', 'tipo' => 'enlace', 'defecto' => '/actividades'],
+                    // Punto 9 del 08/10: la página «Qué es» del sitio del DPS. Un enlace de fuera abre en otra pestaña.
+                    'cta_enlace' => ['label' => 'A dónde lleva el botón', 'tipo' => 'enlace', 'defecto' => 'https://diadelpatrimoniosocial.cl/que-es/'],
                     'imagen' => ['label' => 'Imagen', 'tipo' => 'imagen', 'defecto' => 'img/manos-patrimonio-social.jpg'],
                     'imagen_alt' => ['label' => 'Descripción de la imagen', 'tipo' => 'texto', 'defecto' => 'Personas dándose la mano en una jornada solidaria'],
                 ],
