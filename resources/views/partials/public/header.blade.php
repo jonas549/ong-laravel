@@ -15,6 +15,17 @@
     en otra pestaña, como el botón del home (C5).
 --}}
 @php($voluntariado = 'https://voluntariadoschile.cl/oportunidades')
+{{--
+    Punto 7 del 09/10: una barra delgada sobre el menú, con el estilo de la
+    línea de «Política de privacidad» del pie. Va fuera del <header> para que
+    se vaya al bajar y no le quite alto al menú fijo.
+--}}
+<div class="barra-fina" data-barra-fina>
+    <div class="barra-fina-fila">
+        <a class="textlink" href="{{ url('/preguntas-frecuentes') }}">Preguntas frecuentes</a>
+    </div>
+</div>
+
 <header style="position:sticky;top:0;z-index:50;"
         x-data="{ abierto: false }"
         x-on:keydown.escape.window="abierto = false">

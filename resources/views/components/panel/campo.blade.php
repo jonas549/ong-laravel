@@ -42,7 +42,7 @@
     unset($attrs['type']);
 @endphp
 
-<div class="campo" x-data="campoValidado({{ Js::from($pistas) }})">
+<div class="campo" x-data="campoValidado({{ Js::from($pistas) }}, {{ Js::from($error ?: '') }})">
     @if ($tipo === 'bool')
         <label class="campo-bool" for="{{ $id }}">
             {{-- El hidden va delante: una casilla desmarcada no se envía, y sin
@@ -108,10 +108,7 @@
         <p class="helper campo-ayuda">{{ $ayuda }}</p>
     @endif
 
-    {{-- El del servidor manda: si viene, se enseña ése y no el del navegador. --}}
-    @if ($error)
-        <p class="field-error">{{ $error }}</p>
-    @else
-        <p class="field-error" x-show="aviso" x-cloak x-text="aviso"></p>
-    @endif
+    {{-- El del servidor manda mientras el campo siga como lo rechazó; en
+         cuanto queda bien se va (09/10). Sin JavaScript se ve el del servidor. --}}
+    <p class="field-error" x-show="aviso" @unless ($error) x-cloak @endunless x-text="aviso">{{ $error }}</p>
 </div>

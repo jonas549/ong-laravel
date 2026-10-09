@@ -334,6 +334,7 @@ a.textlink:hover { color: var(--naranjo-600); }
 .fld.is-invalid { border-color: var(--rosa); }
 
 .field-error { display: block; font-size: 12.5px; font-weight: 400; color: var(--rosa); margin-top: 5px; }
+.field-error[hidden] { display: none; }
 
 /* `font-weight` explícito: la ayuda suele ir dentro de un .lbl, que desde B7 es
  * negrita, y sin esto la heredaba. */
@@ -4114,3 +4115,35 @@ img.org-logo {
     .soy-parte-confirmacion { padding: 20px; gap: 14px; }
     .soy-parte-confirmacion h1 { font-size: 24px !important; }
 }
+
+/* ── Barra fina sobre el menú (punto 7 del 09/10) ──
+ * Con el aire de la línea de «Política de privacidad» del pie: fondo blanco,
+ * letra de 13 px y el enlace subrayado de siempre, a la derecha. */
+.barra-fina { background: #fff; border-bottom: 1px solid #f2f3f4; }
+.barra-fina-fila {
+    max-width: 1180px; margin: 0 auto; padding: 6px 32px;
+    display: flex; justify-content: flex-end; gap: 20px;
+    font-size: 13px; line-height: 1.4;
+}
+@media (max-width: 1020px) { .barra-fina-fila { padding: 6px 16px; } }
+
+/* ── Páginas sueltas: títulos, listas y las preguntas frecuentes ── */
+.pagina-texto h2 { font-size: 22px; font-weight: 800; line-height: 1.25; color: var(--gris-900, #33363a); margin: 40px 0 14px; letter-spacing: -.01em; }
+.pagina-texto h2:first-child { margin-top: 0; }
+.pagina-texto ul { padding-left: 22px; margin: 0 0 14px; }
+.pagina-texto li { margin-bottom: 6px; }
+.pagina-texto a { color: var(--naranjo-600); text-decoration: underline; text-underline-offset: 3px; }
+.pagina-texto .faq details { border: 1px solid var(--linea, #eceef0); border-radius: 14px; background: #fff; margin: 0 0 10px; }
+.pagina-texto .faq summary {
+    cursor: pointer; list-style: none; padding: 16px 48px 16px 20px; position: relative;
+    font-weight: 700; color: var(--gris-900, #33363a); line-height: 1.45;
+}
+.pagina-texto .faq summary::-webkit-details-marker { display: none; }
+.pagina-texto .faq summary::after {
+    content: '+'; position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+    font-size: 22px; font-weight: 400; color: var(--naranjo-600); line-height: 1;
+}
+.pagina-texto .faq details[open] summary::after { content: '−'; }
+.pagina-texto .faq summary:focus-visible { outline: 2px solid var(--naranjo); outline-offset: 2px; border-radius: 14px; }
+.pagina-texto .faq details > div { padding: 0 20px 6px; }
+.pagina-texto .faq details > div p { margin: 0 0 12px; }

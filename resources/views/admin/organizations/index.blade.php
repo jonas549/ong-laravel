@@ -43,12 +43,23 @@
             <option value="{{ $valor }}" @selected(\App\Support\Papelera::estado(request()) === $valor)>{{ $texto }}</option>
         @endforeach
     </select>
+
+    {{-- Tanda del 09/10: por la fecha de la columna «Creada». --}}
+    <label class="panel-filtros-fecha">
+        <span class="helper">Creada desde</span>
+        <input class="fld" type="date" name="desde" value="{{ $desde }}" x-on:change="enviar()" data-filtro-desde>
+    </label>
+
+    <label class="panel-filtros-fecha">
+        <span class="helper">Hasta</span>
+        <input class="fld" type="date" name="hasta" value="{{ $hasta }}" x-on:change="enviar()" data-filtro-hasta>
+    </label>
 </x-panel.filtros>
 
 <x-panel.tabla
     :filas="$organizaciones"
     :columnas="8"
-    :vacio="request()->hasAny(['q', 'estado', 'papelera']) ? 'Ninguna organización coincide con el filtro.' : 'Todavía no hay organizaciones.'">
+    :vacio="request()->hasAny(['q', 'estado', 'papelera', 'desde', 'hasta']) ? 'Ninguna organización coincide con el filtro.' : 'Todavía no hay organizaciones.'">
 
     <x-slot:cabecera>
         <x-panel.columna campo="id" clase="col-id">ID</x-panel.columna>

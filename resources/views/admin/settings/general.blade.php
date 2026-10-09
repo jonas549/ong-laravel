@@ -39,6 +39,9 @@
                 {{-- Esta pantalla no enseñaba ningún error: un valor inválido
                      recargaba la página y no se guardaba, sin decir nada. --}}
                 @error($a->clave) <span class="field-error">{{ $message }}</span> @enderror
+                @if (str_contains($a->clave, 'email') && ! $errors->has($a->clave) && ! \App\Models\Setting::esCorreoUtil($valores[$a->clave] ?? ''))
+                    <span class="field-error" data-correo-de-ejemplo>Esta dirección no sirve: está vacía o es de ejemplo, y no llega a nadie. Escribe el correo real.</span>
+                @endif
 
                 @if ($a->descripcion)
                     <span class="helper" style="display:block;margin-top:5px;">{{ $a->descripcion }}</span>

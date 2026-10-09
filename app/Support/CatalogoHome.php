@@ -158,6 +158,8 @@ class CatalogoHome
                 'campos' => [
                     'titulo' => ['label' => 'Titular', 'tipo' => 'texto', 'defecto' => 'Chile está construyendo su Patrimonio Social y lo celebra desde 2024'],
                     'bajada' => ['label' => 'Bajada', 'tipo' => 'texto', 'defecto' => 'Ya somos:'],
+                    // Tanda del 09/10: separa los contadores de las tarjetas.
+                    'titulo_ediciones' => ['label' => 'Título sobre las ediciones', 'tipo' => 'texto', 'defecto' => 'Ediciones', 'vaciable' => true, 'ayuda' => 'Va entre los contadores y las tarjetas de ediciones. Déjalo vacío para no poner título.'],
                 ],
                 'crud' => ['ruta' => 'admin.content.index', 'parametros' => ['tipo' => 'cifras'], 'texto' => 'Editar las cifras', 'nota' => 'Las ediciones anteriores se editan en Contenido → Ediciones.'],
             ],

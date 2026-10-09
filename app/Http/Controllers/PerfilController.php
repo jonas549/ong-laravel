@@ -90,7 +90,7 @@ class PerfilController extends Controller
 
         // Y la anterior se entera del cambio: es lo único que le queda a la
         // persona para darse cuenta si el cambio no lo hizo ella.
-        $contacto = Setting::get('sitio_email_contacto');
+        $contacto = Setting::correoDeContacto();
 
         Mail::to($correoAnterior)->send(new CorreoCambiado(
             nombre: $usuario->name,

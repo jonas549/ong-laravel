@@ -57,6 +57,47 @@
                 <a href="{{ route('admin.organizations.index') }}" class="btn btn-ghost">Cancelar</a>
             </div>
         </form>
+
+        {{--
+            Tanda del 09/10: la cuenta de acceso también desde aquí, para las
+            que no tienen ninguna (casi todas las importadas). Mismos campos y
+            reglas que en «Nueva organización» (`CuentaDeAcceso`); queda como
+            su cuenta principal. Formulario aparte: guardarla no toca la ficha.
+        --}}
+        @if ($organizacion->cuentas->isEmpty())
+            <form method="POST" action="{{ route('admin.organizations.crear-cuenta', $organizacion) }}" id="crear-cuenta"
+                  data-crear-cuenta-organizacion
+                  x-data="cuentaDeOrganizacion({ crearCuenta: true, rutaCorreo: @js(route('publish.correo')) })"
+                  style="margin-top:26px;padding-top:22px;border-top:1px solid var(--linea);display:flex;flex-direction:column;gap:14px;">
+                @csrf
+                <div>
+                    <h2 style="font-size:16px;font-weight:700;margin:0 0 4px;">Crear su cuenta de acceso</h2>
+                    <p class="helper" style="margin:0;">Esta organización no tiene cuenta. La que crees aquí queda como su cuenta principal: puede entrar y publicar sin reclamarla. Compártele la contraseña por un canal seguro.</p>
+                </div>
+                <div>
+                    <label class="helper" for="c-name" style="display:block;margin-bottom:6px;font-weight:600;">Nombre de la persona</label>
+                    <input class="fld @error('name') is-invalid @enderror" type="text" id="c-name" name="name" value="@viejo('name')" required autocomplete="off">
+                    @error('name') <span class="field-error">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="helper" for="c-email" style="display:block;margin-bottom:6px;font-weight:600;">Correo de acceso</label>
+                    <input class="fld @error('email') is-invalid @enderror" type="email" id="c-email" name="email" value="@viejo('email')" required autocomplete="off"
+                           x-on:blur="comprobarCorreo($event.target.value)"
+                           x-on:input="if ($event.target.value.trim() !== correoComprobado) correoExiste = false">
+                    <span class="field-error" x-show="correoExiste" x-cloak data-correo-existe>{{ \App\Support\CuentaDeAcceso::CORREO_REPETIDO }}</span>
+                    @error('email') <span class="field-error">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="helper" for="c-password" style="display:block;margin-bottom:6px;font-weight:600;">Contraseña</label>
+                    <input class="fld @error('password') is-invalid @enderror" type="password" id="c-password" name="password" required autocomplete="new-password">
+                    <span class="helper">Mínimo 8 caracteres.</span>
+                    @error('password') <span class="field-error">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary" data-cargando="Creando…">Crear cuenta</button>
+                </div>
+            </form>
+        @endif
     </section>
 
     <aside class="card" style="padding:22px 24px;">
@@ -82,10 +123,14 @@
                     </dd>
                 @elseif ($organizacion->user_id)
                     <dd style="margin:0;" class="field-error" data-sin-principal>
-                        La cuenta principal ya no existe o salió de la organización. Elige otra entre las de abajo.
+                        @if ($organizacion->cuentas->isEmpty())
+                            La cuenta principal ya no existe o salió de la organización, y no le queda ninguna. <a class="textlink" href="#crear-cuenta">Crea una</a>.
+                        @else
+                            La cuenta principal ya no existe o salió de la organización. Elige otra entre las de abajo.
+                        @endif
                     </dd>
                 @else
-                    <dd style="margin:0;">Sin cuenta</dd>
+                    <dd style="margin:0;">Sin cuenta · <a class="textlink" href="#crear-cuenta">crearla</a></dd>
                 @endif
             </div>
             @php

@@ -60,7 +60,7 @@ class ActivityController extends Controller
         return view('public.activities.index', $comunes + [
             'actividades' => $filtradas
                 ->with(['commune', 'region', 'terms', 'organization'])
-                ->ordered()
+                ->recientesPrimero()
                 ->paginate(12)
                 ->withQueryString(),
         ]);

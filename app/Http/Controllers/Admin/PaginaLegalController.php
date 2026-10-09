@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Page;
 
 /**
- * La política de privacidad.
+ * La política de privacidad y, desde el 09/10, las preguntas frecuentes.
  *
  * En el árbol del panel es un nodo propio porque es lo que la ONG va a buscar
  * por su nombre, pero por debajo es una página más del CRUD de páginas. Se
@@ -16,13 +16,22 @@ use App\Models\Page;
  */
 class PaginaLegalController extends Controller
 {
-    private const SLUG = 'privacidad';
-
     private const TIPO = 'paginas';
 
     public function privacidad(ContentController $contenido)
     {
-        $pagina = Page::where('slug', self::SLUG)->first();
+        return $this->abrir($contenido, 'privacidad', 'La política de privacidad');
+    }
+
+    /** Punto 7 del 09/10: la crea su migración; aquí se edita como la otra. */
+    public function preguntasFrecuentes(ContentController $contenido)
+    {
+        return $this->abrir($contenido, 'preguntas-frecuentes', 'La página de preguntas frecuentes');
+    }
+
+    private function abrir(ContentController $contenido, string $slug, string $nombre)
+    {
+        $pagina = Page::where('slug', $slug)->first();
 
         if (! $pagina) {
             // Todavía no existe: se va al formulario de creación con el aviso
@@ -30,7 +39,7 @@ class PaginaLegalController extends Controller
             // que debería estar.
             return redirect()
                 ->route('admin.content.create', ['tipo' => self::TIPO])
-                ->with('error', 'La política de privacidad todavía no existe. Créala con el slug «'.self::SLUG.'».');
+                ->with('error', $nombre.' todavía no existe. Créala con el slug «'.$slug.'».');
         }
 
         return $contenido->edit(self::TIPO, $pagina->id);

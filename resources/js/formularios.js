@@ -394,6 +394,12 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
 
         if (! caja || ! this.tieneValor(caja)) return;
 
+        // Una contraseña a medio escribir no está bien todavía: la regla es
+        // `min:8` en todas las pantallas (ver `seguirAviso` en campos.js).
+        const clave = caja.querySelector('input[autocomplete="new-password"]:not([name$="_confirmation"])');
+
+        if (clave && clave.value.length < 8) return;
+
         caja.classList.remove('campo-fallido');
         this.controles(caja).forEach((c) => c.removeAttribute('aria-invalid'));
         this.errores = this.errores.filter((e) => e.campo !== nombre);

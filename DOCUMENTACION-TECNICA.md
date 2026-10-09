@@ -327,6 +327,29 @@ devuelva. Ver `resources/js/formularios.js`.
 (`data-obligatorio-salvo`). Un formulario que exige más que el servidor frena
 envíos que habrían valido.
 
+Los avisos rojos que pinta el servidor (`@error(...)`) **se van solos en
+cuanto el campo queda bien** y vuelven si se estropea (`seguirAviso` en
+`resources/js/campos.js`, para todas las pantallas). «Bien» es lo que el
+navegador sabe comprobar, la contraseña nueva de 8 o más (y que coincida con
+su confirmación si ya está escrita), un `data-minimo` en el campo, y para lo
+que sólo sabe el servidor —un `unique`— que el valor sea otro que el
+rechazado. Un aviso que maneja Alpine (`x-show`) no se toca.
+
+### El paso 4 del wizard y el editor de «Mi cuenta» son el mismo formulario
+
+Los campos de una actividad viven en **un solo parcial**,
+`resources/views/public/partials/campos-actividad.blade.php`, que pintan el
+wizard y el editor (tanda del 09/10). Antes el editor tenía su copia, sacada
+del prototipo viejo, y cada tanda dejaba una diferencia suelta; una perdía
+datos (guardar apagaba la accesibilidad contestada al publicar).
+
+**Un campo nuevo se escribe en el parcial, y su estado en los DOS componentes
+de Alpine** —`wizard` y `editorActividad`—, y su regla en los dos Form Request.
+La lista de lo que el parcial espera del componente está en su cabecera. Lo
+único propio del editor: los cupos que quedan (`cupos_disponibles`, a mano),
+la imagen actual, «antes de asistir» sólo si ya estaba escrito, y lo que va
+fuera del parcial (QR, hilo, mensaje de ajustes, cancelar).
+
 ### Los campos de fecha y hora son de texto a propósito
 
 `type="date"` y `type="time"` **no dejan pegar**, y pegar la fecha desde otro
@@ -391,7 +414,10 @@ organización**:
   Organizaciones. Recibe el aviso cuando alguien se suma y es la única que
   edita la ficha (nombre, tipo, logo, enlaces). Nunca cambia sola.
 - `activities.user_id` es quién creó cada actividad. **Cada cuenta ve, edita y
-  recibe los correos de las suyas**; el administrador, de todas. Las que se
+  recibe los correos de las suyas**; el administrador, de todas. Desde el
+  09/10 la principal va **en copia** de todos esos correos (recibida, ajustes,
+  publicada con QR, cancelada, nueva inscripción y guía), salvo que sea ella
+  misma la autora o no haya principal activa: `Activity::copiaParaLaPrincipal()`. Las que se
   quedan sin autor —sin autor conocido, cuenta borrada o sacada de la
   organización— pasan a la principal. La regla está en `Activity::responsable()`
   y, para listados, en `Activity::deLaCuenta()`: si se cambia una, hay que

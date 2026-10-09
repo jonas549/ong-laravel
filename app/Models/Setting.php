@@ -44,6 +44,38 @@ class Setting extends Model
         return static::todos()[$clave] ?? $default;
     }
 
+    /**
+     * Dominios reservados para ejemplos y pruebas (RFC 2606). Un correo así
+     * no llega a nadie: es el que dejó la siembra en «Correo de contacto»
+     * (`contacto@ong-laravel.test`) y salía tal cual en producción (09/10).
+     */
+    public const DOMINIO_DE_EJEMPLO = '/@(?:[^@]+\.)?(?:test|example|invalid|localhost)$|@example\.(?:com|org|net)$/i';
+
+    /** ¿Es un correo al que se puede escribir de verdad? */
+    public static function esCorreoUtil(?string $correo): bool
+    {
+        $correo = trim((string) $correo);
+
+        return filter_var($correo, FILTER_VALIDATE_EMAIL) !== false
+            && ! preg_match(self::DOMINIO_DE_EJEMPLO, $correo);
+    }
+
+    /**
+     * El correo al que la gente puede escribir a la ONG: el de contacto de
+     * Configuración → General y, si no sirve, el buzón de avisos. Null si
+     * ninguno sirve: mejor no dar dirección que dar una inventada.
+     */
+    public static function correoDeContacto(): ?string
+    {
+        foreach (['sitio_email_contacto', 'avisos_email'] as $clave) {
+            if (static::esCorreoUtil(static::get($clave))) {
+                return trim((string) static::get($clave));
+            }
+        }
+
+        return null;
+    }
+
     public static function set(string $clave, mixed $valor): void
     {
         $registro = static::firstOrNew(['clave' => $clave]);

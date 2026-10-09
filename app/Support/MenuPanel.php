@@ -65,6 +65,7 @@ class MenuPanel
                 self::nodo('Marquesina de organizaciones', 'admin.marquesina.edit', [], [], 'admin.marquesina.*'),
                 self::nodo('Páginas sueltas', 'admin.content.index', ['tipo' => 'paginas'], [], 'admin.content.*'),
                 self::nodo('Política de privacidad', 'admin.paginas.privacidad'),
+                self::nodo('Preguntas frecuentes', 'admin.paginas.preguntas-frecuentes'),
             ]),
 
             self::nodo('Contenido', null, [], [

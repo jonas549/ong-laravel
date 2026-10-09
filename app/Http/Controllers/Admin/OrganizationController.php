@@ -40,6 +40,12 @@ class OrganizationController extends Controller
     {
         $estado = Filtro::texto($request, 'estado');
 
+        // Tanda del 09/10: por la fecha en que se creó (la columna «Creada»).
+        // Sólo fechas bien formadas: lo demás se ignora en vez de filtrar mal.
+        $fecha = fn (string $campo) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $v = Filtro::texto($request, $campo)) ? $v : '';
+        $desde = $fecha('desde');
+        $hasta = $fecha('hasta');
+
         // Las actividades, sólo con su correo: lo pide la columna de correos
         // (punto 2 del 08/10) sin una consulta por fila.
         $consulta = Organization::with(['user', 'cuentas:id,organization_id,email', 'activities:id,organization_id,correo_contacto'])
@@ -55,7 +61,9 @@ class OrganizationController extends Controller
                 Filtro::texto($request, 'filtro') === 'activas',
                 fn ($q) => $q->whereHas('activities', fn ($a) => $a->where('estado', 'publicada')),
             )
-            ->when($estado !== '', fn ($q) => $q->where('activo', $estado === 'si'));
+            ->when($estado !== '', fn ($q) => $q->where('activo', $estado === 'si'))
+            ->when($desde, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($hasta, fn ($q, $d) => $q->whereDate('created_at', '<=', $d));
 
         $consulta = Papelera::aplicar($consulta, $request);
 
@@ -66,6 +74,8 @@ class OrganizationController extends Controller
             'soloPendientes' => $soloPendientes,
             'soloActivas' => Filtro::texto($request, 'filtro') === 'activas',
             'verEliminados' => Papelera::incluyeEliminados($request),
+            'desde' => $desde,
+            'hasta' => $hasta,
             'pendientes' => Organization::where('verificada', false)->count(),
         ]);
     }
@@ -184,6 +194,51 @@ class OrganizationController extends Controller
         $organization->forceFill(['user_id' => $user->id])->save();
 
         return back()->with('ok', "{$user->email} es ahora la cuenta principal de «{$organization->nombre}».");
+    }
+
+    /**
+     * Crear la cuenta de acceso de una organización que no tiene ninguna,
+     * desde su ficha (tanda del 09/10).
+     *
+     * Hasta aquí sólo se podía al crear la organización, y de las importadas
+     * casi ninguna tiene cuenta. Mismos campos y reglas que en «Nueva
+     * organización» y Panel → Usuarios (`CuentaDeAcceso`), y queda como su
+     * cuenta principal.
+     *
+     * Sólo si no tiene ninguna: con cuentas, la siguiente se asigna desde
+     * Panel → Usuarios, que es donde se ve a quién se está sumando.
+     */
+    public function crearCuenta(Request $request, Organization $organization)
+    {
+        if ($organization->cuentas()->exists()) {
+            return back()->with('error', 'Esta organización ya tiene cuenta. Para sumarle otra, créala en Usuarios y elige esta organización.');
+        }
+
+        $cuenta = $request->validate(CuentaDeAcceso::reglas(), CuentaDeAcceso::mensajes(), CuentaDeAcceso::atributos());
+
+        DB::transaction(function () use ($organization, $cuenta) {
+            $usuario = CuentaDeAcceso::crear($cuenta, User::ROL_ORGANIZER);
+
+            /*
+             * Una principal que ya no está en la organización (borrada o
+             * sacada) no cuenta: sin esto, `enlazarCuenta()` la daría por
+             * principal y la cuenta nueva quedaría como sumada a nadie.
+             */
+            if ($organization->user_id !== null) {
+                $organization->forceFill(['user_id' => null])->save();
+            }
+
+            $organization->enlazarCuenta($usuario);
+
+            // Como al crearla: sin correo de contacto escrito, el de la cuenta.
+            if (blank($organization->correo_contacto)) {
+                $organization->forceFill(['correo_contacto' => $usuario->email])->save();
+            }
+        });
+
+        return redirect()
+            ->route('admin.organizations.edit', $organization)
+            ->with('ok', "Cuenta creada: {$cuenta['email']} ya puede entrar y publicar por «{$organization->nombre}».");
     }
 
     /**

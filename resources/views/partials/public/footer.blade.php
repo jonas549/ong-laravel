@@ -26,7 +26,11 @@
                  style="height:68px;width:auto;object-fit:contain;">
         </a>
 
-        <a class="textlink" href="{{ url('/privacidad') }}" style="font-size:14px;">Política de privacidad</a>
+        {{-- Punto 7 del 09/10: las preguntas frecuentes, bajo la privacidad. --}}
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <a class="textlink" href="{{ url('/privacidad') }}" style="font-size:14px;">Política de privacidad</a>
+            <a class="textlink" href="{{ url('/preguntas-frecuentes') }}" style="font-size:14px;" data-pie-faq>Preguntas frecuentes</a>
+        </div>
 
         <div style="display:flex;align-items:center;gap:24px;margin-left:auto;flex-wrap:wrap;">
             <a class="textlink" href="mailto:diadelpatrimoniosocial@comunidad-org.cl" style="font-size:14px;">diadelpatrimoniosocial@comunidad-org.cl</a>

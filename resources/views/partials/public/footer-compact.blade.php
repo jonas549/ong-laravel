@@ -16,6 +16,7 @@
 
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--gris);">
             <a class="textlink" href="{{ url('/privacidad') }}">Política de privacidad</a>
+            <a class="textlink" href="{{ url('/preguntas-frecuentes') }}" data-pie-faq>Preguntas frecuentes</a>
             <span>diadelpatrimoniosocial@comunidad-org.cl</span>
             <span>@diadelpatrimoniosocial</span>
         </div>

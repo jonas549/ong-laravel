@@ -269,16 +269,21 @@ export const flash = (auto = false) => ({
 
 /* ─────────────────────────── validación en tiempo real ── */
 
-export const campoValidado = (pistas) => ({
-    aviso: '',
-    tocado: false,
+export const campoValidado = (pistas, errorDelServidor = '') => ({
+    aviso: errorDelServidor,
+    tocado: errorDelServidor !== '',
     entrada: null,
+    // El valor que el servidor rechazó. Con una regla que aquí no se puede
+    // mirar (`unique`), su aviso se queda mientras el campo siga diciendo eso.
+    rechazado: null,
     // Si hace falta rellenarlo AHORA MISMO. Con `required_if` cambia al vuelo,
     // y de esto cuelga el asterisco de la etiqueta.
     obligatorio: false,
 
     init() {
         this.entrada = this.$refs.entrada ?? null;
+
+        if (errorDelServidor) this.rechazado = this.valor();
 
         /*
          * Con `required_if`, el aviso depende de OTRO campo. Hay que volver a
@@ -340,7 +345,8 @@ export const campoValidado = (pistas) => ({
 
     revisar() {
         this.tocado = true;
-        this.aviso = this.problema();
+        this.aviso = this.problema()
+            || (this.rechazado !== null && this.valor() === this.rechazado ? errorDelServidor : '');
     },
 
     problema() {

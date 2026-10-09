@@ -11,6 +11,12 @@ const AVISO_DIR_SIN_SERVICIO = 'Ahora no podemos sugerir direcciones. Escríbela
  * organizadores, y era la única que se había quedado con el aviso viejo —«hay N
  * datos por corregir», sin decir cuáles—.
  *
+ * Desde la tanda del 09/10 pinta los MISMOS campos que el paso 4 del wizard
+ * (resources/views/public/partials/campos-actividad.blade.php), así que tiene
+ * que dar el mismo estado y los mismos métodos que `wizard` para esa parte:
+ * la lista está en la cabecera del parcial. Si se añade algo allí, va en los
+ * dos componentes.
+ *
  * A diferencia del wizard, aquí no hay pasos: la guía no define `irAlPaso`, y
  * las llamadas de dentro están escritas con `?.` justamente para eso.
  */
@@ -21,7 +27,6 @@ export const editorActividad = (inicial) => ({
         temas: inicial.temas.map(Number),
         caracteristicas: inicial.caracteristicas.map(Number),
         publicos: inicial.publicos.map(Number),
-        accesos: inicial.accesos.map(Number),
     },
     limites: inicial.limites,
 
@@ -34,10 +39,24 @@ export const editorActividad = (inicial) => ({
     // Punto 6 del 05/10: sustituye a «abierta», cuya pregunta salió del editor.
     cerrada: inicial.cerrada ?? false,
     insc: inicial.insc,
+    acc: inicial.acc ?? false,
     descLen: inicial.descLen,
 
-    colaboradores: inicial.colaboradores,
-    colab: inicial.colaboradores.length > 0,
+    // Colaboradores: sólo los nombres, en etiquetas, como en el wizard.
+    colabs: inicial.colabs ?? [],
+    colab: (inicial.colabs ?? []).length > 0,
+
+    regionId: inicial.regionId ?? '',
+    communeId: inicial.communeId ?? '',
+    comunas: inicial.comunas ?? {},
+    otrosId: inicial.otrosId ?? null,
+
+    correoCuenta: inicial.correoCuenta ?? '',
+    correoContacto: inicial.correoContacto ?? '',
+    mismoCorreo: inicial.mismoCorreo ?? false,
+
+    tipo: inicial.tipo ?? '',
+    editaLaFicha: inicial.editaLaFicha ?? true,
 
     modalCancelar: false,
 
@@ -48,6 +67,11 @@ export const editorActividad = (inicial) => ({
         // `$el` sólo es la raíz aquí dentro; ver la regla de panel.js.
         this.raiz = this.$el;
         this.iniciarGuia(this.$el);
+
+        // Como en el wizard: marcar la casilla copia el correo de la cuenta.
+        this.$watch('mismoCorreo', (activo) => {
+            if (activo) this.correoContacto = this.correoCuenta;
+        });
     },
 
     marcado(grupo, id) {
@@ -81,12 +105,35 @@ export const editorActividad = (inicial) => ({
         return this.sel[grupo].length;
     },
 
-    activarColab() {
-        this.colab = true;
+    // "¿Cuál?" solo aparece si el público marcado incluye "Otros".
+    publicoOtros() {
+        return this.otrosId !== null && this.sel.publicos.includes(Number(this.otrosId));
+    },
 
-        if (this.colaboradores.length === 0) {
-            this.colaboradores.push({ nombre: '', tipo: '' });
-        }
+    comunasDeRegion() {
+        return this.comunas[this.regionId] ?? [];
+    },
+
+    cambiarRegion() {
+        this.communeId = '';
+    },
+
+    agregarColaborador(e) {
+        const v = e.target.value.trim();
+        if (!v) return;
+        this.colabs.push(v);
+        e.target.value = '';
+    },
+
+    // Los trabajadores voluntarios son un dato de la ficha: sólo los cambia la
+    // cuenta principal, y sólo de una empresa.
+    esEmpresa() {
+        return this.editaLaFicha && this.tipo === 'Empresa o institución privada';
+    },
+
+    // Los dos enlaces son de la ficha (varias cuentas por organización).
+    fichaAjena() {
+        return ! this.editaLaFicha;
     },
 
     /* ─────────────────────────── sugerencias de dirección (P16) ── */

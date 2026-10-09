@@ -76,7 +76,7 @@
 
             <p style="font-size:16px;line-height:1.7;color:var(--gris-700);white-space:pre-line;margin:0 0 24px;">{{ $activity->descripcion }}</p>
 
-            @foreach (['tema' => 'Temas', 'caracteristica' => 'Características', 'publico' => 'Dirigida a', 'acceso' => 'Accesibilidad'] as $grupo => $label)
+            @foreach (['tema' => 'Temas', 'caracteristica' => 'Características', 'publico' => 'Dirigida a'] as $grupo => $label)
                 @php $items = $activity->termsDe($grupo); @endphp
                 @if ($items->isNotEmpty())
                     <div style="margin-bottom:18px;">
@@ -89,6 +89,31 @@
                     </div>
                 @endif
             @endforeach
+
+            {{--
+                Punto 8 del 09/10: la respuesta a «¿Tu actividad cuenta con
+                alguna adecuación de accesibilidad?», con lo que se escribió.
+                Sólo el «Sí»: un «No» guardado puede ser sólo que nadie lo
+                contestó, y leerlo como «no es accesible» espanta a quien más
+                lo necesita saber. Con las etiquetas del formulario viejo, si
+                las tiene.
+            --}}
+            @php $accesos = $activity->termsDe('acceso'); @endphp
+            @if ($activity->tiene_accesibilidad || $accesos->isNotEmpty())
+                <div style="margin-bottom:18px;" data-ficha-accesibilidad>
+                    <div class="seclabel" style="margin-bottom:8px;">Accesibilidad</div>
+                    @if ($activity->tiene_accesibilidad)
+                        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:var(--gris-700);white-space:pre-line;">{{ filled($activity->accesibilidad_detalle) ? $activity->accesibilidad_detalle : 'Esta actividad cuenta con adecuaciones de accesibilidad.' }}</p>
+                    @endif
+                    @if ($accesos->isNotEmpty())
+                        <div style="display:flex;flex-wrap:wrap;gap:7px;">
+                            @foreach ($accesos as $t)
+                                <span style="font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;background:var(--gris-100);color:var(--gris-700);">{{ $t->nombre }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             @if ($activity->info_previa)
                 <div class="alert alert-info" style="margin-top:22px;">
@@ -154,6 +179,20 @@
                         </div>
                     @endif
                 </div>
+
+                {{--
+                    Punto 8 del 09/10: el correo de contacto público que se pide
+                    al publicar. Como botón que abre la aplicación de correo, y
+                    no la dirección a la vista.
+                --}}
+                @if (filled($activity->correo_contacto))
+                    <a class="btn btn-outline btn-sm" data-escribir-organizador
+                       href="mailto:{{ $activity->correo_contacto }}?subject={{ rawurlencode('Consulta sobre «'.$activity->titulo.'»') }}"
+                       style="margin-top:20px;width:100%;justify-content:center;gap:8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-10 6L2 7"/></svg>
+                        Escribir a quien organiza
+                    </a>
+                @endif
 
                 @if ($activity->puedeRecibirInscripciones())
                     <hr style="border:0;border-top:1px solid var(--linea);margin:22px 0;">

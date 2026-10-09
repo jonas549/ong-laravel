@@ -200,7 +200,8 @@ class ActivityModerationService
     private function avisar(Activity $actividad, string $estado): void
     {
         $mailable = self::AVISOS[$estado] ?? null;
-        // A quien creó la actividad, no a la principal (ver `responsable()`).
+        // A quien creó la actividad (ver `responsable()`), con la principal en
+        // copia salvo que sea ella misma o no haya principal activa.
         $destino = $actividad->responsable()?->email;
 
         if (! $mailable || blank($destino)) {
@@ -215,7 +216,13 @@ class ActivityModerationService
 
         try {
             app(SmtpConfigService::class)->aplicar();
-            Mail::to($destino)->send(new $mailable($actividad));
+            $correo = Mail::to($destino);
+
+            if ($copia = $actividad->copiaParaLaPrincipal($destino)) {
+                $correo->cc($copia);
+            }
+
+            $correo->send(new $mailable($actividad));
         } catch (Throwable $e) {
             Log::warning('No se pudo avisar del cambio de estado', [
                 'activity' => $actividad->id,

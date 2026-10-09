@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\Activity;
-use App\Models\ActivityCollaborator;
 use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
 use App\Support\Enlace;
@@ -16,10 +15,11 @@ use Illuminate\Validation\Rule;
 /**
  * Edición de una actividad desde "Mi cuenta".
  *
- * Es el mismo formulario del paso 4 del wizard más los campos que sólo
- * aparecen en la pantalla de edición de mi-cuenta.html (fecha de término,
- * cupos, info previa, tipo de colaborador). No lleva los datos de la
- * organización ni los de la cuenta: eso ya existe cuando se edita.
+ * Desde la tanda del 09/10 es EL MISMO formulario que el paso 4 del wizard
+ * (un parcial compartido), así que las reglas siguen a las de
+ * PublishActivityRequest campo a campo. Lo que sólo tiene el editor: los
+ * cupos que quedan (`cupos_disponibles`), «antes de asistir» si ya estaba
+ * escrito y el mensaje al volver de ajustes. No lleva los datos de la cuenta.
  *
  * Las fechas y horas llegan como texto, no como input[type=date]: el
  * prototipo usa campos de texto ("26 / 07 / 2026", "10:00") y además los
@@ -112,6 +112,7 @@ class UpdateActivityRequest extends FormRequest
                 ['after:hora_inicio'],
             )],
 
+            'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
             'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
             'direccion' => ['nullable', Rule::requiredIf(
                 // Punto 5 de la tanda del 11/09: una actividad ONLINE no tiene
@@ -140,6 +141,10 @@ class UpdateActivityRequest extends FormRequest
             // Punto 6 del 05/10: sustituye a «¿Esta actividad es abierta al
             // público?», que salió del editor.
             'cerrada' => ['nullable', 'boolean'],
+            'tiene_accesibilidad' => ['nullable', 'boolean'],
+            'accesibilidad_detalle' => ['nullable', 'string', 'max:2000'],
+            // De la ficha de una empresa; sólo lo guarda la cuenta principal.
+            'org_num_voluntarios' => ['nullable', 'integer', 'min:0', 'max:100000'],
 
             /*
              * El mensaje con el que el organizador acompaña una corrección.
@@ -150,6 +155,7 @@ class UpdateActivityRequest extends FormRequest
             'mensaje_ajustes' => ['nullable', 'string', 'max:2000'],
             'info_previa' => ['nullable', 'string', 'max:2000'],
 
+            'usar_correo_cuenta' => ['nullable', 'boolean'],
             'correo_contacto' => ['nullable', 'email', 'max:255', new CorreoEnviable],
             'enlace_red_social' => Enlace::reglas(),
             'enlace_web' => Enlace::reglas(),
@@ -159,16 +165,17 @@ class UpdateActivityRequest extends FormRequest
 
             'temas' => ['required', 'array', 'min:1', 'max:'.TaxonomyTerm::limiteDe('tema')],
             'temas.*' => ['exists:taxonomy_terms,id'],
-            'caracteristicas' => ['nullable', 'array', 'max:'.TaxonomyTerm::limiteDe('caracteristica')],
+            // Obligatorias, como al publicar: el editor ya no es más permisivo.
+            'caracteristicas' => ['required', 'array', 'min:1', 'max:'.TaxonomyTerm::limiteDe('caracteristica')],
             'caracteristicas.*' => ['exists:taxonomy_terms,id'],
             'publicos' => ['required', 'array', 'min:1'],
             'publicos.*' => ['exists:taxonomy_terms,id'],
-            'accesos' => ['nullable', 'array'],
-            'accesos.*' => ['exists:taxonomy_terms,id'],
+            'publico_otro' => ['nullable', 'string', 'max:255'],
 
+            // Sólo los nombres, como en el wizard. El tipo que tuviera cada
+            // uno se conserva al guardar (MyActivityController).
             'colaboradores' => ['nullable', 'array', 'max:20'],
-            'colaboradores.*.nombre' => ['nullable', 'string', 'max:255'],
-            'colaboradores.*.tipo' => ['nullable', Rule::in(ActivityCollaborator::TIPOS)],
+            'colaboradores.*' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -178,6 +185,7 @@ class UpdateActivityRequest extends FormRequest
         return [
             'temas.max' => 'Puedes elegir hasta 3 temas principales.',
             'temas.required' => 'Elige al menos un tema.',
+            'caracteristicas.required' => 'Marca al menos una característica de tu actividad.',
             'caracteristicas.max' => 'Puedes elegir hasta 5 características.',
             'publicos.required' => 'Indica a qué público está dirigida la actividad.',
             'fecha_inicio.required_without' => 'Indica la fecha, o marca que está disponible de forma permanente.',
@@ -188,6 +196,7 @@ class UpdateActivityRequest extends FormRequest
             'hora_inicio.date_format' => 'Escribe la hora como HH:MM, por ejemplo 10:00.',
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:30.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
+            'region_id.required_without' => 'Elige la región donde ocurre la actividad.',
             'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
             'direccion.required' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
             'imagen.max' => 'La imagen no puede pesar más de 2 MB.',
@@ -201,6 +210,7 @@ class UpdateActivityRequest extends FormRequest
         return [
             'titulo' => 'nombre de la actividad',
             'descripcion' => 'la descripción',
+            'region_id' => 'región',
             'commune_id' => 'comuna',
             'direccion' => 'dirección',
             'imagen' => 'imagen de la actividad',

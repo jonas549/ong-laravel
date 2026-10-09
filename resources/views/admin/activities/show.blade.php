@@ -142,7 +142,7 @@
                 <form method="POST" action="{{ route('admin.activities.changes', $activity) }}" style="display:flex;flex-direction:column;gap:9px;">
                     @csrf
                     <label class="helper" for="comentario" style="font-weight:600;">Pedir ajustes</label>
-                    <textarea class="fld @error('comentario') is-invalid @enderror" id="comentario" name="comentario" rows="3"
+                    <textarea class="fld @error('comentario') is-invalid @enderror" id="comentario" name="comentario" rows="3" data-minimo="10"
                               placeholder="Explica qué falta o qué hay que corregir…">{{ \App\Support\Formulario::viejo('comentario') }}</textarea>
                     <span class="helper">El organizador recibe este texto tal cual, por correo, y queda en el hilo de arriba. Podrá responderte al reenviar la actividad corregida.</span>
                     @error('comentario') <span class="field-error">{{ $message }}</span> @enderror

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateActivityRequest;
 use App\Models\Activity;
-use App\Models\ActivityCollaborator;
 use App\Models\Commune;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
@@ -88,7 +87,6 @@ class MyActivityController extends Controller
 
         return view('account.activities.edit', $catalogos->todos() + [
             'activity' => $activity,
-            'tiposColaborador' => ActivityCollaborator::TIPOS,
         ]);
     }
 
@@ -137,9 +135,25 @@ class MyActivityController extends Controller
                 // editor y la sustituye «cerrada» (punto 6 del 05/10).
                 'inscripcion_habilitada' => $request->boolean('inscripcion_habilitada'),
                 'cerrada' => ! $request->boolean('inscripcion_habilitada') && $request->boolean('cerrada'),
-                'info_previa' => $datos['info_previa'] ?? null,
-                'correo_contacto' => $datos['correo_contacto'] ?? null,
+                // La accesibilidad, como en el wizard: «Sí» con su detalle, o
+                // «No». Antes salía de las etiquetas de accesibilidad del
+                // formulario viejo y apagaba el «Sí» contestado al publicar.
+                'tiene_accesibilidad' => $request->boolean('tiene_accesibilidad'),
+                'accesibilidad_detalle' => $request->boolean('tiene_accesibilidad')
+                    ? ($datos['accesibilidad_detalle'] ?? null)
+                    : null,
+                'publico_otro' => $datos['publico_otro'] ?? null,
+                // Igual que al publicar: con la casilla, el de la cuenta.
+                'correo_contacto' => $request->boolean('usar_correo_cuenta')
+                    ? $request->user()->email
+                    : ($datos['correo_contacto'] ?? null),
             ]);
+
+            // «Antes de asistir» ya no se pregunta; el campo sólo viaja si la
+            // actividad lo tenía escrito, y sin él no se toca.
+            if ($request->has('info_previa')) {
+                $activity->info_previa = $datos['info_previa'] ?? null;
+            }
 
             /*
              * Los dos enlaces son de la organización y no de la actividad, así
@@ -158,7 +172,14 @@ class MyActivityController extends Controller
                 $activity->organization->fill([
                     'enlace_web' => $datos['enlace_web'] ?? null,
                     'enlace_red_social' => $datos['enlace_red_social'] ?? null,
-                ])->save();
+                ]);
+
+                // Los trabajadores voluntarios de una empresa, como en el wizard.
+                if ($request->has('org_num_voluntarios')) {
+                    $activity->organization->num_voluntarios = $datos['org_num_voluntarios'] ?? null;
+                }
+
+                $activity->organization->save();
             }
 
             // El título sólo rehace el slug mientras la ficha no se haya publicado:
@@ -175,16 +196,18 @@ class MyActivityController extends Controller
                 $this->borrarImagen($anterior);
             }
 
-            // La accesibilidad queda en "sí" en cuanto se marca alguna medida.
-            $activity->tiene_accesibilidad = ! empty($datos['accesos']);
-
             $activity->save();
 
+            /*
+             * Las etiquetas de accesibilidad del formulario viejo ya no se
+             * eligen, pero las que tuviera una actividad se conservan: se
+             * siguen viendo en su ficha y no hay dónde volver a ponerlas.
+             */
             $activity->terms()->sync(
                 collect($datos['temas'] ?? [])
                     ->merge($datos['publicos'] ?? [])
                     ->merge($datos['caracteristicas'] ?? [])
-                    ->merge($datos['accesos'] ?? [])
+                    ->merge($activity->termsDe('acceso')->pluck('id'))
                     ->filter()
                     ->unique()
             );
@@ -351,14 +374,21 @@ class MyActivityController extends Controller
      *
      * @param  array<int, array<string, string|null>>  $filas
      */
-    private function guardarColaboradores(Activity $activity, array $filas): void
+    /**
+     * Los colaboradores llegan como nombres, igual que en el wizard. El tipo
+     * de organización que tuviera cada uno (lo pedía el formulario viejo) se
+     * conserva si el nombre sigue en la lista.
+     */
+    private function guardarColaboradores(Activity $activity, array $nombres): void
     {
+        $tipos = $activity->collaborators()->pluck('tipo', 'nombre');
+
         $activity->collaborators()->delete();
 
         $orden = 0;
 
-        foreach ($filas as $fila) {
-            $nombre = trim((string) ($fila['nombre'] ?? ''));
+        foreach ($nombres as $nombre) {
+            $nombre = trim((string) $nombre);
 
             if ($nombre === '') {
                 continue;
@@ -366,7 +396,7 @@ class MyActivityController extends Controller
 
             $activity->collaborators()->create([
                 'nombre' => $nombre,
-                'tipo' => $fila['tipo'] ?? null,
+                'tipo' => $tipos[$nombre] ?? null,
                 'orden' => $orden++,
             ]);
         }

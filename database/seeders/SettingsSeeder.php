@@ -95,7 +95,9 @@ class SettingsSeeder extends Seeder
             ],
             [
                 'grupo' => 'general', 'clave' => 'sitio_email_contacto', 'tipo' => 'string',
-                'valor' => 'contacto@ong-laravel.test',
+                // Vacío y no un correo de ejemplo: uno inventado acaba en los
+                // correos de producción (09/10). Se rellena en el panel.
+                'valor' => '',
                 'label' => 'Correo de contacto',
             ],
             [

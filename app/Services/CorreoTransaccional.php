@@ -48,7 +48,31 @@ class CorreoTransaccional
                 'nombre' => $inscripcion->nombre,
                 'enlace_cancelar' => route('registrations.cancel', $inscripcion->token),
                 'bloque_soy_parte' => $actividad ? $this->bloqueSoyParte($actividad) : '',
+                'bloque_contacto' => $actividad ? $this->bloqueContacto($actividad) : '',
             ], $inscripcion);
+    }
+
+    /**
+     * «Si tienes dudas, escríbele» con el correo público de la actividad
+     * (punto 8 del 09/10). Va después del enlace del calendario.
+     *
+     * **El correo lo escribe una persona** en el formulario, y los `bloque_`
+     * entran sin escapar (ver EmailTemplateRenderer): por eso se escapa aquí,
+     * entero, antes de meterlo en el HTML. Sin correo, el bloque no sale.
+     */
+    private function bloqueContacto(Activity $actividad): string
+    {
+        $correo = trim((string) $actividad->correo_contacto);
+
+        if ($correo === '' || filter_var($correo, FILTER_VALIDATE_EMAIL) === false) {
+            return '';
+        }
+
+        $enlace = e('mailto:'.$correo.'?subject='.rawurlencode('Consulta sobre «'.$actividad->titulo.'»'));
+
+        return '<p style="margin:18px 0 0;font-size:14px;color:#63666A;">'
+            .'Si tienes dudas y necesitas contactar al organizador, '
+            .'<a href="'.$enlace.'" style="color:#cc6600;font-weight:600;">escríbele</a>.</p>';
     }
 
     /**
@@ -89,6 +113,9 @@ class CorreoTransaccional
      * principal de la organización. Con varias personas publicando, mandarlos
      * a la principal le llenaría el buzón con lo de todas y la autora no se
      * enteraría de nada.
+     *
+     * La principal va **en copia** (tanda del 09/10), salvo que sea ella la
+     * autora o no haya principal activa: `Activity::copiaParaLaPrincipal()`.
      */
     public function nuevaInscripcion(Registration $inscripcion): bool
     {
@@ -109,7 +136,7 @@ class CorreoTransaccional
                 : (string) $actividad->cupos_disponibles,
             'enlace_participantes' => route('account.participants.index', $actividad),
             'sitio' => config('app.name'),
-        ], $inscripcion);
+        ], $inscripcion, copia: $actividad->copiaParaLaPrincipal($destino));
     }
 
     /** Recordatorio los días previos. */
@@ -203,7 +230,7 @@ class CorreoTransaccional
             'sitio' => config('app.name'),
         ], $actividad, incrustadas: $qr === '' ? [] : [
             'qr' => ['datos' => $qr, 'nombre' => 'qr-evaluacion.png', 'mime' => 'image/png'],
-        ]);
+        ], copia: $actividad->copiaParaLaPrincipal($destino));
     }
 
     /**
@@ -244,7 +271,7 @@ class CorreoTransaccional
             'enlace_guia' => $guia,
             'enlace_cuenta' => route('account.activities.index'),
             'sitio' => config('app.name'),
-        ], $actividad);
+        ], $actividad, copia: $actividad->copiaParaLaPrincipal($destino));
     }
 
     /**
@@ -275,7 +302,9 @@ class CorreoTransaccional
             'fecha' => \App\Support\Fecha::corta(now()),
             // El correo de contacto del sitio (Configuración → General): a
             // dónde escribir si no conoce a esa persona. El de avisos, si no hay.
-            'correo_sitio' => trim((string) Setting::get('sitio_email_contacto')) ?: trim((string) Setting::get('avisos_email')),
+            // Nunca una dirección de ejemplo (09/10): sin correo útil, la
+            // frase queda en «escríbenos a nuestro equipo».
+            'correo_sitio' => Setting::correoDeContacto() ?? 'nuestro equipo',
             'enlace_cuenta' => route('account.login'),
             'sitio' => config('app.name'),
         ];
@@ -472,7 +501,7 @@ class CorreoTransaccional
      * quien se acaba de inscribir no tiene por qué ver un error 500 porque el
      * SMTP esté caído.
      */
-    private function enviar(string $clave, string $destino, array $datos, ?Model $relacionado = null, array $incrustadas = []): bool
+    private function enviar(string $clave, string $destino, array $datos, ?Model $relacionado = null, array $incrustadas = [], ?string $copia = null): bool
     {
         $plantilla = EmailTemplate::porClave($clave);
 
@@ -482,7 +511,13 @@ class CorreoTransaccional
 
         try {
             $this->smtp->aplicar();
-            Mail::to($destino)->send(new PlantillaMail($plantilla, $datos, relacionado: $relacionado, incrustadas: $incrustadas));
+            $correo = Mail::to($destino);
+
+            if (filled($copia)) {
+                $correo->cc($copia);
+            }
+
+            $correo->send(new PlantillaMail($plantilla, $datos, relacionado: $relacionado, incrustadas: $incrustadas));
 
             return true;
         } catch (Throwable $e) {

@@ -60,7 +60,9 @@ class SettingController extends Controller
                 $ajuste->tipo === 'imagen' => ['nullable', 'string', 'max:255'],
                 // Vacío vale: significa «el mensaje de siempre» (MensajeCompartir).
                 $ajuste->clave === 'compartir_mensaje' => ['nullable', 'string', 'max:300'],
-                str_contains($ajuste->clave, 'email') => ['required', 'email', 'max:255'],
+                // Sin dominios de ejemplo (09/10): `contacto@ong-laravel.test`
+                // pasaba la regla `email` y salía en los correos de producción.
+                str_contains($ajuste->clave, 'email') => ['required', 'email', 'max:255', 'not_regex:'.Setting::DOMINIO_DE_EJEMPLO],
                 /*
                  * Q3: los ajustes que son un enlace —hoy solo el del kit de
                  * difusion— se validan como tal y se completan antes, igual
@@ -82,7 +84,9 @@ class SettingController extends Controller
             collect($ajustes)->pluck('clave')->filter(fn ($c) => str_ends_with($c, '_url'))->all(),
         ));
 
-        $request->validate($reglas, [], $nombres);
+        $request->validate($reglas, [
+            'not_regex' => 'Esa dirección es de ejemplo y no llega a nadie. Escribe el correo real.',
+        ], $nombres);
 
         foreach ($ajustes as $ajuste) {
             Setting::set($ajuste->clave, match ($ajuste->tipo) {

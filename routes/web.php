@@ -357,6 +357,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/organizaciones/{organization}', [Admin\OrganizationController::class, 'update'])->name('organizations.update');
         Route::post('/organizaciones/{organization}/estado', [Admin\OrganizationController::class, 'alternar'])->name('organizations.alternar');
         // Varias cuentas por organización: elegir la principal y sacar una cuenta.
+        Route::post('/organizaciones/{organization}/cuenta', [Admin\OrganizationController::class, 'crearCuenta'])->name('organizations.crear-cuenta');
         Route::post('/organizaciones/{organization}/principal/{user}', [Admin\OrganizationController::class, 'hacerPrincipal'])->name('organizations.principal');
         Route::delete('/organizaciones/{organization}/cuentas/{user}', [Admin\OrganizationController::class, 'quitarCuenta'])->name('organizations.quitar-cuenta');
         Route::delete('/organizaciones/{organization}', [Admin\OrganizationController::class, 'destroy'])->name('organizations.destroy');
@@ -433,6 +434,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/paginas/home/{seccion}/borrador', [Admin\HomeSectionController::class, 'descartarBorrador'])->name('home.borrador.descartar');
         Route::post('/paginas/home/{seccion}/versiones/{version}/restaurar', [Admin\HomeSectionController::class, 'restaurar'])->name('home.restaurar');
         Route::get('/paginas/privacidad', [Admin\PaginaLegalController::class, 'privacidad'])->name('paginas.privacidad');
+        Route::get('/paginas/preguntas-frecuentes', [Admin\PaginaLegalController::class, 'preguntasFrecuentes'])->name('paginas.preguntas-frecuentes');
 
         // Qué organizaciones salen en la marquesina del home, y el interruptor
         // que la llena sola. Ver App\Support\Marquesina.

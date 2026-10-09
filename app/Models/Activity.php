@@ -153,6 +153,27 @@ class Activity extends Model
     }
 
     /**
+     * El correo de la cuenta principal para ir EN COPIA de los avisos de esta
+     * actividad (tanda del 09/10): el aviso va a quien tiene que actuar —el
+     * `responsable()`—, y la dueña de la organización se entera de todo lo
+     * que se publica en su nombre.
+     *
+     * Null en los dos casos raros: si la principal es la propia destinataria
+     * (un correo, no dos) y si la organización no tiene principal activa
+     * (entonces va sólo al autor).
+     */
+    public function copiaParaLaPrincipal(?string $destino): ?string
+    {
+        $copia = $this->organization?->principalActiva()?->email;
+
+        if (blank($copia) || blank($destino) || strcasecmp(trim($copia), trim($destino)) === 0) {
+            return null;
+        }
+
+        return $copia;
+    }
+
+    /**
      * Las actividades que le tocan a esta cuenta, con el mismo criterio que
      * `responsable()`: las suyas y, si es la principal, las que se quedaron
      * sin autor dentro de su organización.
@@ -347,6 +368,26 @@ class Activity extends Model
     public function scopeOrdered(Builder $q): Builder
     {
         return $q->orderBy('orden')->orderBy('fecha_inicio');
+    }
+
+    /**
+     * El orden del listado de /actividades (tanda del 09/10): las más recién
+     * creadas primero y las que ya pasaron al final, con la misma regla de
+     * «ya pasó» que `scopeSinPasadas()`. El calendario no lo usa: ahí manda
+     * la fecha de la actividad.
+     */
+    public function scopeRecientesPrimero(Builder $q): Builder
+    {
+        $hoy = now(\App\Support\Fecha::zona())->toDateString();
+
+        return $q
+            ->orderByRaw(
+                'CASE WHEN COALESCE(sin_fecha_definida, 0) = 0 AND fecha_inicio IS NOT NULL'
+                .' AND COALESCE(fecha_termino, fecha_inicio) < ? THEN 1 ELSE 0 END',
+                [$hoy]
+            )
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     // ── Accessors ────────────────────────────────────────────────

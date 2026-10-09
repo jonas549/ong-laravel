@@ -105,7 +105,115 @@ function ponerVisor(campo) {
     });
 }
 
+/* ── El aviso del servidor se va cuando el campo queda bien (09/10) ──
+ *
+ * Los avisos en rojo que pinta el servidor (`@error(...)`) eran texto fijo: se
+ * corregía la contraseña de siete letras, se escribía una buena, y el «debe
+ * tener al menos 8 caracteres» seguía ahí hasta enviar. Es el mismo fallo que
+ * la guía de errores vino a arreglar: lo que ya está bien no puede seguir en
+ * rojo, porque entonces no se sabe qué queda.
+ *
+ * Qué es «queda bien» sin una segunda lista de reglas:
+ *
+ * - lo que el navegador sabe comprobar (`type="email"`, `required`,
+ *   `minlength`), con `checkValidity()`;
+ * - la contraseña nueva, al menos 8 caracteres —la regla `min:8` de todas las
+ *   pantallas— y, si el campo de confirmación ya está escrito, que coincidan;
+ * - `data-minimo` en el campo, para otro mínimo del servidor;
+ * - y para lo que sólo sabe el servidor (`unique`, `exists`), que el valor sea
+ *   otro que el rechazado. Si se vuelve a escribir el mismo, el aviso vuelve.
+ *
+ * Los avisos que ya maneja Alpine (`x-show`, `x-text`) no se tocan: ésos van y
+ * vienen solos.
+ */
+const MINIMO_CLAVE = 8;
+
+function controlDelAviso(aviso) {
+    const visibles = 'input[name]:not([type="hidden"]):not([name$="_confirmation"]), select[name], textarea[name]';
+
+    for (let caja = aviso.parentElement, nivel = 0; caja && nivel < 2; caja = caja.parentElement, nivel++) {
+        const controles = [...caja.querySelectorAll(visibles)];
+
+        if (controles.length) {
+            return { caja, control: controles.find((c) => c.classList.contains('is-invalid')) ?? controles[0] };
+        }
+
+        // Un grupo de chips: no hay control a la vista, el valor va en hidden.
+        if (caja.querySelector('template, input[type="hidden"][name$="[]"]')) return { caja, control: null };
+    }
+
+    return null;
+}
+
+function valorDe(control) {
+    return control.type === 'checkbox' || control.type === 'radio' ? String(control.checked) : control.value.trim();
+}
+
+function valoresOcultos(caja) {
+    return [...caja.querySelectorAll('input[type="hidden"][name]')].map((c) => c.value).sort().join(',');
+}
+
+function seguirAviso(aviso) {
+    if (aviso.dataset.avisoSeguido || aviso.hasAttribute('x-show') || aviso.hasAttribute('x-text')) return;
+
+    const enlace = controlDelAviso(aviso);
+
+    if (! enlace) return;
+
+    aviso.dataset.avisoSeguido = '1';
+
+    const { caja, control } = enlace;
+
+    if (! control) {
+        // Chips: bien en cuanto hay alguno marcado y la selección cambió.
+        // Alpine repinta los hidden después del clic, de ahí la espera.
+        const rechazado = valoresOcultos(caja);
+
+        caja.addEventListener('click', () => setTimeout(() => {
+            const ahora = valoresOcultos(caja);
+
+            aviso.hidden = ahora !== '' && ahora !== rechazado;
+        }, 30));
+
+        return;
+    }
+
+    const rechazado = valorDe(control);
+    const confirmacion = control.form?.querySelector(`[name="${CSS.escape(control.name + '_confirmation')}"]`) ?? null;
+    // Se mira ahora: el visor de contraseña le cambia el `type` a «text».
+    const esClave = control.type === 'password' && control.autocomplete !== 'current-password';
+    const minimo = Number(control.dataset.minimo || (esClave ? MINIMO_CLAVE : 0));
+
+    const quedaBien = () => {
+        const valor = valorDe(control);
+
+        if (control.disabled) return true;
+        if (valor === '' || valor === 'false') return false;
+        if (control.checkValidity && ! control.checkValidity()) return false;
+        if (minimo && control.value.length < minimo) return false;
+        if (confirmacion && confirmacion.value !== '' && confirmacion.value !== control.value) return false;
+
+        // La contraseña rechazada no vuelve en el formulario: lo escrito ya es otro.
+        return esClave || valor !== rechazado;
+    };
+
+    const repasar = () => {
+        const bien = quedaBien();
+
+        aviso.hidden = bien;
+        control.classList.toggle('is-invalid', ! bien);
+        if (bien) control.removeAttribute('aria-invalid');
+    };
+
+    ['input', 'change'].forEach((evento) => {
+        control.addEventListener(evento, repasar);
+        confirmacion?.addEventListener(evento, repasar);
+    });
+}
+
 export function montarCampos(raiz = document) {
+    raiz.querySelectorAll('.field-error').forEach(seguirAviso);
+
     raiz.querySelectorAll('input[data-autoprotocolo]').forEach((campo) => {
         if (campo.dataset.protocoloPuesto) return;
         campo.dataset.protocoloPuesto = '1';

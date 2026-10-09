@@ -17,7 +17,13 @@
         </div>
 
         @if ($ediciones->isNotEmpty())
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:52px;text-align:left;">
+            {{-- Tanda del 09/10: un título que separa los dos bloques. --}}
+            @php $tituloEdiciones = $seccion->texto('titulo_ediciones', $b); @endphp
+            @if (filled($tituloEdiciones))
+                <h3 class="reveal dato-editable" data-titulo-ediciones
+                    style="font-weight:800;font-size:28px;line-height:1.2;margin:64px 0 0;letter-spacing:-.01em;">{{ $tituloEdiciones }}</h3>
+            @endif
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:{{ filled($tituloEdiciones) ? '26px' : '52px' }};text-align:left;">
                 @foreach ($ediciones as $e)
                     <article class="reveal" style="background:#fff;border:1px solid #eef0f1;border-radius:18px;overflow:hidden;">
                         @if ($e->imagen)

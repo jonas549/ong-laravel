@@ -546,18 +546,16 @@ if (! editar) {
         cajasAqui.join(', '));
 
     /*
-     * «Características» lleva asterisco en el HTML fuente y su regla dice
-     * `nullable`, y hay actividades sembradas sin ninguna. Hasta que se decida,
-     * la revisión previa sigue a la REGLA, igual que se hizo con «Dirección»
-     * antes de que se decidiera.
+     * Tanda del 09/10: el editor pinta los campos del wizard, y ahí
+     * «Características» es obligatoria (lo mismo en las dos reglas).
      */
-    di('«características» sigue a la regla y no al asterisco',
-        ! cajasAqui.includes('caracteristicas'));
+    di('«características» es obligatoria, como al publicar',
+        cajasAqui.includes('caracteristicas'));
     di('y «accesibilidad», que es opcional, tampoco', ! cajasAqui.includes('accesos'));
 
     di('los dos grupos obligatorios lo dicen con la palabra',
         await p.$$eval('[data-campo] .marca-obligatoria',
-            (n) => n.map((e) => e.closest('[data-campo]').dataset.campo).join(',')) === 'temas,publicos');
+            (n) => n.map((e) => e.closest('[data-campo]').dataset.campo).join(',')) === 'caracteristicas,temas,publicos');
 
     // Aquí el encabezado va dentro de `.lbl`, que es flex en columna: la
     // marca salía estirada a todo el ancho y en su propio renglón.
@@ -605,15 +603,17 @@ if (! editar) {
         document.querySelector('input[name="direccion"]').value = '';
     });
     await p.evaluate((r) => {
-        // Desmarcar todos los públicos, que es el caso del reporte.
+        // Desmarcar todos los públicos, que es el caso del reporte, y las
+        // características (obligatorias desde el 09/10).
         const d = Alpine.$data(document.querySelector(r));
         d.sel.publicos = [];
+        d.sel.caracteristicas = [];
     }, raiz);
     await new Promise((r) => setTimeout(r, 300));
 
     const pendientesAqui = await faltanAqui();
-    di('detecta los tres que faltan',
-        ['titulo', 'direccion', 'publicos'].every((c) => pendientesAqui.includes(c)),
+    di('detecta los cuatro que faltan',
+        ['titulo', 'caracteristicas', 'direccion', 'publicos'].every((c) => pendientesAqui.includes(c)),
         pendientesAqui.join(', '));
 
     await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -628,13 +628,13 @@ if (! editar) {
 
     const resEdit = await textoResumen();
     di('aparece el resumen', resEdit !== null, JSON.stringify(resEdit?.slice(0, 90)));
-    di('dice cuántos faltan', /Faltan 3 campos/.test(resEdit ?? ''));
-    di('nombra los tres', /Nombre de la actividad/.test(resEdit ?? '')
+    di('dice cuántos faltan', /Faltan 4 campos/.test(resEdit ?? ''));
+    di('nombra los tres de siempre', /Nombre de la actividad/.test(resEdit ?? '')
         && /Dirección/.test(resEdit ?? '') && /Público beneficiado/.test(resEdit ?? ''));
     di('el resumen quedó EN PANTALLA', await enPantalla('[data-resumen-errores]') === true);
 
     const marcadasAqui = await p.$$eval('.campo-fallido', (n) => n.map((e) => e.dataset.campo));
-    di('marca las tres cajas', marcadasAqui.length === 3, marcadasAqui.join(', '));
+    di('marca las cuatro cajas', marcadasAqui.length === 4, marcadasAqui.join(', '));
 
     // El renglón salta, y al rellenar se limpia.
     await p.evaluate(() => document.querySelector('[data-resumen-errores] .resumen-errores-salto').click());
@@ -643,7 +643,7 @@ if (! editar) {
 
     await p.type('input[name="titulo"]', 'Título recuperado');
     await new Promise((r) => setTimeout(r, 300));
-    di('al rellenarlo sale del resumen', /Faltan 2 campos/.test(await textoResumen() ?? ''));
+    di('al rellenarlo sale del resumen', /Faltan 3 campos/.test(await textoResumen() ?? ''));
 
     /* ── Y el camino del servidor: la dirección vacía ahora la rechaza él ── */
     await p.evaluate(() => { document.querySelector('input[name="direccion"]').value = ''; });
