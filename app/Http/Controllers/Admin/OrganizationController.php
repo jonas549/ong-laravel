@@ -42,8 +42,8 @@ class OrganizationController extends Controller
 
         // Las actividades, sólo con su correo: lo pide la columna de correos
         // (punto 2 del 08/10) sin una consulta por fila.
-        $consulta = Organization::with(['user', 'activities:id,organization_id,correo_contacto'])
-            ->withCount(['activities', 'activities as publicadas_count' => fn ($q) => $q->where('estado', 'publicada')])
+        $consulta = Organization::with(['user', 'cuentas:id,organization_id,email', 'activities:id,organization_id,correo_contacto'])
+            ->withCount(['activities', 'cuentas', 'activities as publicadas_count' => fn ($q) => $q->where('estado', 'publicada')])
             ->when(Filtro::texto($request, 'q'), fn ($q, $b) => $q->where('nombre', 'like', '%'.Filtro::like($b).'%'))
             ->when($soloPendientes, fn ($q) => $q->where('verificada', false))
             /*
@@ -134,15 +134,19 @@ class OrganizationController extends Controller
         $organizacion = DB::transaction(function () use ($datos, $cuenta) {
             $usuario = $cuenta ? CuentaDeAcceso::crear($cuenta, User::ROL_ORGANIZER) : null;
 
-            return Organization::create(array_merge($datos, [
-                // Sin dueño es lo que la deja reclamable en el wizard.
-                'user_id' => $usuario?->id,
+            $organizacion = Organization::create(array_merge($datos, [
                 // Como al crearla desde Panel → Usuarios: sin correo de
                 // contacto escrito, el de la cuenta.
                 'correo_contacto' => ($datos['correo_contacto'] ?? null) ?: $usuario?->email,
                 'verificada' => false,
                 'activo' => true,
             ]));
+
+            // Sin cuenta, sin principal: es lo que la deja reclamable en el
+            // wizard. Con cuenta, ésa queda como su principal.
+            $usuario && $organizacion->enlazarCuenta($usuario);
+
+            return $organizacion;
         });
 
         return redirect()
@@ -155,9 +159,57 @@ class OrganizationController extends Controller
     public function edit(Organization $organization)
     {
         return view('admin.organizations.edit', [
-            'organizacion' => $organization->loadCount(['activities', 'registrations']),
+            'organizacion' => $organization->loadCount(['activities', 'registrations'])
+                ->load(['cuentas' => fn ($q) => $q->withCount('activities')->orderBy('organizacion_desde')]),
             'tipos' => Organization::TIPOS,
         ]);
+    }
+
+    /**
+     * Elegir la cuenta principal entre las de la organización.
+     *
+     * La principal es la que recibe el aviso cuando alguien se suma y la única
+     * que edita la ficha. Nunca cambia sola: si se borra o se desactiva, la
+     * organización sigue funcionando y la ficha avisa de que hay que elegir
+     * otra aquí.
+     */
+    public function hacerPrincipal(Organization $organization, User $user)
+    {
+        abort_unless($user->organization_id === $organization->id, 404);
+
+        if (! $user->is_active) {
+            return back()->with('error', 'Esa cuenta está desactivada: no podría leer los avisos ni editar la ficha. Actívala antes o elige otra.');
+        }
+
+        $organization->forceFill(['user_id' => $user->id])->save();
+
+        return back()->with('ok', "{$user->email} es ahora la cuenta principal de «{$organization->nombre}».");
+    }
+
+    /**
+     * Sacar una cuenta de la organización.
+     *
+     * La cuenta no se borra: se queda sin organización, como las que crea el
+     * panel antes de asignarles una, y puede volver a enlazarse desde Panel →
+     * Usuarios. Sus actividades se quedan en la organización —son de ella— y
+     * pasan a verlas la cuenta principal (`Activity::responsable()`), que es
+     * también quien recibe desde ahora sus correos. No se reescribe ninguna
+     * fila: si la cuenta vuelve, recupera las suyas.
+     *
+     * La principal no se saca así: primero se elige otra. Si no, la
+     * organización se quedaría con cuentas y sin nadie que edite su ficha.
+     */
+    public function quitarCuenta(Organization $organization, User $user)
+    {
+        abort_unless($user->organization_id === $organization->id, 404);
+
+        if ($organization->user_id === $user->id) {
+            return back()->with('error', 'No se puede sacar a la cuenta principal. Elige antes otra cuenta como principal.');
+        }
+
+        $user->forceFill(['organization_id' => null, 'organizacion_desde' => null])->save();
+
+        return back()->with('ok', "{$user->email} ya no es de «{$organization->nombre}». Sus actividades pasan a la cuenta principal.");
     }
 
     public function update(Request $request, Organization $organization)
@@ -241,10 +293,14 @@ class OrganizationController extends Controller
          * justo lo que dejaba a un organizador sin poder publicar con su ficha
          * (punto 1 del 30/09). Desactivarla la esconde sin romper nada.
          */
-        if ($organization->user_id) {
-            return back()->with('error', 'No se puede eliminar «'.$organization->nombre.'»: es la organización de la cuenta '
-                .($organization->user?->email ?? 'de un organizador')
-                .', que se quedaría sin ella. Desactívala para esconderla del sitio.');
+        $cuentas = $organization->cuentas()->count();
+
+        if ($organization->user_id || $cuentas > 0) {
+            return back()->with('error', 'No se puede eliminar «'.$organization->nombre.'»: '
+                .($cuentas > 1
+                    ? 'tiene '.$cuentas.' cuentas, que se quedarían sin ella.'
+                    : 'es la organización de la cuenta '.($organization->user?->email ?? 'de un organizador').', que se quedaría sin ella.')
+                .' Desactívala para esconderla del sitio.');
         }
 
         $organization->delete();
@@ -265,7 +321,7 @@ class OrganizationController extends Controller
         $formato = Filtro::texto($request, 'formato') === 'csv' ? 'csv' : 'xlsx';
 
         $filas = (function () {
-            $consulta = Organization::with('user')->withCount('activities')->orderBy('nombre');
+            $consulta = Organization::with('user')->withCount(['activities', 'cuentas'])->orderBy('nombre');
 
             foreach ($consulta->cursor() as $o) {
                 yield [
@@ -273,6 +329,7 @@ class OrganizationController extends Controller
                     $o->nombre,
                     $o->tipo_label,
                     $o->user?->email,
+                    $o->cuentas_count,
                     $o->correo_contacto,
                     $o->verificada ? 'Sí' : 'No',
                     $o->activo ? 'Sí' : 'No',
@@ -283,7 +340,7 @@ class OrganizationController extends Controller
         })();
 
         return $exportador->descargar($formato, 'Organizaciones', [
-            'ID', 'Nombre', 'Tipo', 'Correo de la cuenta', 'Correo de contacto',
+            'ID', 'Nombre', 'Tipo', 'Correo de la cuenta principal', 'Cuentas', 'Correo de contacto',
             'Verificada', 'Activa', 'Actividades', 'Alta',
         ], $filas);
     }

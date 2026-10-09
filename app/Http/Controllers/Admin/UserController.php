@@ -7,6 +7,7 @@ use App\Mail\ContrasenaCambiadaPorAdmin;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\ControlDeAcceso;
+use App\Services\CorreoTransaccional;
 use App\Services\SesionesActivas;
 use App\Services\SmtpConfigService;
 use App\Support\CuentaDeAcceso;
@@ -78,17 +79,21 @@ class UserController extends Controller
 
         $organizacion = $datos['role'] === User::ROL_ORGANIZER ? $this->organizacionPedida($request) : null;
 
-        DB::transaction(function () use ($datos, $organizacion) {
+        [$usuario, $sumada] = DB::transaction(function () use ($datos, $organizacion) {
             $usuario = CuentaDeAcceso::crear($datos, $datos['role']);
 
-            if ($organizacion) {
-                $this->enlazar($usuario, $organizacion);
-            }
+            return [$usuario, $organizacion ? $this->enlazar($usuario, $organizacion) : false];
         });
 
-        return back()->with('ok', $organizacion
-            ? "Usuario creado, con «{$organizacion['nombre']}» como su organización."
-            : 'Usuario creado.');
+        if ($sumada) {
+            app(CorreoTransaccional::class)->cuentaSumada($usuario->fresh('organization'));
+        }
+
+        return back()->with('ok', match (true) {
+            $sumada => "Usuario creado y sumado a «{$organizacion['nombre']}». Avisamos a su cuenta principal.",
+            (bool) $organizacion => "Usuario creado, con «{$organizacion['nombre']}» como su organización.",
+            default => 'Usuario creado.',
+        });
     }
 
     /**
@@ -98,9 +103,13 @@ class UserController extends Controller
      * Un organizador sin organización enlazada era una cuenta que entraba pero
      * no podía hacer nada: el wizard la trataba como a quien no tiene ficha y
      * su propio nombre le rebotaba como repetido. Desde el panel ya no se
-     * puede crear así. Se elige una libre del listado —se enlaza— o se escribe
-     * un nombre nuevo —se crea—. Una que ya tiene cuenta no se puede quitar a
-     * su dueño desde aquí: eso es mover actividades de una persona a otra.
+     * puede crear así. Se elige una del listado —se enlaza— o se escribe un
+     * nombre nuevo —se crea—.
+     *
+     * Desde las varias cuentas por organización, la del listado puede tener
+     * ya cuenta: la nueva se suma a ella, sin quitarle nada a nadie (cada
+     * cuenta tiene sus propias actividades). El administrador puede hacerlo
+     * siempre, sin depender del interruptor de Configuración → General.
      *
      * @return array{id: ?int, nombre: string}
      */
@@ -116,54 +125,57 @@ class UserController extends Controller
         ], ['org_nombre' => 'la organización']);
 
         if ($id = (int) ($datos['org_id'] ?? 0)) {
-            $libre = Organization::sinReclamar()->where('activo', true)->find($id);
+            $elegida = Organization::where('activo', true)->find($id);
 
-            if (! $libre) {
+            if (! $elegida) {
                 throw ValidationException::withMessages([
-                    'org_nombre' => 'Esa organización ya tiene una cuenta, o ya no está disponible.',
+                    'org_nombre' => 'Esa organización ya no está disponible.',
                 ]);
             }
 
-            return ['id' => $libre->id, 'nombre' => $libre->nombre];
+            return ['id' => $elegida->id, 'nombre' => $elegida->nombre];
         }
 
         $existe = Organization::whereRaw('LOWER(nombre) = ?', [mb_strtolower($datos['org_nombre'])])->first();
 
         if ($existe) {
             throw ValidationException::withMessages([
-                'org_nombre' => $existe->estaSinReclamar()
-                    ? 'Esa organización ya está en el listado: elígela en las sugerencias en vez de crear otra.'
-                    : 'Esa organización ya tiene una cuenta. Si es otra distinta, escribe un nombre que la diferencie.',
+                'org_nombre' => 'Esa organización ya está en el listado: elígela en las sugerencias en vez de crear otra.',
             ]);
         }
 
         return ['id' => null, 'nombre' => $datos['org_nombre']];
     }
 
-    /** Le pone dueño a la libre elegida, o crea la nueva ya con dueño. */
-    private function enlazar(User $usuario, array $organizacion): void
+    /**
+     * Enlaza la cuenta a la elegida —como principal si estaba libre, sumada
+     * si ya tenía— o crea la nueva con ella como principal.
+     *
+     * Devuelve true si se sumó a una que ya tenía cuenta: entonces hay que
+     * avisar a su principal, fuera de la transacción.
+     */
+    private function enlazar(User $usuario, array $organizacion): bool
     {
         if ($organizacion['id']) {
             // Se relee con bloqueo: entre validar y guardar alguien pudo
-            // reclamarla en el wizard.
-            $libre = Organization::sinReclamar()->lockForUpdate()->find($organizacion['id']);
+            // reclamarla en el wizard, y eso decide si ésta es la principal.
+            $elegida = Organization::lockForUpdate()->find($organizacion['id']);
 
-            if (! $libre) {
-                throw ValidationException::withMessages(['org_nombre' => 'Esa organización acaba de quedar reclamada por otra cuenta.']);
+            if (! $elegida) {
+                throw ValidationException::withMessages(['org_nombre' => 'Esa organización ya no está disponible.']);
             }
 
-            $libre->update(['user_id' => $usuario->id]);
-
-            return;
+            return $elegida->enlazarCuenta($usuario);
         }
 
         Organization::create([
-            'user_id' => $usuario->id,
             'nombre' => $organizacion['nombre'],
             'correo_contacto' => $usuario->email,
             'verificada' => false,
             'activo' => true,
-        ]);
+        ])->enlazarCuenta($usuario);
+
+        return false;
     }
 
     public function edit(Request $request, User $user)
@@ -216,17 +228,19 @@ class UserController extends Controller
             ? $this->organizacionPedida($request)
             : null;
 
-        DB::transaction(function () use ($user, $datos, $organizacion) {
+        $sumada = DB::transaction(function () use ($user, $datos, $organizacion) {
             $user->update($datos);
 
-            if ($organizacion) {
-                $this->enlazar($user, $organizacion);
-            }
+            return $organizacion ? $this->enlazar($user, $organizacion) : false;
         });
+
+        if ($sumada) {
+            app(CorreoTransaccional::class)->cuentaSumada($user->fresh('organization'));
+        }
 
         return redirect()
             ->route('admin.users.edit', [$user, 'rol' => $user->role])
-            ->with('ok', 'Datos actualizados.');
+            ->with('ok', $sumada ? 'Datos actualizados. Se sumó a la organización y avisamos a su cuenta principal.' : 'Datos actualizados.');
     }
 
     /**

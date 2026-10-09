@@ -172,6 +172,20 @@ class EmailTemplateSeeder extends Seeder
                     '{{ enlace_revisar }}',
                 ),
             ],
+
+            'cuenta_sumada' => [
+                'asunto' => 'Una nueva cuenta se sumó a {{ organizacion }}',
+                'cuerpo_html' => $this->cuerpo(
+                    'Una nueva cuenta en tu organización',
+                    '<p style="margin:0 0 14px;">Hola {{ nombre }}:</p>
+                     <p style="margin:0 0 14px;"><strong>{{ nombre_cuenta }}</strong> ({{ correo_cuenta }}) creó una cuenta en {{ sitio }} y se sumó a <strong>{{ organizacion }}</strong> el {{ fecha }}. Desde ahora puede publicar actividades con el nombre de la organización.</p>
+                     <p style="margin:0 0 14px;">Cada cuenta ve y edita sólo sus propias actividades, y su primera actividad pasará por revisión antes de publicarse.</p>
+                     <p style="margin:0 0 14px;">Si no conoces a esta persona o no debería publicar en nombre de {{ organizacion }}, escríbenos a {{ correo_sitio }}.</p>
+                     <p style="margin:0 0 14px;">{{ nota }}</p>',
+                    'Ir a mi cuenta',
+                    '{{ enlace_cuenta }}',
+                ),
+            ],
         ];
     }
 

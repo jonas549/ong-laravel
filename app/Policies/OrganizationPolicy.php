@@ -26,20 +26,25 @@ class OrganizationPolicy
         return $user?->esAdmin() ? true : null;
     }
 
+    /** Verla: cualquier cuenta de la organización. */
     public function view(?User $user, Organization $organization): bool
     {
-        return $this->esSuya($user, $organization);
+        return $user !== null && $user->organization_id === $organization->id;
     }
 
+    /**
+     * Cambiar la ficha: sólo la cuenta principal. Con varias personas en la
+     * organización, la ficha es de todas, y que cualquiera pudiera renombrarla
+     * o cambiarle el logo sería abrírsela a quien se acaba de sumar.
+     */
     public function update(?User $user, Organization $organization): Response
     {
-        return $this->esSuya($user, $organization)
-            ? Response::allow()
-            : Response::deny('Esa organización no es la tuya.');
-    }
+        if (! $this->view($user, $organization)) {
+            return Response::deny('Esa organización no es la tuya.');
+        }
 
-    private function esSuya(?User $user, Organization $organization): bool
-    {
-        return $user !== null && $organization->user_id === $user->id;
+        return $organization->user_id === $user->id
+            ? Response::allow()
+            : Response::deny('Los datos de la organización los cambia su cuenta principal.');
     }
 }

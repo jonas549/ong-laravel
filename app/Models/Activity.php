@@ -50,7 +50,7 @@ class Activity extends Model
     ];
 
     protected $fillable = [
-        'organization_id', 'titulo', 'slug', 'descripcion', 'formato',
+        'organization_id', 'user_id', 'titulo', 'slug', 'descripcion', 'formato',
         'fecha_inicio', 'fecha_termino', 'hora_inicio', 'hora_termino', 'sin_fecha_definida',
         'region_id', 'commune_id', 'direccion', 'latitud', 'longitud',
         'participantes_estimados', 'cupos_totales', 'cupos_disponibles',
@@ -110,6 +110,72 @@ class Activity extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * La cuenta que creó la actividad (`activities.user_id`).
+     *
+     * Nula en las que no tienen autor conocido —las de antes de la
+     * migración sin dueño, las de los escenarios de prueba—, y también cuando
+     * la cuenta se borró, porque las cuentas se borran en blando y la
+     * relación no las trae. Para saber a quién le corresponde, usar
+     * `responsable()`.
+     */
+    public function autor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * La cuenta a la que le toca esta actividad: la ve en «Mis actividades»,
+     * la edita y recibe sus correos.
+     *
+     * Es su autor mientras siga en la organización. Si no hay autor, si su
+     * cuenta se borró o si el administrador la sacó de la organización, pasa
+     * a la cuenta principal: una actividad que no fuera de nadie sólo la
+     * podría tocar el administrador, y los correos de sus inscritos no
+     * llegarían a ninguna parte.
+     *
+     * La consulta equivalente, para listados, es `scopeDeLaCuenta()`. Si se
+     * cambia una, hay que cambiar la otra.
+     */
+    public function responsable(): ?User
+    {
+        $autor = $this->autor;
+
+        if ($autor && $autor->organization_id === $this->organization_id) {
+            return $autor;
+        }
+
+        $principal = $this->organization?->user;
+
+        return $principal && $principal->organization_id === $this->organization_id ? $principal : null;
+    }
+
+    /**
+     * Las actividades que le tocan a esta cuenta, con el mismo criterio que
+     * `responsable()`: las suyas y, si es la principal, las que se quedaron
+     * sin autor dentro de su organización.
+     */
+    public function scopeDeLaCuenta(Builder $q, User $cuenta): Builder
+    {
+        $org = $cuenta->organization;
+
+        if (! $org) {
+            return $q->whereRaw('1 = 0');
+        }
+
+        return $q->where('organization_id', $org->id)
+            ->where(function (Builder $q) use ($cuenta, $org) {
+                $q->where('user_id', $cuenta->id);
+
+                if ($org->user_id === $cuenta->id) {
+                    // Sin autor, o con un autor que ya no está en la
+                    // organización (borrado en blando o sacado de ella).
+                    $q->orWhereNull('user_id')
+                        ->orWhereNotIn('user_id', User::where('organization_id', $org->id)->select('id'));
+                }
+            });
     }
 
     public function region(): BelongsTo

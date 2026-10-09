@@ -52,8 +52,18 @@
                 @endif
             </dd>
 
-            <dt class="helper" style="font-weight:700;">Contacto</dt>
-            <dd style="margin:0;">{{ $activity->organization?->user?->email }}</dd>
+            {{-- Varias cuentas: la cuenta que la creó, que es a quien le llegan
+                 los avisos de moderación; no la principal de la organización. --}}
+            <dt class="helper" style="font-weight:700;">Registrada por</dt>
+            <dd style="margin:0;" data-registrada-por>
+                @php
+                    $cuenta = $activity->autor ?? $activity->responsable();
+                @endphp
+                {{ $cuenta?->email }}
+                @if ($cuenta && $cuenta->name && $cuenta->name !== $activity->organization?->nombre)
+                    <span class="helper">· {{ $cuenta->name }}</span>
+                @endif
+            </dd>
 
             <dt class="helper" style="font-weight:700;">Fecha</dt>
             <dd style="margin:0;">{{ $activity->fecha_larga }}</dd>

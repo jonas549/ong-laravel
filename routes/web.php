@@ -356,6 +356,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/organizaciones/{organization}/editar', [Admin\OrganizationController::class, 'edit'])->name('organizations.edit');
         Route::put('/organizaciones/{organization}', [Admin\OrganizationController::class, 'update'])->name('organizations.update');
         Route::post('/organizaciones/{organization}/estado', [Admin\OrganizationController::class, 'alternar'])->name('organizations.alternar');
+        // Varias cuentas por organización: elegir la principal y sacar una cuenta.
+        Route::post('/organizaciones/{organization}/principal/{user}', [Admin\OrganizationController::class, 'hacerPrincipal'])->name('organizations.principal');
+        Route::delete('/organizaciones/{organization}/cuentas/{user}', [Admin\OrganizationController::class, 'quitarCuenta'])->name('organizations.quitar-cuenta');
         Route::delete('/organizaciones/{organization}', [Admin\OrganizationController::class, 'destroy'])->name('organizations.destroy');
         Route::post('/organizaciones/{id}/restaurar', [Admin\OrganizationController::class, 'restaurar'])->name('organizations.restaurar');
 

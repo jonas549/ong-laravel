@@ -402,14 +402,23 @@
                 @error('correo_contacto') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
-            <label class="lbl">Enlace a red social
+            {{-- Varias cuentas: quien se suma, o publica en una organización
+                 de la que no es la cuenta principal, no cambia la ficha. Los
+                 campos siguen en el HTML —se puede entrar o cambiar de cuenta
+                 sin recargar— pero no se enseñan, y el servidor ignora lo que
+                 llegue. --}}
+            <p class="helper" style="grid-column:1/-1;margin:0;" x-show="fichaAjena()" x-cloak data-enlaces-de-la-principal>
+                El enlace a red social y el de página web son datos de la organización y los cambia su cuenta principal.
+            </p>
+
+            <label class="lbl" x-show="! fichaAjena()">Enlace a red social
                 <input class="fld @error('enlace_red_social') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_red_social"
                        value="@viejo('enlace_red_social', $organizacion?->enlace_red_social)" placeholder="https://instagram.com/...">
                 <span class="helper">Solo un enlace: Instagram, Facebook, LinkedIn o el que prefieras.</span>
                 @error('enlace_red_social') <span class="field-error">{{ $message }}</span> @enderror
             </label>
 
-            <label class="lbl">Enlace a página web (opcional)
+            <label class="lbl" x-show="! fichaAjena()">Enlace a página web (opcional)
                 <input class="fld @error('enlace_web') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_web"
                        value="@viejo('enlace_web', $organizacion?->enlace_web)" placeholder="https://tusitio.cl">
                 <span class="helper">Si tu actividad tiene una página con más información, compártela aquí.</span>
@@ -417,7 +426,7 @@
             </label>
 
             {{-- Ver la nota del mismo par de campos en account/activities/edit. --}}
-            <p class="helper" style="grid-column:1/-1;margin:-4px 0 0;">
+            <p class="helper" style="grid-column:1/-1;margin:-4px 0 0;" x-show="! fichaAjena()">
                 El enlace a red social y el de página web son datos de tu organización: se muestran en todas tus actividades.
             </p>
         </div>

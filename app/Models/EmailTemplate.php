@@ -105,6 +105,21 @@ class EmailTemplate extends Model
                 .'Como mucho uno por actividad y día, aunque se guarde varias veces.',
             'variables' => ['actividad', 'organizacion', 'correo_organizacion', 'fecha', 'lugar', 'enlace_revisar', 'enlace_actividad', 'sitio'],
         ],
+
+        /*
+         * Varias cuentas por organización: quien se suma entra directo, sin
+         * aprobación previa, y este aviso es el contrapeso. Va a la cuenta
+         * principal; si la organización no tiene una activa, al buzón de
+         * avisos del equipo, y `nota` dice por qué.
+         */
+        'cuenta_sumada' => [
+            'nombre' => 'Aviso de cuenta sumada a la organización',
+            // `email_templates.descripcion` es varchar(255): pasarse rompe
+            // `dps:instalar`, que corre en cada despliegue.
+            'descripcion' => 'Se envía a la cuenta principal de una organización cuando otra persona se suma a ella '
+                .'(si Configuración → General permite varias cuentas). Sin cuenta principal activa, va al correo de avisos del equipo.',
+            'variables' => ['nombre', 'organizacion', 'nombre_cuenta', 'correo_cuenta', 'fecha', 'nota', 'correo_sitio', 'enlace_cuenta', 'sitio'],
+        ],
     ];
 
     protected $fillable = ['clave', 'nombre', 'descripcion', 'asunto', 'cuerpo_html', 'variables', 'activo'];

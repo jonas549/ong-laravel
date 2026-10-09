@@ -68,9 +68,43 @@ trait ReclamarOrganizacion
 
         $id = (int) $this->input('org_id');
 
+        /*
+         * Libre, o ya con cuenta si el interruptor de varias cuentas está
+         * encendido: en ese caso quien la elige se suma a ella. El
+         * interruptor se mira aquí, en el servidor y en cada envío: con él
+         * apagado, un `org_id` de una organización con cuenta no lleva a
+         * ninguna parte, lo diga el navegador o no.
+         */
         return $this->organizacionReclamada = $id > 0
-            ? Organization::sinReclamar()->where('activo', true)->find($id)
+            ? Organization::admitenCuentaNueva()->find($id)
             : null;
+    }
+
+    /**
+     * Si la cuenta se va a sumar a una organización que ya tiene cuenta, en
+     * vez de reclamar una libre. Al sumarse no se toca nada de la ficha:
+     * es de la organización, y la cambia su cuenta principal.
+     */
+    public function seSuma(): bool
+    {
+        return ($org = $this->reclamada()) !== null && ! $org->estaSinReclamar();
+    }
+
+    /**
+     * Si la ficha de la organización NO se va a escribir con este envío: quien
+     * se suma, o quien tiene sesión en una organización de la que no es la
+     * cuenta principal. A esos los campos de la organización no se les
+     * preguntan, y exigirlos rebotaría un formulario que no los enseña.
+     */
+    public function fichaFija(): bool
+    {
+        $cuenta = $this->user();
+
+        if ($cuenta?->organization) {
+            return ! $cuenta->editaLaFicha();
+        }
+
+        return $this->seSuma();
     }
 
     /**
@@ -98,17 +132,22 @@ trait ReclamarOrganizacion
         return $regla;
     }
 
-    /** La regla del id: existe, está activa y NO tiene cuenta. Las tres. */
+    /**
+     * La regla del id: existe, está activa y NO tiene cuenta. Las tres. Con
+     * el interruptor de varias cuentas encendido, la tercera sobra: tener
+     * cuenta ya no impide llegar a ella, sólo cambia reclamar por sumarse.
+     */
     public function reglaDelIdDeOrganizacion(): array
     {
-        return [
-            'nullable',
-            'integer',
-            Rule::exists('organizations', 'id')
-                ->whereNull('deleted_at')
-                ->whereNull('user_id')
-                ->where('activo', true),
-        ];
+        $existe = Rule::exists('organizations', 'id')
+            ->whereNull('deleted_at')
+            ->where('activo', true);
+
+        if (! Organization::admiteVariasCuentas()) {
+            $existe->whereNull('user_id');
+        }
+
+        return ['nullable', 'integer', $existe];
     }
 
     /**
@@ -137,6 +176,12 @@ trait ReclamarOrganizacion
                 .'escribe un nombre que la diferencie.';
         }
 
+        if (Organization::admiteVariasCuentas()) {
+            return 'Ya hay una organización registrada con ese nombre. '
+                .'Si es la tuya, elígela en la lista de sugerencias para sumarte a ella. '
+                .'Si es otra organización distinta, escribe un nombre que la diferencie.';
+        }
+
         return 'Ya hay una organización registrada con ese nombre. '
             .'Si es la tuya, inicia sesión con la cuenta que la creó y podrás sumar la actividad desde ahí. '
             .'Si es otra organización distinta, escribe un nombre que la diferencie.';
@@ -145,11 +190,19 @@ trait ReclamarOrganizacion
     public function reclamarOCrear(User $usuario, array $campos, array $alReclamar): Organization
     {
         if ($reclamada = $this->reclamada()) {
-            $reclamada->fill($alReclamar + ['user_id' => $usuario->id])->save();
+            // Sumándose no se escribe nada en la ficha (ver `seSuma()`).
+            if (! $this->seSuma()) {
+                $reclamada->fill($alReclamar)->save();
+            }
+
+            $reclamada->enlazarCuenta($usuario);
 
             return $reclamada;
         }
 
-        return Organization::create($campos + ['user_id' => $usuario->id]);
+        $organizacion = Organization::create($campos);
+        $organizacion->enlazarCuenta($usuario);
+
+        return $organizacion;
     }
 }

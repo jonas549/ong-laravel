@@ -31,10 +31,9 @@ class ParticipantController extends Controller
      */
     public function resumen(Request $request)
     {
-        $organizacion = $request->user()->organization;
-
-        $actividades = $organizacion
-            ? Activity::where('organization_id', $organizacion->id)
+        // Las de esta cuenta, con el mismo criterio que «Mis actividades».
+        $actividades = $request->user()->organization
+            ? Activity::deLaCuenta($request->user())
                 ->conInscripcion()
                 ->withCount(['registrations as inscritos' => fn ($q) => $q->where('estado', '!=', 'cancelado')])
                 ->with('commune')

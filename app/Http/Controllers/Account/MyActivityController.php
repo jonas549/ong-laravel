@@ -42,7 +42,13 @@ class MyActivityController extends Controller
             ]);
         }
 
-        $base = Activity::where('organization_id', $organizacion->id);
+        /*
+         * Las de esta cuenta, no las de toda la organización: con varias
+         * personas publicando, cada una ve y edita sólo las suyas. La
+         * principal ve además las que quedaron sin autor. El administrador las
+         * ve todas desde el panel.
+         */
+        $base = Activity::deLaCuenta($request->user());
 
         $conteos = (clone $base)->selectRaw('estado, COUNT(*) n')->groupBy('estado')->pluck('n', 'estado');
 
@@ -143,11 +149,17 @@ class MyActivityController extends Controller
              *
              * La consecuencia hay que tenerla presente: **cambiarlos desde una
              * actividad los cambia para todas**. El formulario lo dice.
+             *
+             * Y por eso sólo los cambia la cuenta principal: a las demás el
+             * formulario se los enseña sin poder tocarlos, y lo que llegue
+             * aquí se ignora.
              */
-            $activity->organization->fill([
-                'enlace_web' => $datos['enlace_web'] ?? null,
-                'enlace_red_social' => $datos['enlace_red_social'] ?? null,
-            ])->save();
+            if ($request->user()->editaLaFicha()) {
+                $activity->organization->fill([
+                    'enlace_web' => $datos['enlace_web'] ?? null,
+                    'enlace_red_social' => $datos['enlace_red_social'] ?? null,
+                ])->save();
+            }
 
             // El título sólo rehace el slug mientras la ficha no se haya publicado:
             // después ya hay enlaces circulando.
@@ -227,8 +239,11 @@ class MyActivityController extends Controller
 
         $activity->load(['terms', 'collaborators']);
 
-        $copia = DB::transaction(function () use ($activity) {
+        $copia = DB::transaction(function () use ($activity, $request) {
             $copia = $activity->replicate();
+
+            // La copia es de quien la hace, no de quien hizo la original.
+            $copia->user_id = $request->user()->id;
 
             $copia->titulo = $this->tituloDeCopia($activity->titulo);
             $copia->slug = Activity::slugUnico($copia->titulo);
@@ -306,7 +321,7 @@ class MyActivityController extends Controller
          */
         [$estado, $motivo] = $activity->estado === 'ajustes'
             ? ['revision', 'A revisión: vuelve de una petición de ajustes.']
-            : $aprobacion->estadoAlEnviar($activity->organization);
+            : $aprobacion->estadoAlEnviar($activity);
 
         $moderacion->cambiar($activity, $estado, $request->user(), $motivo, automatica: $estado === 'publicada');
 

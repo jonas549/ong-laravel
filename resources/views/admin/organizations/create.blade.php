@@ -33,7 +33,7 @@
                 <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
                     <input type="checkbox" name="crear_cuenta" value="1" x-model="crearCuenta" style="margin-top:3px;">
                     <span>Crear también la cuenta con la que entra la organización
-                        <span class="helper" style="display:block;">Queda como su dueña: puede entrar y publicar sin reclamarla. Sin marcar, la organización queda libre en el listado.</span>
+                        <span class="helper" style="display:block;">Queda como su cuenta principal: puede entrar y publicar sin reclamarla. Sin marcar, la organización queda libre en el listado.</span>
                     </span>
                 </label>
 

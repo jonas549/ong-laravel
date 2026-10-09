@@ -33,6 +33,9 @@ class ActivitySeeder extends Seeder
                 ['slug' => Str::slug($d['titulo'])],
                 [
                     'organization_id' => $org->id,
+                    // Creadas por su cuenta principal, como las de antes de
+                    // las varias cuentas por organización.
+                    'user_id' => $org->user_id,
                     'titulo' => $d['titulo'],
                     'descripcion' => $d['descripcion'],
                     'formato' => $d['formato'] ?? 'Presencial',

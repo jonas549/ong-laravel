@@ -85,7 +85,7 @@ class ActivityController extends Controller
     public function descargar(Request $request, \App\Services\Exportador $exportador)
     {
         $consulta = $this->consultaDeExportacion($request)
-            ->with(['organization.user', 'commune', 'region', 'terms', 'collaborators']);
+            ->with(['organization.user', 'autor', 'commune', 'region', 'terms', 'collaborators']);
 
         $filas = (function () use ($consulta) {
             foreach ($consulta->lazyById(200) as $a) {
@@ -124,7 +124,7 @@ class ActivityController extends Controller
     }
 
     public const COLUMNAS_EXPORTACION = [
-        'ID', 'Actividad', 'Organización', 'Estado', 'Correo que registró la actividad', 'Fecha de registro',
+        'ID', 'Actividad', 'Organización', 'Estado', 'Correo que registró la actividad', 'Registrada por', 'Fecha de registro',
         'Fecha de la actividad', 'Fecha de término', 'Hora de inicio', 'Hora de término',
         'Dirección', 'Comuna', 'Región', 'Formato', 'Cupos totales', 'Cupos disponibles',
         'Requiere inscripción previa', 'Descripción', 'Temas', 'Características', 'Dirigido a', 'Colaboración',
@@ -145,7 +145,13 @@ class ActivityController extends Controller
             $a->titulo,
             $a->organization?->nombre ?? '',
             $a->estado_label,
-            $a->organization?->user?->email ?? '',
+            /*
+             * Varias cuentas por organización: la cuenta que la creó, no la
+             * principal de la organización. Sin autor conocido (las de antes,
+             * o una cuenta ya borrada), la que responde hoy por ella.
+             */
+            ($a->autor ?? $a->responsable())?->email ?? '',
+            ($a->autor ?? $a->responsable())?->name ?? '',
             \App\Support\Fecha::conHora($a->created_at),
             $a->sin_fecha_definida ? 'Por definir' : $dia($a->fecha_inicio),
             $a->sin_fecha_definida ? '' : $dia($a->fecha_termino),
@@ -170,7 +176,7 @@ class ActivityController extends Controller
 
     public function show(Activity $activity)
     {
-        $activity->load(['organization.user', 'region', 'commune', 'terms', 'collaborators', 'statusLogs.user']);
+        $activity->load(['organization.user', 'autor', 'region', 'commune', 'terms', 'collaborators', 'statusLogs.user']);
 
         return view('admin.activities.show', compact('activity'));
     }

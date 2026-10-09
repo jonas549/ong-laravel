@@ -116,7 +116,18 @@ class SettingsSeeder extends Seeder
             [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica', 'tipo' => 'bool', 'valor' => '1',
                 'label' => 'Publicar sin revisar automáticamente',
-                'descripcion' => 'Apagar esto devuelve TODAS las actividades a revisión; es lo que hay que hacer si llega spam. Encendido, se revisan las primeras de cada organización según el número de abajo. Cada organización tiene además su propio interruptor.',
+                'descripcion' => 'Apagar esto devuelve TODAS las actividades a revisión; es lo que hay que hacer si llega spam. Encendido, se revisan las primeras de cada cuenta según el número de abajo. Cada organización tiene además su propio interruptor.',
+            ],
+            /*
+             * Varias cuentas por organización. Apagado por defecto: apagado es
+             * exactamente lo de antes. La descripción cabe en 255 caracteres
+             * (`settings.descripcion` es varchar(255) y pasarse rompe
+             * `dps:instalar`, que corre en cada despliegue).
+             */
+            [
+                'grupo' => 'general', 'clave' => 'organizacion_varias_cuentas', 'tipo' => 'bool', 'valor' => '0',
+                'label' => 'Permitir que una organización tenga más de una cuenta',
+                'descripcion' => 'Encendido, quien elige una organización que ya tiene cuenta se suma a ella y se avisa a su cuenta principal. Apagado, no puede. Apagarlo no saca a quien ya se sumó: sólo deja de admitir nuevas.',
             ],
             [
                 'grupo' => 'general', 'clave' => 'kit_difusion_url', 'tipo' => 'texto', 'valor' => '',
@@ -193,7 +204,7 @@ class SettingsSeeder extends Seeder
             [
                 'grupo' => 'general', 'clave' => 'aprobacion_automatica_desde', 'tipo' => 'int', 'valor' => '1',
                 'label' => 'Actividades que se revisan antes de publicar sin revisión',
-                'descripcion' => 'Cuántas actividades de cada organización se revisan a mano antes de que las siguientes se publiquen solas. 1 revisa sólo la primera (lo de antes), 2 las dos primeras, 0 ninguna. Cuentan las que llegaron a publicarse, aunque se cancelaran.',
+                'descripcion' => 'Cuántas actividades de cada cuenta se revisan antes de que las siguientes se publiquen solas. 1 la primera, 2 las dos primeras, 0 ninguna (salvo la primera de una cuenta sumada, que siempre). Cuentan las publicadas aunque se cancelaran.',
             ],
             [
                 'grupo' => 'general', 'clave' => 'alerta_revision_dias', 'tipo' => 'int', 'valor' => '3',

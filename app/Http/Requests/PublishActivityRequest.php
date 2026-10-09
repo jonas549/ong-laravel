@@ -92,6 +92,13 @@ class PublishActivityRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        /*
+         * Quien se suma a una organización, o publica en una de la que no es
+         * la cuenta principal, no escribe la ficha: el tipo y sus dos campos
+         * condicionales no se le preguntan y no se le exigen.
+         */
+        $fija = $this->fichaFija();
+
         return [
             // Paso 3 — organización y acceso. El prototipo no pide descripción
             // de la organización, así que acá tampoco es obligatoria.
@@ -102,11 +109,11 @@ class PublishActivityRequest extends FormRequest
              * este campo lo escribe el navegador.
              */
             'org_id' => $this->reglaDelIdDeOrganizacion(),
-            'org_tipo' => ['required', Rule::in(Organization::TIPOS)],
-            'org_tipo_otro' => ['nullable', 'required_if:org_tipo,Otra', 'string', 'max:255'],
+            'org_tipo' => [$fija ? 'nullable' : 'required', Rule::in(Organization::TIPOS)],
+            'org_tipo_otro' => array_merge(['nullable'], $fija ? [] : ['required_if:org_tipo,Otra'], ['string', 'max:255']),
             'org_descripcion' => ['nullable', 'string', 'max:2000'],
             'org_num_voluntarios' => ['nullable', 'integer', 'min:0', 'max:100000'],
-            'org_unidad_educativa' => ['nullable', 'required_if:org_tipo,Institución educativa', 'string', 'max:255'],
+            'org_unidad_educativa' => array_merge(['nullable'], $fija ? [] : ['required_if:org_tipo,Institución educativa'], ['string', 'max:255']),
             'org_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:500'],
             /*
              * Correo y contraseña sólo se piden a quien no tiene cuenta. Con la
@@ -240,8 +247,10 @@ class PublishActivityRequest extends FormRequest
              * sueltas en dos archivos.
              */
             'email.unique' => ReglasDeCampo::CORREO_YA_EXISTE,
-            'org_id.exists' => 'Esa organización ya tiene una cuenta, o ya no está disponible. '
-                .'Si es la tuya, inicia sesión para publicar con ella.',
+            'org_id.exists' => Organization::admiteVariasCuentas()
+                ? 'Esa organización ya no está disponible. Búscala otra vez en la lista de sugerencias.'
+                : 'Esa organización ya tiene una cuenta, o ya no está disponible. '
+                    .'Si es la tuya, inicia sesión para publicar con ella.',
             'org_nombre.unique' => $this->avisoNombreRepetido(),
             'password.confirmed' => 'Las contraseñas no coinciden.',
             'org_tipo_otro.required_if' => 'Especifica qué tipo de organización es.',

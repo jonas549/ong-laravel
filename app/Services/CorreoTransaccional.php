@@ -81,11 +81,19 @@ class CorreoTransaccional
         HTML);
     }
 
-    /** Aviso a la organización de que alguien se inscribió. */
+    /**
+     * Aviso de que alguien se inscribió, a quien creó la actividad.
+     *
+     * **Todos los correos sobre una actividad van a su `responsable()`** —su
+     * autora, o la cuenta principal si se quedó sin autor—, no a la cuenta
+     * principal de la organización. Con varias personas publicando, mandarlos
+     * a la principal le llenaría el buzón con lo de todas y la autora no se
+     * enteraría de nada.
+     */
     public function nuevaInscripcion(Registration $inscripcion): bool
     {
         $actividad = $inscripcion->activity;
-        $destino = $actividad?->organization?->user?->email;
+        $destino = $actividad?->responsable()?->email;
 
         if (blank($destino)) {
             return false;
@@ -176,14 +184,15 @@ class CorreoTransaccional
      */
     public function actividadPublicada(Activity $actividad, string $qr = ''): bool
     {
-        $destino = $actividad->organization?->user?->email;
+        $cuenta = $actividad->responsable();
+        $destino = $cuenta?->email;
 
         if (blank($destino)) {
             return false;
         }
 
         return $this->enviar('actividad_publicada', $destino, [
-            'nombre' => $actividad->organization?->user?->name ?? '',
+            'nombre' => $cuenta->name ?? '',
             'organizacion' => $actividad->organization?->nombre ?? '',
             'actividad' => $actividad->titulo,
             'fecha' => $actividad->fecha_larga,
@@ -211,7 +220,8 @@ class CorreoTransaccional
      */
     public function guiaOrganizador(Activity $actividad): bool
     {
-        $destino = $actividad->organization?->user?->email;
+        $cuenta = $actividad->responsable();
+        $destino = $cuenta?->email;
         $guia = trim((string) Setting::get('guia_organizador_url'));
 
         if (blank($destino) || $guia === '') {
@@ -228,13 +238,66 @@ class CorreoTransaccional
         }
 
         return $this->enviar('guia_organizador', $destino, [
-            'nombre' => $actividad->organization?->user?->name ?? '',
+            'nombre' => $cuenta->name ?? '',
             'organizacion' => $actividad->organization?->nombre ?? '',
             'actividad' => $actividad->titulo,
             'enlace_guia' => $guia,
             'enlace_cuenta' => route('account.activities.index'),
             'sitio' => config('app.name'),
         ], $actividad);
+    }
+
+    /**
+     * Aviso a la cuenta principal de que otra cuenta se sumó a su
+     * organización (varias cuentas por organización).
+     *
+     * Quien se suma entra directo, sin aprobación previa: este aviso es lo que
+     * impide que cualquiera se meta como «Fundación X» y publique en su nombre
+     * sin que nadie de la fundación se entere. Por eso, si la organización no
+     * tiene una principal que lo pueda leer —borrada, desactivada o fuera de
+     * la organización—, va al buzón de avisos del equipo en vez de a nadie, y
+     * `nota` dice por qué le llega.
+     */
+    public function cuentaSumada(User $nueva): bool
+    {
+        $organizacion = $nueva->organization;
+
+        if (! $organizacion) {
+            return false;
+        }
+
+        $principal = $organizacion->principalActiva();
+
+        $datos = [
+            'organizacion' => $organizacion->nombre,
+            'nombre_cuenta' => $nueva->name,
+            'correo_cuenta' => $nueva->email,
+            'fecha' => \App\Support\Fecha::corta(now()),
+            // El correo de contacto del sitio (Configuración → General): a
+            // dónde escribir si no conoce a esa persona. El de avisos, si no hay.
+            'correo_sitio' => trim((string) Setting::get('sitio_email_contacto')) ?: trim((string) Setting::get('avisos_email')),
+            'enlace_cuenta' => route('account.login'),
+            'sitio' => config('app.name'),
+        ];
+
+        if ($principal) {
+            return $this->enviar('cuenta_sumada', $principal->email, $datos + [
+                'nombre' => $principal->name,
+                'nota' => '',
+            ], $nueva);
+        }
+
+        $alguno = false;
+
+        foreach ($this->destinosDelEquipo() as $destino) {
+            $alguno = $this->enviar('cuenta_sumada', $destino, $datos + [
+                'nombre' => 'equipo',
+                'nota' => 'Te llega a ti porque «'.$organizacion->nombre.'» no tiene una cuenta principal activa. '
+                    .'Puedes elegir una en Panel → Organizaciones.',
+            ], $nueva) || $alguno;
+        }
+
+        return $alguno;
     }
 
     /**
@@ -317,7 +380,8 @@ class CorreoTransaccional
         $datos = [
             'actividad' => $actividad->titulo,
             'organizacion' => $actividad->organization?->nombre ?? '',
-            'correo_organizacion' => $actividad->organization?->user?->email ?? '',
+            // El de la cuenta que la publicó, que es a quien hay que escribir.
+            'correo_organizacion' => $actividad->responsable()?->email ?? '',
             'fecha' => $actividad->fecha_larga,
             'lugar' => trim(($actividad->direccion ? $actividad->direccion.', ' : '').$actividad->lugar, ', '),
             'enlace_revisar' => route('admin.activities.show', $actividad),

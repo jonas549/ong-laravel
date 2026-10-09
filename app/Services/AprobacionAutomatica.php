@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Activity;
 use App\Models\Organization;
 use App\Models\Setting;
+use App\Models\User;
 
 /**
  * Decide si una actividad sale publicada directamente o pasa por revisión.
@@ -30,6 +31,19 @@ use App\Models\Setting;
  * 4. **Dos interruptores.** Uno global en Configuración, que es el botón de
  *    pánico si llega spam, y uno por organización, que es el que sirve de
  *    verdad: apaga a quien haya que apagar sin castigar a las demás.
+ *
+ * **Desde el bloque de varias cuentas, lo que se cuenta es por CUENTA, no por
+ * organización.** Con una sola cuenta por organización era lo mismo. Con
+ * varias, contar por organización dejaba publicar sin revisión a cualquiera
+ * que se sumara a una organización con historial: justo la puerta para que
+ * alguien se presente como «Fundación X» y publique en su nombre. Ahora cada
+ * cuenta se gana su confianza, y la primera actividad de una cuenta sumada —
+ * la que no es la principal— se revisa **siempre**, aunque el umbral sea 0.
+ * La marca de «revisión siempre» y la pausa por ajustes pendientes siguen
+ * siendo de la organización entera.
+ *
+ * Al migrar, cada cuenta quedó como autora de todo lo de su organización, así
+ * que con los datos de entonces el resultado no cambió para nadie.
  */
 class AprobacionAutomatica
 {
@@ -70,11 +84,25 @@ class AprobacionAutomatica
     }
 
     /**
-     * ¿Esta organización se ha ganado publicar sin pasar por revisión?
+     * ¿Quien envía esto se ha ganado publicar sin pasar por revisión?
+     *
+     * Con una actividad se mira la cuenta que la envía (`responsable()`); con
+     * una organización a secas, su cuenta principal. Lo segundo es lo que
+     * había antes de las varias cuentas y lo siguen usando las pruebas.
      */
-    public function aplica(?Organization $organizacion): bool
+    public function aplica(Activity|Organization|null $que): bool
     {
-        return $this->motivoDeRevision($organizacion) === null;
+        return $this->motivoDeRevision($que) === null;
+    }
+
+    /** @return array{0: ?Organization, 1: ?User} */
+    private function deQuien(Activity|Organization|null $que): array
+    {
+        if ($que instanceof Activity) {
+            return [$que->organization, $que->responsable()];
+        }
+
+        return [$que, $que?->user];
     }
 
     /**
@@ -84,11 +112,13 @@ class AprobacionAutomatica
      * historial: dentro de seis meses, «por qué esta pasó por revisión y
      * aquélla no» es una pregunta que alguien va a hacer.
      */
-    public function motivoDeRevision(?Organization $organizacion): ?string
+    public function motivoDeRevision(Activity|Organization|null $que): ?string
     {
         if (! $this->activa()) {
             return 'la aprobación automática está desactivada';
         }
+
+        [$organizacion, $cuenta] = $this->deQuien($que);
 
         if (! $organizacion) {
             return 'la actividad no tiene organización';
@@ -98,13 +128,22 @@ class AprobacionAutomatica
             return 'esta organización está marcada para revisión siempre';
         }
 
+        if (! $cuenta) {
+            return 'la actividad no tiene una cuenta responsable';
+        }
+
         $umbral = $this->umbral();
-        $publicadas = $this->cuantasPublico($organizacion);
+        $publicadas = $this->cuantasPublico($cuenta);
+
+        // La primera de una cuenta sumada, siempre a revisión (ver arriba).
+        if ($publicadas === 0 && ! $cuenta->esPrincipal()) {
+            return 'es la primera actividad de una cuenta que se sumó a esta organización';
+        }
 
         if ($publicadas < $umbral) {
             return $umbral === 1
-                ? 'es la primera actividad de esta organización'
-                : 'la organización lleva '.$publicadas.' de las '.$umbral.' actividades publicadas que se piden antes de publicar sin revisión';
+                ? 'es la primera actividad de esta cuenta'
+                : 'la cuenta lleva '.$publicadas.' de las '.$umbral.' actividades publicadas que se piden antes de publicar sin revisión';
         }
 
         if ($this->tieneAjustesPendientes($organizacion)) {
@@ -119,12 +158,12 @@ class AprobacionAutomatica
      *
      * @return array{0: string, 1: string}  el estado y el comentario del historial
      */
-    public function estadoAlEnviar(?Organization $organizacion): array
+    public function estadoAlEnviar(Activity|Organization|null $que): array
     {
-        $motivo = $this->motivoDeRevision($organizacion);
+        $motivo = $this->motivoDeRevision($que);
 
         return $motivo === null
-            ? ['publicada', 'Publicada automáticamente: la organización lleva '.$this->cuantasPublico($organizacion).' actividad(es) publicada(s), y el umbral es '.$this->umbral().'.']
+            ? ['publicada', 'Publicada automáticamente: la cuenta lleva '.$this->cuantasPublico($this->deQuien($que)[1]).' actividad(es) publicada(s), y el umbral es '.$this->umbral().'.']
             : ['revision', 'A revisión: '.$motivo.'.'];
     }
 
@@ -135,9 +174,9 @@ class AprobacionAutomatica
      * porque en su momento la ONG la aprobó. Un borrador cancelado sin publicar
      * nunca tuvo `published_at`, así que no cuenta, que es lo correcto.
      */
-    public function yaPublico(Organization $organizacion): bool
+    public function yaPublico(Organization|User $quien): bool
     {
-        return $this->cuantasPublico($organizacion) > 0;
+        return $this->cuantasPublico($quien instanceof Organization ? $quien->user : $quien) > 0;
     }
 
     /**
@@ -147,12 +186,22 @@ class AprobacionAutomatica
      * cancelada cuenta, porque en su momento la ONG aprobó ese contenido. Un
      * borrador que nunca se publicó no tiene `published_at` y no cuenta, que es
      * lo correcto. `withTrashed` para que borrar una actividad publicada no le
-     * quite a la organización la confianza que ya se había ganado.
+     * quite a la cuenta la confianza que ya se había ganado.
+     *
+     * Las de la cuenta son las de `Activity::deLaCuenta()`: las suyas y, si
+     * es la principal, las que quedaron sin autor en su organización. Con una
+     * organización se cuenta la de su principal, como antes.
      */
-    public function cuantasPublico(Organization $organizacion): int
+    public function cuantasPublico(Organization|User|null $quien): int
     {
+        $cuenta = $quien instanceof Organization ? $quien->user : $quien;
+
+        if (! $cuenta) {
+            return 0;
+        }
+
         return Activity::withTrashed()
-            ->where('organization_id', $organizacion->id)
+            ->deLaCuenta($cuenta)
             ->whereNotNull('published_at')
             ->count();
     }

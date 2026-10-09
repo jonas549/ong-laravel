@@ -21,10 +21,16 @@
  *   crear. Verla y que le digan «ésta ya tiene cuenta, inicia sesión» le lleva
  *   a donde tiene que ir.
  *
- * Tres desenlaces al elegir una:
- *   libre  → se reclama: no se le vuelve a pedir nada suyo.
- *   tomada → ya tiene cuenta; se le manda a iniciar sesión.
- *   nada   → escribe un nombre nuevo y sigue el camino de siempre.
+ * Cuatro desenlaces al elegir una:
+ *   libre   → se reclama: no se le vuelve a pedir nada suyo.
+ *   sumable → ya tiene cuenta, pero el interruptor de varias cuentas está
+ *             encendido: quien la elige se suma a ella. Tampoco se le pide
+ *             nada de la ficha, que es de la organización.
+ *   tomada  → ya tiene cuenta y no admite otra; se le manda a iniciar sesión.
+ *   nada    → escribe un nombre nuevo y sigue el camino de siempre.
+ *
+ * Lo de «sumable» lo dice el servidor en cada sugerencia, y lo vuelve a
+ * comprobar al enviar: el navegador sólo decide qué enseñar.
  *
  * Quien lo monta tiene que guardar la raíz del componente en `this.raiz`
  * dentro de su `init()`: aquí se usa para encontrar el campo, y `$el` dentro
@@ -63,6 +69,14 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
      * cambian.
      */
     reclamando: (inicial.orgElegida ?? null) !== null,
+
+    /*
+     * Si la elegida ya tiene cuenta y se va a sumar a ella (varias cuentas por
+     * organización). Va con `reclamando` encendido —a efectos de qué se
+     * pregunta, es lo mismo: nada de la ficha— y sirve para cambiar el texto.
+     * Propiedad y no getter, por lo mismo que `reclamando`.
+     */
+    sumandose: (inicial.orgElegida ?? null) !== null && inicial.orgElegida.sumable === true,
 
     /**
      * Pide sugerencias, con un respiro entre teclas.
@@ -137,10 +151,11 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
             return;
         }
 
-        if (!org.libre) {
+        if (!org.libre && !org.sumable) {
             // Ya tiene cuenta. No se reclama: se le manda a iniciar sesión.
             this.orgElegida = null;
             this.reclamando = false;
+            this.sumandose = false;
             this.orgTomada = org;
 
             return;
@@ -149,6 +164,7 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
         this.orgTomada = null;
         this.orgElegida = org;
         this.reclamando = true;
+        this.sumandose = !org.libre;
 
         // El tipo viene con ella: la organización ya lo eligió en su día, y
         // volver a preguntarlo es parte de lo que P10 quita.
@@ -169,6 +185,7 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
     soltarOrg() {
         this.orgElegida = null;
         this.reclamando = false;
+        this.sumandose = false;
         this.orgTomada = null;
     },
 
@@ -187,16 +204,31 @@ export const buscadorOrganizaciones = (inicial = {}) => ({
  * viaja—, y una organización que ya tiene cuenta no se manda a iniciar sesión:
  * se avisa y se suelta.
  */
-export const organizacionDeUsuario = (inicial = {}) => ({
-    ...buscadorOrganizaciones(inicial),
+export const organizacionDeUsuario = (inicial = {}) => {
+    const buscador = buscadorOrganizaciones(inicial);
 
-    rol: inicial.rol ?? 'organizer',
-    raiz: null,
+    return {
+        ...buscador,
 
-    init() {
-        this.raiz = this.$el;
-    },
-});
+        rol: inicial.rol ?? 'organizer',
+        raiz: null,
+
+        init() {
+            this.raiz = this.$el;
+        },
+
+        /*
+         * Varias cuentas por organización: el administrador puede asignar la
+         * cuenta a cualquiera del listado, tenga cuenta o no, esté como esté
+         * el interruptor. Una que ya tiene cuenta se trata como «sumable»: la
+         * cuenta se suma y se avisa a su principal. El servidor lo permite
+         * igual (`UserController::organizacionPedida`).
+         */
+        elegirOrg(org) {
+            buscador.elegirOrg.call(this, { ...org, sumable: ! org.libre });
+        },
+    };
+};
 
 /**
  * La pantalla de crear cuenta de organizador.

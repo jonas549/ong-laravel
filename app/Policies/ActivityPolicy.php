@@ -14,8 +14,8 @@ use Illuminate\Auth\Access\Response;
  * actividad por la URL nacía sin comprobación y nada lo señalaba. Aquí la regla
  * es una sola y los controladores la piden por su nombre.
  *
- * La regla, en una línea: una actividad es de la organización que la publicó, y
- * una organización es de su usuario. El administrador pasa por encima de todo
+ * La regla, en una línea: una actividad es de la cuenta que la creó, dentro de
+ * su organización (o de la cuenta principal, si se quedó sin autor). El administrador pasa por encima de todo
  * —para eso modera—, y eso lo resuelve `before()`.
  */
 class ActivityPolicy
@@ -112,24 +112,35 @@ class ActivityPolicy
      */
     private function respuesta(?User $user, Activity $activity): Response
     {
-        return $this->esSuya($user, $activity)
-            ? Response::allow()
+        if ($this->esSuya($user, $activity)) {
+            return Response::allow();
+        }
+
+        // De su organización pero de otra persona: decirle eso, no que es ajena.
+        return $user?->organization_id !== null && $activity->organization_id === $user?->organization_id
+            ? Response::deny('Esta actividad la publicó otra cuenta de tu organización. Cada cuenta gestiona sus propias actividades.')
             : Response::deny('Esta actividad no es de tu organización.');
     }
 
     /**
-     * Se comprueba contra el `organization_id`, no contra el `user_id` de la
-     * organización: si algún día una organización tiene más de una persona,
-     * esta línea sigue siendo la correcta.
+     * Es suya si es la cuenta a la que le toca (`Activity::responsable()`):
+     * su autora mientras siga en la organización, o la cuenta principal si la
+     * actividad se quedó sin autor. **Ya no basta con ser de la misma
+     * organización**: con varias cuentas por organización, cada persona ve y
+     * edita sólo lo suyo.
      *
-     * El `?->` de la izquierda cubre a quien no tiene organización todavía; sin
-     * el `!== null` explícito, dos nulos se darían por iguales y una actividad
+     * La organización se compara aparte y antes, como hasta ahora: sin el
+     * `!== null` explícito, dos nulos se darían por iguales y una actividad
      * huérfana quedaría abierta a cualquiera.
      */
     private function esSuya(?User $user, Activity $activity): bool
     {
         $suya = $user?->organization?->id;
 
-        return $suya !== null && $activity->organization_id === $suya;
+        if ($suya === null || $activity->organization_id !== $suya) {
+            return false;
+        }
+
+        return $activity->responsable()?->id === $user->id;
     }
 }

@@ -145,6 +145,15 @@ export const wizard = (inicial) => ({
      * para pintar el estado de partida.
      */
     faltaEnElPaso3(campo) {
+        /*
+         * Varias cuentas: quien se suma a una organización, o tiene sesión en
+         * una de la que no es la cuenta principal, no escribe la ficha. No hay
+         * nada de ella que preguntarle; lo que falte lo completa la principal.
+         * El nombre sí se pregunta al que se suma: es con lo que la elige.
+         */
+        if (this.conSesion && this.ficha?.soloLectura) return false;
+        if (this.sumandose && campo !== 'org_nombre') return false;
+
         if (! this.conSesion || ! this.ficha) return true;
 
         switch (campo) {
@@ -170,16 +179,29 @@ export const wizard = (inicial) => ({
         return ! this.movil && ! this.esOtra();
     },
 
-    /** B1: con sesión y el tipo ya en su ficha, el paso 2 no pregunta nada. */
+    /**
+     * B1: con sesión y el tipo ya en su ficha, el paso 2 no pregunta nada. Ni
+     * a quien no es la cuenta principal: el tipo es de la ficha.
+     */
     saltaPaso2() {
-        return this.conSesion && !! this.ficha?.tipo;
+        return this.conSesion && (!! this.ficha?.tipo || !! this.ficha?.soloLectura);
+    },
+
+    /**
+     * Si la ficha de la organización no la escribe este envío (varias
+     * cuentas): quien se suma, o quien no es la cuenta principal. Esconde los
+     * dos enlaces de la organización del paso 4. Es la misma condición que
+     * `fichaFija()` en el servidor, que ignora lo que llegue.
+     */
+    fichaAjena() {
+        return this.sumandose || (this.conSesion && !! this.ficha?.soloLectura);
     },
 
     /** Si el paso 3 no tiene nada que preguntar y se puede pasar de largo. */
     saltaPaso3() {
         return this.conSesion && !! this.ficha
-            && ['org_nombre', 'org_tipo_otro', 'org_unidad_educativa', 'org_logo']
-                .every((campo) => ! this.faltaEnElPaso3(campo));
+            && (this.ficha.soloLectura || ['org_nombre', 'org_tipo_otro', 'org_unidad_educativa', 'org_logo']
+                .every((campo) => ! this.faltaEnElPaso3(campo)));
     },
 
     /**

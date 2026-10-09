@@ -5,10 +5,11 @@
 {{--
     Ficha de una organización.
 
-    No se puede cambiar la cuenta a la que pertenece: eso es mover la propiedad
-    de sus actividades de una persona a otra, y no se resuelve con un selector.
     Aquí se corrigen los datos que la ONG puede necesitar arreglar —un nombre mal
-    escrito, un correo de contacto, un tipo equivocado en el wizard—.
+    escrito, un correo de contacto, un tipo equivocado en el wizard— y, desde
+    las varias cuentas por organización, se elige su cuenta principal y se saca
+    a una cuenta de ella. Cada actividad sigue siendo de quien la creó: cambiar
+    la principal no mueve actividades de una persona a otra.
 --}}
 
 @section('content')
@@ -64,18 +65,62 @@
         <dl style="display:flex;flex-direction:column;gap:12px;margin:0;font-size:14px;">
             {{-- Punto 2 del 08/10: la cuenta con su nombre y su alta, y los
                  correos de contacto usados en la ficha y en sus actividades. --}}
+            {{-- Varias cuentas por organización: la principal primero, y las
+                 demás con desde cuándo están y cuántas actividades crearon. La
+                 principal recibe el aviso cuando alguien se suma y es la única
+                 que edita la ficha. --}}
             <div data-cuenta-ficha>
-                <dt class="helper">Cuenta de acceso</dt>
-                @if ($organizacion->user)
+                <dt class="helper">Cuenta principal</dt>
+                @if ($organizacion->user && $organizacion->user->organization_id === $organizacion->id)
                     <dd style="margin:0;">
                         {{ $organizacion->user->name }}<br>
                         {{ $organizacion->user->email }}<br>
                         <span class="helper">Alta: {{ \App\Support\Fecha::corta($organizacion->user->created_at) }}</span>
+                        @unless ($organizacion->user->is_active)
+                            <br><span class="field-error" data-principal-inactiva>Está desactivada: elige otra cuenta como principal.</span>
+                        @endunless
+                    </dd>
+                @elseif ($organizacion->user_id)
+                    <dd style="margin:0;" class="field-error" data-sin-principal>
+                        La cuenta principal ya no existe o salió de la organización. Elige otra entre las de abajo.
                     </dd>
                 @else
                     <dd style="margin:0;">Sin cuenta</dd>
                 @endif
             </div>
+            @php
+                $otras = $organizacion->cuentas->reject(fn ($c) => $c->id === $organizacion->user_id);
+            @endphp
+            @if ($otras->isNotEmpty())
+                <div data-cuentas-ficha>
+                    <dt class="helper">Otras cuentas ({{ $otras->count() }})</dt>
+                    @foreach ($otras as $c)
+                        <dd style="margin:0 0 12px;" data-cuenta="{{ $c->id }}">
+                            {{ $c->name }}@unless ($c->is_active) <span class="insignia insignia-no">Inactiva</span>@endunless<br>
+                            <a class="textlink" href="{{ route('admin.users.edit', [$c, 'rol' => $c->role]) }}">{{ $c->email }}</a><br>
+                            <span class="helper">
+                                Desde {{ \App\Support\Fecha::corta($c->organizacion_desde ?? $c->created_at) }}
+                                · {{ \App\Support\Texto::cuantos($c->activities_count, 'actividad') }}
+                            </span>
+                            <span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+                                @if ($c->is_active)
+                                    <form method="POST" action="{{ route('admin.organizations.principal', [$organizacion, $c]) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline btn-sm" data-hacer-principal>Hacer principal</button>
+                                    </form>
+                                @endif
+                                <x-panel.confirmar
+                                    :accion="route('admin.organizations.quitar-cuenta', [$organizacion, $c])"
+                                    :titulo="'Sacar a '.$c->email.' de la organización'"
+                                    texto="La cuenta no se borra: se queda sin organización y puedes volver a asignarle una desde Usuarios. Sus actividades se quedan en la organización y pasan a la cuenta principal."
+                                    confirmar="Sí, sacarla"
+                                    boton="Sacar de la organización"
+                                    clase="btn btn-ghost btn-sm" />
+                            </span>
+                        </dd>
+                    @endforeach
+                </div>
+            @endif
             <div data-correos-ficha>
                 <dt class="helper">Otros correos de contacto usados</dt>
                 @forelse ($organizacion->correosDeContacto() as $correo)
@@ -106,11 +151,15 @@
                 </button>
             </form>
 
-            @if ($organizacion->user_id)
-                {{-- Con cuenta no se borra: la cuenta se quedaría sin organización. --}}
+            @if ($organizacion->user_id || $organizacion->cuentas->isNotEmpty())
+                {{-- Con cuentas no se borra: se quedarían sin organización. --}}
                 <p class="helper" style="margin:0;" data-no-eliminar-con-cuenta>
                     <strong>No se puede eliminar.</strong>
-                    Es la organización de la cuenta {{ $organizacion->user?->email }}, que se quedaría sin ella.
+                    @if ($organizacion->cuentas->count() > 1)
+                        Tiene {{ $organizacion->cuentas->count() }} cuentas, que se quedarían sin ella.
+                    @else
+                        Es la organización de la cuenta {{ $organizacion->user?->email }}, que se quedaría sin ella.
+                    @endif
                     Desactivarla la esconde sin borrar nada.
                 </p>
             @elseif ($organizacion->activities_count === 0)

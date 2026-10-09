@@ -29,7 +29,7 @@
     copies el comportamiento.
 
     Necesita, en el ámbito de Alpine: `buscarOrg`, `sugerencias`, `buscando`,
-    `sugerenciasAbiertas`, `orgElegida`, `orgTomada`, `reclamando`, `sinCoincidencias`,
+    `sugerenciasAbiertas`, `orgElegida`, `orgTomada`, `reclamando`, `sumandose`, `sinCoincidencias`,
     `escribirOrg()`, `elegirOrg()` y `soltarOrg()`.
 
     La lista se cierra con Escape y al salir del campo, con un respiro para que
@@ -64,8 +64,8 @@
                 <button type="button" class="org-sugerencia" x-on:click="elegirOrg(o)">
                     <span class="org-sugerencia-nombre" x-text="o.nombre"></span>
                     <span class="org-sugerencia-estado"
-                          x-text="o.propia ? 'Tu organización' : (o.libre ? 'En el listado' : 'Ya tiene cuenta')"
-                          x-bind:class="o.libre || o.propia ? '' : 'org-sugerencia-estado-tomada'"></span>
+                          x-text="o.propia ? 'Tu organización' : (o.libre ? 'En el listado' : (o.sumable ? 'Puedes sumarte' : 'Ya tiene cuenta'))"
+                          x-bind:class="o.libre || o.propia || o.sumable ? '' : 'org-sugerencia-estado-tomada'"></span>
                 </button>
             </li>
         </template>
@@ -73,7 +73,14 @@
 
     {{-- Reclamada: se dice cuál y se ofrece deshacerlo. --}}
     <span class="helper" x-show="reclamando" x-cloak style="color:var(--naranjo-600);">
-        Encontramos tu organización en nuestro listado. No hace falta que vuelvas a cargar sus datos.
+        <span x-show="! sumandose">Encontramos tu organización en nuestro listado. No hace falta que vuelvas a cargar sus datos.</span>
+        {{-- Varias cuentas: ya tiene cuenta y admite otra. Se dice qué va a
+             pasar —publicar con su nombre, y que la principal se entera— antes
+             de que lo descubra por el correo. --}}
+        <span x-show="sumandose" x-cloak data-org-sumandose>
+            <strong x-text="orgElegida?.nombre"></strong> ya tiene cuenta en el sitio. Tu cuenta se sumará a ella:
+            publicarás con su nombre y avisaremos a su cuenta principal. Sus datos los mantiene esa cuenta.
+        </span>
         <button type="button" class="textlink" style="background:none;border:0;padding:0;cursor:pointer;font:inherit;"
                 x-on:click="soltarOrg()">¿No es la que buscas? Haz clic aquí</button>
     </span>

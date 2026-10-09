@@ -23,6 +23,9 @@ class OrganizacionLogoController extends Controller
 
         abort_unless($organizacion, 404);
 
+        // El logo es de la ficha, y la ficha la cambia la cuenta principal.
+        $this->authorize('update', $organizacion);
+
         // Las mismas reglas que el logo del wizard (PublishActivityRequest).
         $request->validate([
             'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:500'],

@@ -146,7 +146,8 @@ try {
   if (revision[0]) {
     const h = await html(revision[0]);
     di('el de revisión dice la organización y su correo', h.includes(ORG) && h.includes(CORREO));
-    di('y el motivo de la revisión', h.includes('es la primera actividad de esta organización'));
+    // Desde las varias cuentas por organización se cuenta por cuenta.
+    di('y el motivo de la revisión', h.includes('es la primera actividad de esta cuenta'));
     di('y el botón lleva a la ficha del panel', h.includes(`/admin/actividades/${aid}`));
     di('sin marcadores sin rellenar', ! /\{\{\s*\w+\s*\}\}/.test(h));
   }

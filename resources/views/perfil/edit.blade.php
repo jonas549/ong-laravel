@@ -92,7 +92,17 @@
         Con el mismo trato que en el wizard: se reduce en el navegador a 800 px
         y se avisa del peso al elegirlo, no después de enviar.
     --}}
-    @if (! $esAdmin && ($organizacion = $usuario->organization))
+    {{-- Varias cuentas: el logo es de la ficha y lo cambia la cuenta principal.
+         Las demás ven de quién es la organización y a quién pedírselo. --}}
+    @if (! $esAdmin && ($organizacion = $usuario->organization) && ! $usuario->editaLaFicha())
+        <div class="card" style="padding:26px;" id="logo-organizacion" data-ficha-de-otra-cuenta>
+            <h2 style="font-size:17px;font-weight:800;margin:0 0 4px;">Tu organización</h2>
+            <p class="helper" style="margin:0;">
+                Publicas como «{{ $organizacion->nombre }}». El logo y los datos de la organización
+                los cambia su cuenta principal{{ $organizacion->user?->email ? ', '.$organizacion->user->email : '' }}.
+            </p>
+        </div>
+    @elseif (! $esAdmin && $organizacion)
         <form method="POST" action="{{ route('account.perfil.logo') }}" enctype="multipart/form-data"
               class="card" style="padding:26px;" id="logo-organizacion">
             @csrf

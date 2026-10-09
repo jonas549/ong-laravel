@@ -8,7 +8,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
@@ -55,6 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'organizacion_desde' => 'datetime',
         ];
     }
 
@@ -132,9 +133,49 @@ class User extends Authenticatable implements MustVerifyEmail
         ));
     }
 
-    public function organization(): HasOne
+    /**
+     * La organización de esta cuenta.
+     *
+     * Hasta el bloque de varias cuentas era al revés —la organización colgaba
+     * de la cuenta, `hasOne`— y una organización tenía como mucho una. Ahora
+     * cada cuenta cuelga de una organización y una organización puede tener
+     * muchas. El nombre de la relación no cambia, así que todo lo que pregunta
+     * «¿cuál es mi organización?» sigue igual.
+     *
+     * `organization_id` no es asignable en masa: lo pone
+     * `Organization::enlazarCuenta()`, que es quien decide además si la cuenta
+     * queda como principal.
+     */
+    public function organization(): BelongsTo
     {
-        return $this->hasOne(Organization::class);
+        return $this->belongsTo(Organization::class);
+    }
+
+    /** Las actividades que creó esta cuenta. */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    /**
+     * Si es la cuenta principal de su organización: la que recibe el aviso
+     * cuando alguien se suma y la única que edita la ficha.
+     */
+    public function esPrincipal(): bool
+    {
+        return $this->organization_id !== null
+            && $this->organization?->user_id === $this->id;
+    }
+
+    /**
+     * Si puede cambiar la ficha de su organización (nombre, tipo, logo,
+     * enlaces…). Sólo la principal: con varias personas publicando, que
+     * cualquiera pudiera renombrarla o cambiarle el logo desde su actividad
+     * sería abrirle la ficha a todas.
+     */
+    public function editaLaFicha(): bool
+    {
+        return $this->esPrincipal();
     }
 
     public function statusLogs(): HasMany

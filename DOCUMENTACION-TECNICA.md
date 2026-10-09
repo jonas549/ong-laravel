@@ -374,6 +374,40 @@ lo dice con una nota bajo el par de campos.
 Los rótulos y las ayudas de esos campos son los del HTML fuente y no se tocaron;
 la nota es aparte.
 
+Desde las varias cuentas por organización (ver abajo), esos dos campos **sólo
+los ve y los cambia la cuenta principal**; a las demás no se les enseñan y el
+servidor ignora lo que llegue.
+
+### Varias cuentas por organización
+
+Una organización puede tener muchas cuentas. La relación va **de la cuenta a la
+organización**:
+
+- `users.organization_id` dice de qué organización es cada cuenta (una sola).
+  Lo escribe **sólo** `Organization::enlazarCuenta()`, que decide además si la
+  cuenta queda como principal.
+- `organizations.user_id` es **la cuenta principal**: la primera que la creó o
+  la reclamó, o la que elija después el administrador en Panel →
+  Organizaciones. Recibe el aviso cuando alguien se suma y es la única que
+  edita la ficha (nombre, tipo, logo, enlaces). Nunca cambia sola.
+- `activities.user_id` es quién creó cada actividad. **Cada cuenta ve, edita y
+  recibe los correos de las suyas**; el administrador, de todas. Las que se
+  quedan sin autor —sin autor conocido, cuenta borrada o sacada de la
+  organización— pasan a la principal. La regla está en `Activity::responsable()`
+  y, para listados, en `Activity::deLaCuenta()`: si se cambia una, hay que
+  cambiar la otra.
+
+Quien elige en el buscador una organización que ya tiene cuenta **se suma a
+ella sólo si está encendido** «Permitir que una organización tenga más de una
+cuenta» en Configuración → General (`organizacion_varias_cuentas`, apagado por
+defecto). Apagado es exactamente lo de antes. Apagarlo no saca a nadie: sólo
+deja de admitir nuevas. El administrador puede asignar una cuenta a cualquier
+organización desde Panel → Usuarios, esté como esté el interruptor.
+
+Al sumarse no se escribe nada de la ficha, y se avisa a la principal con la
+plantilla `cuenta_sumada`; si la organización no tiene una principal activa, el
+aviso va al buzón del equipo.
+
 ### Los dos accesos están separados a propósito
 
 `/admin/login` y `/mi-cuenta/login` son dos puertas, y cada una rechaza a la
@@ -393,6 +427,13 @@ Desde el 2026-09-02, **la primera actividad de cada organización se revisa a
 mano y de la segunda en adelante se publica sola**. La decisión está entera en
 `App\Services\AprobacionAutomatica`, con el porqué de cada regla escrito al
 lado. Lo que hay que saber para no romperlo:
+
+- **Se cuenta por cuenta, no por organización.** Con varias cuentas por
+  organización, contar por organización dejaría publicar sin revisión a
+  cualquiera que se sumara a una con historial. Y **la primera actividad de una
+  cuenta sumada —la que no es la principal— se revisa siempre**, aunque el
+  umbral sea 0. La marca de «revisión siempre» y la pausa por ajustes siguen
+  siendo de la organización entera.
 
 - **«Ya publicó antes» se mide por `published_at`, no por el estado.** Una
   actividad cancelada estuvo publicada y sigue contando: lo que da confianza es

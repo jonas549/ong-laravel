@@ -113,13 +113,12 @@ class EvaluationController extends Controller
      */
     private function actividadesDeSuOrganizacion(Request $request)
     {
-        $organizacion = $request->user()?->organization?->id;
-
-        if (! $organizacion) {
+        if (! $request->user()?->organization) {
             return collect();
         }
 
-        return Activity::where('organization_id', $organizacion)
+        // Las de esta cuenta, con el mismo criterio que «Mis actividades».
+        return Activity::deLaCuenta($request->user())
             ->orderByDesc('id')
             ->pluck('titulo', 'id');
     }

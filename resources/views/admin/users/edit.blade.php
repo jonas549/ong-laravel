@@ -56,7 +56,8 @@
 
         @if ($usuario->organization)
             <p class="helper" style="margin:16px 0 0;">
-                Organización: <strong>{{ $usuario->organization->nombre }}</strong>.
+                Organización: <strong><a class="textlink" href="{{ route('admin.organizations.edit', $usuario->organization) }}">{{ $usuario->organization->nombre }}</a></strong>
+                <span data-rol-en-organizacion>({{ $usuario->esPrincipal() ? 'cuenta principal' : 'cuenta sumada' }})</span>.
                 El correo de contacto que se publica es el de la organización, no el de esta cuenta.
             </p>
         @else

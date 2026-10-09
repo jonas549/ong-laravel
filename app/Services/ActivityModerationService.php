@@ -200,7 +200,8 @@ class ActivityModerationService
     private function avisar(Activity $actividad, string $estado): void
     {
         $mailable = self::AVISOS[$estado] ?? null;
-        $destino = $actividad->organization?->user?->email;
+        // A quien creó la actividad, no a la principal (ver `responsable()`).
+        $destino = $actividad->responsable()?->email;
 
         if (! $mailable || blank($destino)) {
             return;

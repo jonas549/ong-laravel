@@ -5,6 +5,12 @@
     Va dentro de un formulario con `x-data="organizacionDeUsuario(...)"`. Sólo
     cuenta con el rol «Organizador»: con «Administración» los campos van
     desactivados, que es lo que hace que no viajen —esconderlos no basta—.
+
+    Varias cuentas por organización: el administrador puede asignar la cuenta
+    a cualquier organización del listado, tenga ya cuenta o no, y esté como
+    esté el interruptor de Configuración → General. El interruptor regula que
+    la gente se sume sola; lo que hace el administrador lo decide él. Si ya
+    tenía cuenta, ésta se suma y se avisa a su principal.
 --}}
 <div data-campo-organizacion x-show="rol === 'organizer'" x-cloak style="position:relative;">
     <label class="helper" for="u-org" style="display:block;margin-bottom:6px;font-weight:600;">Organización</label>
@@ -23,21 +29,20 @@
                 <button type="button" class="org-sugerencia" x-on:click="elegirOrg(o)">
                     <span class="org-sugerencia-nombre" x-text="o.nombre"></span>
                     <span class="org-sugerencia-estado"
-                          x-text="o.libre ? 'Libre en el listado' : 'Ya tiene cuenta'"
-                          x-bind:class="o.libre ? '' : 'org-sugerencia-estado-tomada'"></span>
+                          x-text="o.libre ? 'Libre en el listado' : 'Ya tiene cuenta'"></span>
                 </button>
             </li>
         </template>
     </ul>
 
-    <span class="helper" x-show="reclamando" x-cloak style="color:var(--naranjo-600);" data-org-enlazara>
-        Se le asignará esta organización del listado.
+    <span class="helper" x-show="reclamando && ! sumandose" x-cloak style="color:var(--naranjo-600);" data-org-enlazara>
+        Se le asignará esta organización del listado, como su cuenta principal.
     </span>
-    <span class="field-error" x-show="orgTomada" x-cloak>
-        <span x-text="orgTomada?.nombre"></span> ya tiene su propia cuenta y no se puede asignar a otra.
+    <span class="helper" x-show="sumandose" x-cloak style="color:var(--naranjo-600);" data-org-sumara>
+        Esta organización ya tiene cuenta: ésta se sumará a ella y se avisará a su cuenta principal.
     </span>
-    <span class="helper" x-show="! reclamando && ! orgTomada">
-        Elige una libre del listado o escribe el nombre de una nueva, que se creará con esta cuenta.
+    <span class="helper" x-show="! reclamando">
+        Elige una del listado o escribe el nombre de una nueva, que se creará con esta cuenta.
     </span>
     @error('org_nombre') <span class="field-error">{{ $message }}</span> @enderror
 </div>

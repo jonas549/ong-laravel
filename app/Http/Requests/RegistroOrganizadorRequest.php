@@ -99,11 +99,17 @@ class RegistroOrganizadorRequest extends FormRequest
             'org_tipo_otro.required_if' => 'Especifica qué tipo de organización es.',
             'org_unidad_educativa.required_if' => 'Indica el nombre de la unidad educativa.',
             'org_logo.max' => 'El logo no puede pesar más de 500 KB.',
-            'org_nombre.unique' => 'Ya hay una organización registrada con ese nombre. '
-                .'Si es la tuya, inicia sesión con la cuenta que la creó. '
-                .'Si es otra distinta, escribe un nombre que la diferencie.',
-            'org_id.exists' => 'Esa organización ya tiene una cuenta, o ya no está disponible. '
-                .'Si es la tuya, inicia sesión para publicar con ella.',
+            'org_nombre.unique' => Organization::admiteVariasCuentas()
+                ? 'Ya hay una organización registrada con ese nombre. '
+                    .'Si es la tuya, elígela en la lista de sugerencias para sumarte a ella. '
+                    .'Si es otra distinta, escribe un nombre que la diferencie.'
+                : 'Ya hay una organización registrada con ese nombre. '
+                    .'Si es la tuya, inicia sesión con la cuenta que la creó. '
+                    .'Si es otra distinta, escribe un nombre que la diferencie.',
+            'org_id.exists' => Organization::admiteVariasCuentas()
+                ? 'Esa organización ya no está disponible. Búscala otra vez en la lista de sugerencias.'
+                : 'Esa organización ya tiene una cuenta, o ya no está disponible. '
+                    .'Si es la tuya, inicia sesión para publicar con ella.',
         ];
     }
 

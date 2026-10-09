@@ -397,6 +397,14 @@
                         @error('correo_contacto') <span class="field-error">{{ $message }}</span> @enderror
                     </label>
 
+                    {{-- Varias cuentas: los dos enlaces son de la ficha, y la
+                         ficha la cambia la cuenta principal. A las demás no se
+                         les enseñan (el servidor ignora lo que llegue). --}}
+                    @if (! auth()->user()->editaLaFicha())
+                    <p class="helper" style="grid-column:1/-1;margin:0;" data-enlaces-de-la-principal>
+                        El enlace a red social y el de página web son datos de tu organización y los cambia su cuenta principal.
+                    </p>
+                    @else
                     <label class="lbl">Enlace a red social
                         <input class="fld @error('enlace_red_social') is-invalid @enderror" type="text" inputmode="url" data-autoprotocolo name="enlace_red_social"
                                value="@viejo('enlace_red_social', $activity->organization->enlace_red_social)">
@@ -423,6 +431,7 @@
                     <p class="helper" style="grid-column:1/-1;margin:-4px 0 0;">
                         El enlace a red social y el de página web son datos de tu organización: se muestran en todas tus actividades.
                     </p>
+                    @endif
                 </div>
             </div>
 

@@ -102,9 +102,17 @@ try {
   await crear({ correo: C('nueva'), org: NUEVA });
   di('con un nombre nuevo, se crea con la cuenta', organizacionDe(C('nueva')) === NUEVA, organizacionDe(C('nueva')));
 
+  // Escrita a mano sin elegirla: no se crea otra igual, se pide elegirla.
   tx = await crear({ correo: C('choca'), org: TOMADA });
-  di('con el nombre de una que ya tiene cuenta, no se crea', organizacionDe(C('choca')) === 'NO-EXISTE');
-  di('y dice por qué', tx.includes('ya tiene una cuenta'));
+  di('con el nombre de una que ya tiene cuenta, sin elegirla, no se crea', organizacionDe(C('choca')) === 'NO-EXISTE');
+  di('y pide elegirla en las sugerencias', tx.includes('elígela en las sugerencias'));
+
+  // Varias cuentas por organización: el administrador puede sumar una cuenta
+  // a una que ya tiene, esté como esté el interruptor. La principal no cambia.
+  tx = await crear({ correo: C('suma'), org: TOMADA, elegir: true });
+  di('eligiéndola, la cuenta se suma a ella', organizacionDe(C('suma')) === TOMADA, organizacionDe(C('suma')));
+  di('la principal sigue siendo la de antes', tinker(`echo App\\Models\\Organization::find(${ids.tomada})->user_id;`) === String(ids.dueno));
+  di('y lo dice', tx.includes('Avisamos a su cuenta principal'));
 
   tx = await crear({ correo: C('escrita'), org: LIBRE2 });
   di('escribiendo a mano una libre sin elegirla, no crea otra igual', organizacionDe(C('escrita')) === 'NO-EXISTE'

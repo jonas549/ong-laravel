@@ -71,7 +71,7 @@ class PublishController extends Controller
     public function organizaciones(Request $request)
     {
         return response()->json([
-            'organizaciones' => Organization::buscarPorNombre(Filtro::texto($request, 'q'), $request->user()?->id),
+            'organizaciones' => Organization::buscarPorNombre(Filtro::texto($request, 'q'), $request->user()),
         ]);
     }
 
@@ -169,7 +169,7 @@ class PublishController extends Controller
                 'enlace_red_social' => $organizacion->enlace_red_social,
             ] : null,
             // Lo que decide qué pasos se salta desde ahora (B1/B2).
-            'ficha' => $organizacion?->fichaParaElWizard(),
+            'ficha' => $organizacion?->fichaParaElWizard($usuario),
         ]);
     }
 
@@ -257,6 +257,10 @@ class PublishController extends Controller
          * el correo de la cuenta no viaja en el POST: sale del usuario.
          */
         $conSesion = $request->user();
+
+        // Se mira antes de guardar nada: al reclamar una libre, deja de estarlo.
+        $seSuma = $request->seSuma();
+
         $correoCuenta = $datos['email'] ?? $conSesion?->email;
 
         // El paso 4 ofrece reusar el correo de la cuenta como contacto público.
@@ -265,10 +269,12 @@ class PublishController extends Controller
             : ($datos['correo_contacto'] ?? $correoCuenta);
 
         try {
-            $actividad = DB::transaction(function () use ($datos, $request, $correoPublico, $conSesion) {
+            $actividad = DB::transaction(function () use ($datos, $request, $correoPublico, $conSesion, $seSuma) {
                 $campos = [
                     'nombre' => $datos['org_nombre'],
-                    'tipo' => $datos['org_tipo'],
+                    // Puede no llegar: a quien no escribe la ficha (se suma, o
+                    // no es la principal) no se le exige (`fichaFija()`).
+                    'tipo' => $datos['org_tipo'] ?? null,
                     'tipo_otro' => $datos['org_tipo_otro'] ?? null,
                     'descripcion' => $datos['org_descripcion'] ?? null,
                     'num_voluntarios' => $datos['org_num_voluntarios'] ?? null,
@@ -292,15 +298,24 @@ class PublishController extends Controller
 
                 if ($conSesion?->organization) {
                     /*
-                     * Ya tiene cuenta y organización: se reusan. El usuario es
-                     * `hasOne` de organización, así que crear otra dejaría dos
-                     * colgando del mismo dueño y la ficha saldría de la
-                     * equivocada. Los campos van rellenos desde el formulario y
-                     * son editables, así que lo que venga se guarda; el logo
-                     * sólo se pisa si subió uno nuevo.
+                     * Ya tiene cuenta y organización: se reusan. Una cuenta es
+                     * de una sola organización, así que crear otra la dejaría
+                     * colgando de dos. Los campos van rellenos desde el
+                     * formulario y son editables, así que lo que venga se
+                     * guarda; el logo sólo se pisa si subió uno nuevo.
+                     *
+                     * **Sólo si es la cuenta principal.** Con varias personas
+                     * en la organización, la ficha es de todas: si cualquiera
+                     * la reescribiera al publicar, cualquiera podría
+                     * renombrarla o cambiarle el logo. A las demás el wizard
+                     * no les pregunta nada de ella, y lo que llegue se ignora.
                      */
+                    $usuario = $conSesion;
                     $organizacion = $conSesion->organization;
-                    $organizacion->fill($campos)->save();
+
+                    if ($conSesion->editaLaFicha()) {
+                        $organizacion->fill($campos)->save();
+                    }
                 } else {
                     /*
                      * Sin organización: o no hay cuenta, o la hay pero sin
@@ -334,11 +349,21 @@ class PublishController extends Controller
                      * logo son los de la ONG y no se pisan con lo que venga,
                      * que para eso se le han dejado de pedir.
                      */
-                    if ($reclamada = $request->reclamada()) {
+                    if ($seSuma) {
+                        /*
+                         * Varias cuentas por organización: ya tiene cuenta y
+                         * el interruptor está encendido, así que se suma a ella
+                         * en vez de quedar bloqueada o crear un duplicado. No
+                         * se escribe nada de la ficha —es de la organización y
+                         * la cambia su principal— y se avisa a la principal
+                         * más abajo, fuera de la transacción.
+                         */
+                        $organizacion = $request->reclamada();
+                        $organizacion->enlazarCuenta($usuario);
+                    } elseif ($reclamada = $request->reclamada()) {
                         $organizacion = $reclamada;
 
                         $organizacion->fill([
-                            'user_id' => $usuario->id,
                             'correo_contacto' => $campos['correo_contacto'],
                             'enlace_web' => $campos['enlace_web'],
                             'enlace_red_social' => $campos['enlace_red_social'],
@@ -355,11 +380,14 @@ class PublishController extends Controller
                                 ? ['tipo' => $campos['tipo'], 'tipo_otro' => $campos['tipo_otro']]
                                 : []
                         )->save();
+
+                        $organizacion->enlazarCuenta($usuario);
                     } else {
                         $organizacion = Organization::create($campos + [
-                            'user_id' => $usuario->id,
                             'logo_path' => $campos['logo_path'] ?? null,
                         ]);
+
+                        $organizacion->enlazarCuenta($usuario);
                     }
                 }
 
@@ -377,6 +405,8 @@ class PublishController extends Controller
 
                 $actividad = Activity::create([
                     'organization_id' => $organizacion->id,
+                    // Quién la creó: la ve, la edita y recibe sus correos.
+                    'user_id' => $usuario->id,
                     'titulo' => $datos['titulo'],
                     'descripcion' => $datos['descripcion'],
                     'formato' => $datos['formato'],
@@ -450,7 +480,7 @@ class PublishController extends Controller
          * segunda en adelante, sale directa. Ver `AprobacionAutomatica`.
          */
         [$estado, $motivo] = app(AprobacionAutomatica::class)
-            ->estadoAlEnviar($actividad->organization);
+            ->estadoAlEnviar($actividad);
 
         // La guía para organizadores ya no sale de aquí sino al publicarse la
         // actividad (punto 11 del 23/09): la manda `cambiar()`.
@@ -463,7 +493,9 @@ class PublishController extends Controller
          * que le pediría verificar un correo verificado hace meses.
          */
         if (! $conSesion) {
-            $nuevoUsuario = $actividad->organization->user;
+            // Su autor, no la principal: si se sumó a una organización con
+            // cuenta, la principal es otra persona.
+            $nuevoUsuario = $actividad->autor;
 
             // La cuenta se acaba de crear con la contraseña que eligió aquí
             // mismo: dejarla fuera obligaba a volver a escribirla para ver su
@@ -480,6 +512,11 @@ class PublishController extends Controller
             // La cuenta nace aquí, así que aquí sale también el correo de
             // verificación. No bloquea nada: es para confirmar la dirección.
             event(new Registered($nuevoUsuario));
+
+            // Se sumó a una organización con cuenta: se avisa a su principal.
+            if ($seSuma) {
+                app(CorreoTransaccional::class)->cuentaSumada($nuevoUsuario);
+            }
         }
 
         // Ya están guardados donde tenían que estar: lo retenido sobra, y
@@ -529,21 +566,7 @@ class PublishController extends Controller
      */
     private function organizacionReclamada(): ?array
     {
-        $id = (int) old('org_id');
-
-        if ($id <= 0) {
-            return null;
-        }
-
-        $organizacion = Organization::sinReclamar()->where('activo', true)->find($id);
-
-        return $organizacion ? [
-            'id' => $organizacion->id,
-            'nombre' => $organizacion->nombre,
-            'tipo' => $organizacion->tipo,
-            'tipo_otro' => $organizacion->tipo_otro,
-            'libre' => true,
-        ] : null;
+        return Organization::elegidaAlRebotar(old('org_id'));
     }
 
     private function catalogos(): array
@@ -574,9 +597,11 @@ class PublishController extends Controller
                  */
                 // El desvío del paso 1, configurable (Configuración → General).
                 'urlVoluntariado' => trim((string) Setting::get('voluntariado_url')),
-                'ficha' => Auth::user()?->organization?->fichaParaElWizard(),
-                'saltarPaso2' => filled(Auth::user()?->organization?->tipo),
-                'saltarPaso3' => ($org = Auth::user()?->organization) !== null && $org->faltanEnElPaso3() === [],
+                'ficha' => Auth::user()?->organization?->fichaParaElWizard(Auth::user()),
+                // Quien no es la principal no elige el tipo: es de la ficha.
+                'saltarPaso2' => ($org = Auth::user()?->organization) !== null
+                    && (filled($org->tipo) || ! Auth::user()->editaLaFicha()),
+                'saltarPaso3' => $org !== null && $org->faltanEnElPaso3(null, Auth::user()) === [],
             ];
     }
 }

@@ -57,21 +57,7 @@ class RegistroController extends Controller
      */
     private function organizacionReclamada(): ?array
     {
-        $id = (int) old('org_id');
-
-        if ($id <= 0) {
-            return null;
-        }
-
-        $organizacion = Organization::sinReclamar()->where('activo', true)->find($id);
-
-        return $organizacion ? [
-            'id' => $organizacion->id,
-            'nombre' => $organizacion->nombre,
-            'tipo' => $organizacion->tipo,
-            'tipo_otro' => $organizacion->tipo_otro,
-            'libre' => true,
-        ] : null;
+        return Organization::elegidaAlRebotar(old('org_id'));
     }
 
     public function store(RegistroOrganizadorRequest $request, CorreoTransaccional $correos, ControlDeAcceso $acceso)
@@ -87,6 +73,9 @@ class RegistroController extends Controller
         $datos = $request->validated();
 
         $reclamada = $request->reclamada();
+
+        // Se mira antes de enlazar: al reclamar una libre, deja de estarlo.
+        $seSuma = $request->seSuma();
 
         // Reclamando una del listado, el tipo lo trae ella: el formulario ni
         // lo pinta, así que lo que llegue en el POST no manda.
@@ -163,6 +152,12 @@ class RegistroController extends Controller
         // sigue el wizard, para que las dos altas entreguen lo mismo.
         $correos->bienvenida($usuario->fresh('organization'));
         event(new Registered($usuario));
+
+        // Se sumó a una organización que ya tenía cuenta: se avisa a su
+        // principal, que es quien puede decir que no la conoce.
+        if ($seSuma) {
+            $correos->cuentaSumada($usuario->fresh('organization'));
+        }
 
         return redirect()
             ->route('account.activities.index')

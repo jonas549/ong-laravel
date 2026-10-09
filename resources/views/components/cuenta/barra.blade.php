@@ -33,7 +33,9 @@
      * decide la ficha, no una marca de «visto»: desaparece al subirlo.
      */
     $organizacion = auth()->user()?->organization;
-    $faltaLogo = $organizacion && blank($organizacion->logo_path) && ! request()->routeIs('account.perfil');
+    // Sólo a la cuenta principal: es la única que puede subirlo.
+    $faltaLogo = $organizacion && blank($organizacion->logo_path) && ! request()->routeIs('account.perfil')
+        && auth()->user()->editaLaFicha();
 
     $secciones = [
         ['Mis actividades', route('account.activities.index'), request()->routeIs('account.activities.*')],

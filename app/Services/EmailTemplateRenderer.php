@@ -55,7 +55,12 @@ class EmailTemplateRenderer
             'enlace_participantes' => route('account.activities.index'),
             'enlace_qr' => route('account.activities.index'),
             'correo_organizacion' => 'contacto@juntoalbarrio.cl',
-            'motivo' => 'es la primera actividad de esta organización',
+            'motivo' => 'es la primera actividad de esta cuenta',
+            // Las del aviso de cuenta sumada (varias cuentas por organización).
+            'nombre_cuenta' => 'Pedro Soto',
+            'correo_cuenta' => 'pedro@ejemplo.cl',
+            'nota' => '',
+            'correo_sitio' => 'contacto@ejemplo.cl',
             'enlace_revisar' => route('admin.activities.index'),
             'bloque_calendario' => '<p style="margin:22px 0 0;font-size:14px;color:#63666A;">'
                 .'Añádelo a tu calendario: <a href="#" style="color:#cc6600;font-weight:600;">Google Calendar</a>'

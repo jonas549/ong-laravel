@@ -55,6 +55,8 @@ class UserSeeder extends Seeder
             'DPS_CLAVE_ORGANIZADOR',
         );
 
+        // `enlazarCuenta` y no `user_id` a mano: es lo que escribe también
+        // `users.organization_id` y la deja como su cuenta principal.
         Organization::updateOrCreate(
             ['user_id' => $organizador->id],
             [
@@ -68,7 +70,7 @@ class UserSeeder extends Seeder
                 'enlace_red_social' => 'https://instagram.com/juntoalbarrio',
                 'verificada' => true,
             ],
-        );
+        )->enlazarCuenta($organizador);
     }
 
     /**

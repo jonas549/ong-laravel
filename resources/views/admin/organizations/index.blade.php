@@ -76,9 +76,15 @@
                  correos de contacto usados en su ficha y sus actividades. --}}
             <td data-correos-organizacion>
                 @if ($o->user)
-                    <div title="Cuenta de acceso{{ $o->user->name ? ': '.$o->user->name : '' }}">{{ $o->user->email }}</div>
+                    <div title="Cuenta principal{{ $o->user->name ? ': '.$o->user->name : '' }}">{{ $o->user->email }}</div>
                 @else
                     <div class="helper">Sin cuenta</div>
+                @endif
+                {{-- Varias cuentas: cuántas más hay, sin listarlas todas aquí. --}}
+                @if ($o->cuentas_count > 1)
+                    <div data-mas-cuentas>
+                        <a class="textlink" href="{{ route('admin.organizations.edit', $o) }}">+ {{ $o->cuentas_count - 1 }} {{ $o->cuentas_count - 1 === 1 ? 'cuenta más' : 'cuentas más' }}</a>
+                    </div>
                 @endif
                 @foreach ($o->correosDeContacto() as $correo)
                     <div class="helper" title="Correo de contacto usado en la ficha o en sus actividades">{{ $correo }}</div>
