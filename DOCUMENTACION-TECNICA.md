@@ -14,9 +14,9 @@ clase; para eso está el código, que va comentado en castellano.
 
 | Pieza | Versión | Dónde se fija |
 |---|---|---|
-| PHP | 8.4.24 en producción | `composer.json` pide `^8.2`, así que 8.2 en adelante vale |
+| PHP | 8.4.26 en producción | `composer.json` pide `^8.2`, pero tres dependencias exigen 8.4: con 8.2 o 8.3 no instala |
 | Laravel | 12 | `composer.json` |
-| MySQL | 8.4 | el servidor; en local, el de Laragon |
+| MySQL | 8.0 en producción, 8.4 en local | el servidor; en local, el de Laragon |
 | Node | 22 | sólo para compilar los assets; **no hace falta en el servidor** |
 | Vite | 6 | `package.json` |
 | Alpine.js | 3 | `package.json` |
@@ -145,9 +145,22 @@ el porqué está en `pruebas/README.md`.
 
 ## 5. El despliegue
 
-Producción es un **hosting compartido cPanel (BanaHosting)**. El repositorio
-está clonado en `~/ong-laravel`, **fuera del directorio público**, y el
-subdominio apunta a `~/ong-laravel/public`.
+Producción es **https://diadelpatrimoniosocial.cl**, en un hosting compartido
+cPanel. El repositorio está clonado en `~/ong-laravel`, **fuera del directorio
+público**, y `~/public_html` es un enlace simbólico a `~/ong-laravel/public`.
+
+En ese servidor el `php` del terminal no siempre es el que se quiere, así que
+los crons y el script de despliegue llaman a PHP y a Composer por su ruta
+completa:
+
+```bash
+/opt/cpanel/ea-php84/root/usr/bin/php artisan …
+/opt/cpanel/ea-php84/root/usr/bin/php -d allow_url_fopen=1 ~/bin/composer.phar install --no-dev …
+```
+
+**El dominio anterior, `ong.sandboxdelta.com`, ya no es producción.** Se queda
+sólo redirigiendo al nuevo, porque los QR que se imprimieron antes del cambio
+llevan esa dirección dentro (ver «El QR de la encuesta» en el punto 7).
 
 No hay pipeline ni acción manual: **un cron ejecuta el despliegue cada cinco
 minutos**, y hace un `git pull`, instala dependencias de PHP, corre las
