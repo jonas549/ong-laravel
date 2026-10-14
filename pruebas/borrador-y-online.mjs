@@ -8,10 +8,10 @@
 //   C. Una actividad online, de punta a punta: se guarda sin lugar, y la
 //      tarjeta, la ficha, el filtro por región, el calendario, el .ics y
 //      «otras actividades» se portan bien.
-//   D. «Guardar borrador»: sin el paso 3 lo dice y lleva al campo; con el
-//      paso 3 crea cuenta, organización y borrador; la pantalla dice qué pasó
-//      y dónde está; desde Borradores se completa y se envía, entonces sí con
-//      todas las reglas.
+//   D. «Guardar borrador», sólo con sesión: sin ella el botón no está en el
+//      HTML; con ella sólo exige el nombre, cuelga de la cuenta y la
+//      organización que ya existen (no crea ninguna) y dice dónde quedó; desde
+//      Borradores se completa y se envía, entonces sí con todas las reglas.
 //
 // Monta lo suyo con un sello irrepetible y lo deshace al final.
 //
@@ -34,18 +34,16 @@ const json = (php) => JSON.parse(ultima(tinker(php)));
 const SELLO = Date.now();
 const CLAVE = 'ClaveLarga123';
 const CORREO_ONLINE = `online.${SELLO}@ejemplo.cl`;
-const CORREO_BORRADOR = `borrador.${SELLO}@ejemplo.cl`;
 const ORG_ONLINE = `Fundación Online ${SELLO}`;
-const ORG_BORRADOR = `Fundación Borrador ${SELLO}`;
 const TITULO_ONLINE = `Taller online ${SELLO}`;
 const TITULO_BORRADOR = `Borrador ${SELLO}`;
-const TITULO_BORRADOR_2 = `Segundo borrador ${SELLO}`;
+const TITULO_SIN_SESION = `Sin sesión ${SELLO}`;
 
 const limpiar = () => tinker(
-  `foreach (App\\Models\\Organization::withTrashed()->whereIn('nombre', ['${ORG_ONLINE}', '${ORG_BORRADOR}'])->get() as $o) {`
+  `foreach (App\\Models\\Organization::withTrashed()->where('nombre', '${ORG_ONLINE}')->get() as $o) {`
   + ` foreach ($o->activities()->withTrashed()->get() as $a) { $a->registrations()->delete(); $a->collaborators()->delete(); $a->statusLogs()->delete(); $a->terms()->detach(); $a->forceDelete(); }`
   + ` App\\Models\\User::where('organization_id', $o->id)->update(['organization_id' => null]); $o->forceDelete(); }`
-  + ` foreach (App\\Models\\User::withTrashed()->whereIn('email', ['${CORREO_ONLINE}', '${CORREO_BORRADOR}'])->get() as $u) {`
+  + ` foreach (App\\Models\\User::withTrashed()->where('email', '${CORREO_ONLINE}')->get() as $u) {`
   + ` App\\Models\\AccessLog::where('user_id', $u->id)->orWhere('actor_id', $u->id)->delete(); $u->forceDelete(); }`
   + ` echo 'LIMPIO';`
 );
@@ -156,6 +154,8 @@ try {
 t('A. El lugar según el formato — wizard');
 
 await abrirWizard();
+di('sin sesión, «Guardar borrador» no está en el HTML',
+    ! (await p.content()).includes('data-guardar-borrador') && await p.$('[data-guardar-borrador]') === null);
 await irAPaso(4);
 
 let l = await lugar();
@@ -325,40 +325,28 @@ di('pasarla a Online borra el lugar guardado', a.formato === 'Online' && a.regio
     JSON.stringify({ r: a.region, c: a.comuna, d: a.direccion }));
 
 /* ═════════════════════════════════════════════════════════════════════ */
-t('D. «Guardar borrador» en el wizard');
+t('D. «Guardar borrador», con la sesión de la cuenta online');
 
-// Sin sesión: se cierra la de la cuenta online.
-await p.evaluate(async () => {
-    await fetch('/publicar-actividad/salir', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' } });
-});
+const cuentas = () => json(`echo json_encode(['u' => App\\Models\\User::withTrashed()->count(), 'o' => App\\Models\\Organization::withTrashed()->count()]);`);
+const antesCuentas = cuentas();
 
 await abrirWizard();
-di('el paso 3 ya no tiene «Guardar borrador»',
-    await p.$$eval('[data-paso="3"] button', (b) => ! b.some((x) => x.textContent.includes('Guardar borrador'))));
-di('el paso 4 sí, y es un envío de verdad',
+di('con sesión y organización, el paso 4 lo ofrece y es un envío de verdad',
     await p.$eval('[data-paso="4"] [data-guardar-borrador]', (b) => b.type === 'submit' && ! b.disabled && b.getAttribute('formaction').endsWith('/publicar-actividad/borrador')));
+di('el paso 3 no lo tiene',
+    await p.$$eval('[data-paso="3"] button', (b) => ! b.some((x) => x.textContent.includes('Guardar borrador'))));
 di('Enter en un campo sigue enviando la actividad, no el borrador',
     await p.$eval('form', (f) => ! f.querySelector('button[type=submit]').hasAttribute('data-guardar-borrador')));
 
 await irAPaso(4);
-await p.type('input[name="titulo"]', TITULO_BORRADOR);
 const urlAntes = p.url();
 await p.click('[data-guardar-borrador]');
 await esperar(600);
 resumen = await textoResumen();
-di('con el paso 3 vacío no se va a ninguna parte', p.url() === urlAntes);
-di('lleva al paso 3', await paso() === 3, String(await paso()));
-di('y dice por qué, hablando del borrador', resumen?.startsWith('Para guardar el borrador faltan'), resumen?.slice(0, 80));
-di('nombrando lo que falta', ['Nombre de la organización', 'Correo electrónico', 'Contraseña'].every((x) => resumen?.includes(x)));
+di('sin nombre no se va a ninguna parte', p.url() === urlAntes);
+di('y lo dice hablando del borrador: es lo único que exige',
+    resumen?.startsWith('Para guardar el borrador falta 1 campo') && resumen?.includes('Nombre de la actividad'), resumen);
 di('sin pedir lo que el borrador no exige', ! resumen?.includes('Descripción') && ! resumen?.includes('Tema'));
-
-await abrirWizard();
-await rellenarPaso3(ORG_BORRADOR, CORREO_BORRADOR);
-await irAPaso(4);
-await p.click('[data-guardar-borrador]');
-await esperar(600);
-resumen = await textoResumen();
-di('sin nombre de la actividad tampoco: es lo único que exige', resumen?.startsWith('Para guardar el borrador falta 1 campo') && resumen?.includes('Nombre de la actividad'), resumen);
 di('y se queda en el paso 4', await paso() === 4);
 
 // El servidor también: una fecha imposible rebota y el resumen sigue diciendo «borrador».
@@ -369,35 +357,24 @@ resumen = await textoResumen();
 di('una fecha imposible la rechaza el servidor', actividad(TITULO_BORRADOR) === null && resumen !== null, resumen?.slice(0, 90));
 di('y al volver el resumen sigue hablando del borrador', resumen?.startsWith('Para guardar el borrador'));
 
-// Al rebotar, el logo queda retenido; lo demás del paso 3 vuelve escrito.
 await irAPaso(4);
 await p.evaluate(() => { document.querySelector('input[name="fecha_inicio"]').value = ''; });
-const tituloEscrito = await p.$eval('input[name="titulo"]', (i) => i.value);
-if (! tituloEscrito) await p.type('input[name="titulo"]', TITULO_BORRADOR);
-await p.evaluate(() => { for (const n of ['password', 'password_confirmation']) document.querySelector(`input[name="${n}"]`).value = ''; });
-await irAPaso(3);
-await p.type('input[name="password"]', CLAVE);
-await p.type('input[name="password_confirmation"]', CLAVE);
-await irAPaso(4);
+if (! await p.$eval('input[name="titulo"]', (i) => i.value)) await p.type('input[name="titulo"]', TITULO_BORRADOR);
 await pulsar('[data-guardar-borrador]');
 
-di('con el paso 3 y el nombre, se guarda', p.url().includes('/borrador-guardado'), p.url());
-const pantalla = await p.evaluate(() => document.querySelector('[data-borrador-guardado]')?.innerText.replace(/\s+/g, ' ') ?? '');
-di('dice que se creó la cuenta, con su correo', pantalla.includes('Creamos tu cuenta') && pantalla.includes(CORREO_BORRADOR));
-di('dice que NO se envió a revisión', pantalla.includes('no la enviaste a revisión'));
-di('dice dónde encontrarlo', pantalla.includes('Mi cuenta → Mis actividades → Borradores'));
-di('dice cómo volver otro día', pantalla.includes('Para volver otro día') && pantalla.includes('Enviar a revisión'));
-di('no promete ningún correo', ! /te enviamos|revisa tu correo|recibirás/i.test(pantalla));
+di('con el nombre se guarda y lleva a Mis actividades → Borradores',
+    p.url().includes('/mi-cuenta/actividades') && p.url().includes('filtro=Borradores'), p.url());
+const aviso = await p.evaluate(() => document.querySelector('.alert-ok')?.innerText ?? '');
+di('con un aviso de que quedó guardado y dónde', aviso.includes(`Guardamos «${TITULO_BORRADOR}» como borrador`) && aviso.includes('Borradores'), aviso);
+di('y ahí está', (await p.content()).includes(TITULO_BORRADOR));
 
 a = actividad(TITULO_BORRADOR);
 di('existe la actividad, en borrador', a?.estado === 'borrador', a?.estado);
-di('de la cuenta y la organización nuevas', a?.autor === CORREO_BORRADOR && a?.org === ORG_BORRADOR);
+di('de la cuenta y la organización que ya había', a?.autor === CORREO_ONLINE && a?.org === ORG_ONLINE);
+di('no crea cuentas ni organizaciones', JSON.stringify(cuentas()) === JSON.stringify(antesCuentas),
+    `${JSON.stringify(antesCuentas)} → ${JSON.stringify(cuentas())}`);
 di('con lo vacío vacío (descripción y temas)', a?.descripcion === '' && a?.temas === 0);
 di('sin pasar por moderación (ningún movimiento)', a?.logs === 0, String(a?.logs));
-
-await pulsar('[data-ir-a-borradores]');
-di('«Ir a mis borradores» lleva al filtro Borradores', p.url().includes('filtro=Borradores'));
-di('y ahí está', (await p.content()).includes(TITULO_BORRADOR));
 
 /* ═════════════════════════════════════════════════════════════════════ */
 t('D2. Volver desde Borradores, completar y enviar');
@@ -441,34 +418,42 @@ await elegirLugar();
 await marcarChips();
 await pulsar('form button[name="enviar_revision"]');
 a = actividad(TITULO_BORRADOR);
-di('completo, «Enviar a revisión» lo envía', a.estado === 'revision', a.estado);
+// La organización ya tiene una publicada (la online de C), así que le toca la
+// aprobación automática: sale publicada. Es la misma regla que al enviar desde
+// el wizard (`AprobacionAutomatica`), no un atajo del borrador.
+di('completo, «Enviar a revisión» lo envía (aquí, publicada por aprobación automática)', a.estado === 'publicada', a.estado);
 di('y deja un movimiento en el historial', a.logs >= 1);
-di('vuelve a Mis actividades con el aviso', p.url().includes('/mi-cuenta/actividades') && (await p.content()).includes('Enviamos tu actividad a revisión'));
+di('vuelve a Mis actividades con el aviso', p.url().includes('/mi-cuenta/actividades') && (await p.content()).includes('Tu actividad ya está publicada en el calendario'));
 
 /* ═════════════════════════════════════════════════════════════════════ */
-t('D3. Borrador con la sesión ya abierta');
+t('D3. Sin sesión no hay borrador');
 
+// Cerrar la sesión a mitad del wizard (sin recargar) saca el botón del DOM.
 await abrirWizard();
-di('con sesión el paso 4 ofrece el borrador igual', await p.$('[data-paso="4"] [data-guardar-borrador]') !== null);
-await irAPaso(4);
-await p.type('input[name="titulo"]', TITULO_BORRADOR_2);
-await pulsar('[data-guardar-borrador]');
-di('se guarda sin pedir cuenta', p.url().includes('/borrador-guardado'), p.url());
-di('y no dice que se creó una cuenta', await p.$('[data-cuenta-creada]') === null);
-a = actividad(TITULO_BORRADOR_2);
-di('en la misma organización', a?.org === ORG_BORRADOR && a?.estado === 'borrador');
+di('con sesión, el botón está', await p.$('[data-guardar-borrador]') !== null);
+await p.evaluate(() => Alpine.$data(document.querySelector('[x-data^="wizard"]')).salirYEntrarConOtra());
+await p.waitForFunction(() => ! Alpine.$data(document.querySelector('[x-data^="wizard"]')).conSesion, { timeout: 8000 });
+await esperar(200);
+di('al cerrar la sesión a mitad, sale del DOM', await p.$('[data-guardar-borrador]') === null);
 
-// Si ya no es borrador, esta pantalla ya no dice la verdad: al editor.
-tinker(`App\\Models\\Activity::find(${a.id})->forceFill(['estado' => 'revision'])->save(); echo 'ok';`);
-await p.goto(`${B}/publicar-actividad/${a.slug}/borrador-guardado`, { waitUntil: 'networkidle2' });
-di('la pantalla de un ex borrador lleva al editor', p.url().endsWith('/editar'), p.url());
-
-await nav.close();
-const sinSesion = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
-const q = await sinSesion.newPage();
-const r = await q.goto(`${B}/publicar-actividad/${a.slug}/borrador-guardado`);
-di('sin ser su dueño: 404', r.status() === 404, String(r.status()));
-await sinSesion.close();
+// Y el envío a mano, sin sesión, no crea nada: la ruta pide sesión.
+const antesSinSesion = cuentas();
+await abrirWizard();
+const tk = await p.$eval('meta[name="csrf-token"]', (m) => m.content);
+await Promise.all([
+    p.waitForNavigation({ waitUntil: 'networkidle2' }),
+    p.evaluate((u, tk, titulo) => {
+        const f = document.createElement('form');
+        f.method = 'POST'; f.action = u;
+        f.innerHTML = `<input name="_token" value="${tk}"><input name="titulo" value="${titulo}">`
+            + `<input name="org_nombre" value="Org sin sesión"><input name="email" value="nadie@ejemplo.cl">`
+            + `<input name="password" value="ClaveLarga123"><input name="password_confirmation" value="ClaveLarga123">`;
+        document.body.appendChild(f); f.submit();
+    }, `${B}/publicar-actividad/borrador`, tk, TITULO_SIN_SESION),
+]);
+di('un POST a mano sin sesión manda a iniciar sesión', p.url().includes('/login'), p.url());
+di('y no crea actividad, cuenta ni organización',
+    actividad(TITULO_SIN_SESION) === null && JSON.stringify(cuentas()) === JSON.stringify(antesSinSesion));
 
 di('sin errores de JavaScript', errores.length === 0, errores.slice(0, 3).join(' | '));
 

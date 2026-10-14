@@ -93,8 +93,9 @@ class PublishActivityRequest extends FormRequest
     }
 
     /**
-     * «Guardar borrador» del paso 4: la cuenta y la organización se exigen
-     * enteras —sin ellas no hay dónde colgarlo— y de la actividad, sólo el
+     * «Guardar borrador» del paso 4, sólo con sesión: el borrador cuelga de la
+     * cuenta y la organización que ya existen, así que no se valida nada de
+     * ellas (pasos 2 y 3) —tampoco se usa—, y de la actividad, sólo el
      * nombre. Ver `ReglasDeBorrador`.
      */
     public function esBorrador(): bool
@@ -107,7 +108,16 @@ class PublishActivityRequest extends FormRequest
     {
         $reglas = $this->reglasCompletas();
 
-        return $this->esBorrador() ? $this->sinObligatoriosDeLaActividad($reglas) : $reglas;
+        if (! $this->esBorrador()) {
+            return $reglas;
+        }
+
+        // Fuera todo lo de la organización (`org_*`) y de la cuenta.
+        return $this->sinObligatoriosDeLaActividad(array_filter(
+            $reglas,
+            fn ($campo) => ! str_starts_with($campo, 'org_') && ! in_array($campo, ['email', 'password'], true),
+            ARRAY_FILTER_USE_KEY,
+        ));
     }
 
     /** @return array<string, mixed> */

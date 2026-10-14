@@ -22,18 +22,25 @@
         <div class="wizard-pie-botones" style="display:flex;gap:10px;">
             <button type="submit" class="btn btn-primary">Enviar actividad →</button>
             {{--
-                Crea la cuenta, la organización y la actividad como borrador
-                (`PublishController::borrador`). Va en el mismo formulario con
-                otra dirección: el `x-on:submit` del wizard mira con qué botón
-                se envió y revisa sólo lo que el borrador exige.
+                «Guardar borrador», SÓLO con sesión y organización: el borrador
+                cuelga de las que ya existen (`PublishController::borrador`).
+                Sin sesión no se pinta en absoluto. Y `x-if`, no `x-show`: si
+                se cierra la sesión a mitad del wizard (B3, sin recargar), el
+                botón sale del DOM.
 
-                Detrás de «Enviar» en el HTML y delante a la vista (`order`):
-                Enter en un campo envía con el PRIMER botón del formulario, y
-                tiene que seguir siendo «Enviar actividad».
+                Va en el mismo formulario con otra dirección: el `x-on:submit`
+                del wizard mira con qué botón se envió y revisa sólo lo que el
+                borrador exige. Detrás de «Enviar» en el HTML y delante a la
+                vista (`order`): Enter en un campo envía con el PRIMER botón del
+                formulario, y tiene que seguir siendo «Enviar actividad».
             --}}
-            <button type="submit" class="btn btn-outline" data-guardar-borrador style="order:-1;"
-                    name="guardar_borrador" value="1"
-                    formaction="{{ route('publish.borrador') }}">Guardar borrador</button>
+            @if (auth()->user()?->organization)
+                <template x-if="conSesion">
+                    <button type="submit" class="btn btn-outline" data-guardar-borrador style="order:-1;"
+                            name="guardar_borrador" value="1"
+                            formaction="{{ route('publish.borrador') }}">Guardar borrador</button>
+                </template>
+            @endif
         </div>
     </div>
 </div>

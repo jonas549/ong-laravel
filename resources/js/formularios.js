@@ -204,13 +204,14 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
 
     /**
      * Lo que exige «Guardar borrador», que es el gemelo de `ReglasDeBorrador`
-     * en el servidor: la cuenta y la organización enteras (pasos 2 y 3: sin
-     * ellas no hay dónde colgar la actividad) y de la actividad sólo lo
-     * marcado con `data-obligatorio-en-borrador` —el nombre—. Lo que el campo
-     * sabe que está mal (`data-error-propio`) se dice siempre.
+     * en el servidor: de la actividad, sólo lo marcado con
+     * `data-obligatorio-en-borrador` —el nombre—. Nada de la cuenta ni de la
+     * organización: el borrador sólo se ofrece con sesión y cuelga de las que
+     * ya existen. Lo que un campo de la actividad sabe que está mal
+     * (`data-error-propio`, la portada que no se pudo reducir) se dice igual.
      */
     exigeElBorrador(falta) {
-        return falta.enBorrador || falta.mensaje !== '' || [2, 3].includes(falta.paso);
+        return falta.enBorrador || (falta.mensaje !== '' && ! [2, 3].includes(falta.paso));
     },
 
     /* ─────────────────────────────────── revisión antes de enviar ── */
