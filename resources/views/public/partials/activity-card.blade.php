@@ -10,7 +10,7 @@
     :imagen="$act->imagen_url"
     :titulo="$act->titulo"
     :etiqueta="$temas->first()?->nombre"
-    :lugar="$act->commune?->nombre ?? 'Por definir'"
+    :lugar="$act->lugar_corto"
     :fecha="$act->fecha_corta"
     :descripcion="(string) $act->descripcion"
     :etiquetas="$temas->concat($caracs)->take(3)->pluck('nombre')->all()"

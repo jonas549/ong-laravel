@@ -9,6 +9,7 @@ use App\Models\TaxonomyTerm;
 use App\Services\Calendario;
 use App\Support\CalendarioMes;
 use App\Support\Filtro;
+use App\Support\LugarDeActividad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -100,15 +101,24 @@ class ActivityController extends Controller
 
         $activity->load(['organization', 'region', 'commune', 'terms', 'collaborators']);
 
+        /*
+         * «Otras actividades cerca»: las de su misma región. Una online no
+         * está en ninguna, y sin región la consulta traía tres cualesquiera
+         * del país bajo el rótulo «cerca»; para ella son las otras online, con
+         * su propio rótulo.
+         */
         $relacionadas = Activity::published()
             ->abiertasAlPublico()
             ->where('id', '!=', $activity->id)
-            ->when($activity->region_id, fn ($q) => $q->where('region_id', $activity->region_id))
+            ->when(! $activity->tieneLugar(), fn ($q) => $q->whereIn('formato', LugarDeActividad::FORMATOS_SIN_LUGAR))
+            ->when($activity->tieneLugar() && $activity->region_id, fn ($q) => $q->where('region_id', $activity->region_id))
             ->with(['commune', 'region', 'terms'])
             ->take(3)
             ->get();
 
-        return view('public.activities.show', compact('activity', 'relacionadas'));
+        $tituloRelacionadas = $activity->tieneLugar() ? 'Otras actividades cerca' : 'Otras actividades online';
+
+        return view('public.activities.show', compact('activity', 'relacionadas', 'tituloRelacionadas'));
     }
 
     /**

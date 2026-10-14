@@ -271,7 +271,9 @@ try {
 
   const wiz = await pestana();
   await wiz.goto(`${B}/publicar-actividad`, { waitUntil: 'networkidle2' });
-  const nombresWizard = await wiz.evaluate(() => [...new Set([...document.querySelectorAll('[data-paso="4"] [name]')].map((c) => c.name))].sort());
+  // Los campos, no los botones: «Guardar borrador» lleva `name` para que el
+  // servidor sepa con cuál se envió, y no es un dato de la actividad.
+  const nombresWizard = await wiz.evaluate(() => [...new Set([...document.querySelectorAll('[data-paso="4"] [name]:not(button)')].map((c) => c.name))].sort());
   // Los `algo[]` los pinta la selección (chips, etiquetas): en el wizard
   // vacío no existen todavía. Se comparan los demás.
   const sinSeleccion = (n) => ! n.endsWith('[]');

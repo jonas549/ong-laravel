@@ -44,6 +44,13 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
     ambito: null,
 
     /**
+     * Si lo último que se intentó fue «Guardar borrador». Cambia qué se exige
+     * (ver `exigeElBorrador`) y el título del resumen, para que se entienda
+     * por qué no se guardó.
+     */
+    modoBorrador: false,
+
+    /**
      * @param {HTMLElement} ambito  la raíz del componente, guardada en init()
      */
     iniciarGuia(ambito) {
@@ -191,7 +198,19 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
             // averiguar sola: hoy, el campo de imagen cuando el archivo pasa
             // del límite y el navegador no ha podido reducirlo (P19).
             mensaje: caja.dataset.errorPropio || '',
+            enBorrador: caja.hasAttribute('data-obligatorio-en-borrador'),
         };
+    },
+
+    /**
+     * Lo que exige «Guardar borrador», que es el gemelo de `ReglasDeBorrador`
+     * en el servidor: la cuenta y la organización enteras (pasos 2 y 3: sin
+     * ellas no hay dónde colgar la actividad) y de la actividad sólo lo
+     * marcado con `data-obligatorio-en-borrador` —el nombre—. Lo que el campo
+     * sabe que está mal (`data-error-propio`) se dice siempre.
+     */
+    exigeElBorrador(falta) {
+        return falta.enBorrador || falta.mensaje !== '' || [2, 3].includes(falta.paso);
     },
 
     /* ─────────────────────────────────── revisión antes de enviar ── */
@@ -231,7 +250,15 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
      * porque esto es una cortesía, no una barrera.
      */
     revisarAntesDeEnviar(evento) {
-        const faltan = this.camposQueFaltan();
+        /*
+         * Con qué botón se envió. «Guardar borrador» va por el mismo
+         * formulario (con `formaction`) y exige mucho menos: frenarlo pidiendo
+         * la descripción o los temas sería dejar el botón muerto otra vez.
+         */
+        this.modoBorrador = !! evento.submitter?.hasAttribute('data-guardar-borrador');
+
+        const faltan = this.camposQueFaltan()
+            .filter((falta) => ! this.modoBorrador || this.exigeElBorrador(falta));
 
         if (faltan.length === 0) {
             this.errores = [];
@@ -249,6 +276,8 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
 
     /** Igual, pero de un solo paso: para el botón «Continuar →» del wizard. */
     revisarPaso(paso) {
+        this.modoBorrador = false;
+
         const faltan = this.camposQueFaltan(paso);
 
         this.errores = faltan;
@@ -267,9 +296,13 @@ export const guiaDeErrores = (erroresIniciales = []) => ({
     /* ──────────────────────────────────────────── enseñar y saltar ── */
 
     tituloDeErrores() {
-        return this.errores.length === 1
-            ? 'Falta 1 campo por completar'
-            : 'Faltan ' + this.errores.length + ' campos por completar';
+        const cuantos = this.errores.length === 1
+            ? 'falta 1 campo por completar'
+            : 'faltan ' + this.errores.length + ' campos por completar';
+
+        return this.modoBorrador
+            ? 'Para guardar el borrador ' + cuantos
+            : cuantos.charAt(0).toUpperCase() + cuantos.slice(1);
     },
 
     /**

@@ -243,7 +243,8 @@
     <div class="wizard-seccion wizard-pie" style="padding:20px 30px;border-top:1px solid var(--linea);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <span class="helper">* campos obligatorios</span>
         <div class="wizard-pie-botones" style="display:flex;gap:10px;">
-            <button type="button" class="btn btn-outline" disabled title="Pendiente de definir">Guardar borrador</button>
+            {{-- Sin «Guardar borrador» aquí: hasta el paso 4 no hay cuenta ni
+                 organización creadas, y no habría nada que guardar. --}}
             {{-- Revisa lo obligatorio de ESTE paso antes de dejar pasar. La
                  barra de pasos de arriba sigue navegando libre a propósito: ahí
                  se va a consultar, y frenar a quien vuelve a mirar un dato

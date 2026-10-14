@@ -30,7 +30,7 @@
         <div>
             <a href="{{ route('account.activities.index') }}" class="btn btn-outline btn-sm" style="margin-bottom:16px;">← Volver a mis actividades</a>
             <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 8px;color:var(--ink);">Participantes inscritos</h1>
-            <p style="font-size:16px;color:var(--gris);margin:0;">{{ $activity->titulo }} · {{ $activity->fecha_corta }} · {{ $activity->commune?->nombre ?? 'Por definir' }}</p>
+            <p style="font-size:16px;color:var(--gris);margin:0;">{{ $activity->titulo }} · {{ $activity->fecha_corta }} · {{ $activity->lugar_corto }}</p>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">

@@ -104,7 +104,7 @@
                             @endif
                         </div>
 
-                        <div style="font-size:14.5px;color:var(--gris);margin-bottom:10px;">{{ $a->fecha_lista }} · {{ $a->commune?->nombre ?? 'Por definir' }}</div>
+                        <div style="font-size:14.5px;color:var(--gris);margin-bottom:10px;">{{ $a->fecha_lista }} · {{ $a->lugar_corto }}</div>
 
                         <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
                             {{-- Punto 6 del 05/10: para que se sepa por qué no

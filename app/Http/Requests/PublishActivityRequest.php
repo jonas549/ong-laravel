@@ -10,6 +10,8 @@ use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
 use App\Support\Enlace;
 use App\Support\FechaEscrita;
+use App\Support\LugarDeActividad;
+use App\Support\ReglasDeBorrador;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Support\ArchivosRetenidos;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
@@ -19,6 +21,7 @@ use Illuminate\Validation\Rules\Unique;
 class PublishActivityRequest extends FormRequest
 {
     use ReclamarOrganizacion;
+    use ReglasDeBorrador;
 
     public function authorize(): bool
     {
@@ -89,8 +92,26 @@ class PublishActivityRequest extends FormRequest
         parent::failedValidation($validator);
     }
 
+    /**
+     * «Guardar borrador» del paso 4: la cuenta y la organización se exigen
+     * enteras —sin ellas no hay dónde colgarlo— y de la actividad, sólo el
+     * nombre. Ver `ReglasDeBorrador`.
+     */
+    public function esBorrador(): bool
+    {
+        return $this->routeIs('publish.borrador');
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
+    {
+        $reglas = $this->reglasCompletas();
+
+        return $this->esBorrador() ? $this->sinObligatoriosDeLaActividad($reglas) : $reglas;
+    }
+
+    /** @return array<string, mixed> */
+    private function reglasCompletas(): array
     {
         /*
          * Quien se suma a una organización, o publica en una de la que no es
@@ -163,26 +184,9 @@ class PublishActivityRequest extends FormRequest
                 ),
                 ['after:hora_inicio'],
             )],
-            'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
-            'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
-            'direccion' => ['nullable', Rule::requiredIf(
-                // Punto 5 de la tanda del 11/09: una actividad ONLINE no tiene
-                // dirección física que escribir. Va como `requiredIf` y no como
-                // dos reglas `required_*` sueltas porque Laravel las evalúa por
-                // separado: cada una que dispare hace obligatorio el campo, así
-                // que sumarlas daría un O y lo que hace falta es un Y —sólo se
-                // pide si NO es permanente y ADEMÁS no es online—.
-                fn () => ! $this->boolean('sin_fecha_definida') && $this->input('formato') !== 'Online'
-            ), 'string', 'max:255'],
-
-            /*
-             * El punto de la dirección (P16). Nulos si nadie eligió una
-             * sugerencia, que es lo normal: el campo es texto libre y esto
-             * ayuda, no obliga. Los rangos son los del planeta; lo que llega
-             * aquí lo escribe el navegador.
-             */
-            'latitud' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitud' => ['nullable', 'numeric', 'between:-180,180'],
+            // Región, comuna, dirección y el punto: la condición (online,
+            // permanente) vive en `LugarDeActividad`, la misma del editor.
+            ...LugarDeActividad::reglas($this),
 
             'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -232,9 +236,7 @@ class PublishActivityRequest extends FormRequest
             'hora_inicio.date_format' => 'Escribe la hora como HH:MM, por ejemplo 09:00.',
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:00.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
-            'region_id.required_without' => 'Elige la región donde ocurre la actividad.',
-            'direccion.required' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
-            'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
+            ...LugarDeActividad::mensajes(),
             /*
              * P11. Antes decía qué pasaba pero no a dónde ir, y quien no
              * recuerda la contraseña se quedaba igual de atascado.

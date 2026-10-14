@@ -65,6 +65,7 @@
         descLen: {{ mb_strlen(\App\Support\Formulario::viejo('descripcion', $activity->descripcion ?? '')) }},
         limites: { temas: {{ $limites['tema'] ?? 'null' }}, caracteristicas: {{ $limites['caracteristica'] ?? 'null' }}, publicos: null },
         errores: {{ Js::from($erroresDelServidor) }},
+        modoBorrador: {{ Js::from((bool) old('guardar_borrador')) }},
      })">
 
     <x-cuenta.barra>
@@ -193,32 +194,38 @@
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <a href="{{ route('activities.show', $activity) }}" target="_blank" rel="noopener" class="btn btn-outline">Vista previa</a>
                     <a href="{{ route('account.activities.index') }}" class="btn btn-outline">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Actualizar actividad</button>
+                    @if ($activity->estado === 'borrador')
+                        {{--
+                            Un borrador puede estar a medias (lo deja así el
+                            «Guardar borrador» del wizard). «Guardar borrador»
+                            sólo exige el nombre; «Enviar a revisión» pasa por
+                            todas las reglas, guarda y lo envía en un paso.
+
+                            En este orden también en el HTML: Enter en un campo
+                            envía con el PRIMER botón, y aquí lo seguro es
+                            guardar, no enviar.
+                        --}}
+                        <button type="submit" class="btn btn-outline" data-guardar-borrador
+                                name="guardar_borrador" value="1">Guardar borrador</button>
+                        <button type="submit" class="btn btn-primary" name="enviar_revision" value="1">Enviar a revisión</button>
+                    @else
+                        <button type="submit" class="btn btn-primary">Actualizar actividad</button>
+                    @endif
                 </div>
             </div>
         </div>
     </form>
 
     {{--
-        Fuera del prototipo: sin esto, un borrador —el que deja "Duplicar"—
-        no tiene forma de llegar a revisión.
-    --}}
-    {{--
-        En «necesita ajustes» este botón ya no va: guardar devuelve la actividad
-        a revisión sola. Dejarlo obligaba a dos pasos para una sola intención, y
-        quien sólo daba al primero se quedaba mirando el aviso rosa creyendo que
-        su corrección no había servido.
-
-        En un borrador sigue haciendo falta: ahí guardar es guardar, y el
-        borrador que deja «Duplicar» no tendría otra forma de llegar a revisión.
+        «Enviar a revisión» de un borrador vive en la barra de acciones del
+        formulario: antes era un formulario aparte, debajo, que enviaba lo
+        guardado sin pasar por las reglas —y un borrador del wizard puede estar
+        a medias—. En «necesita ajustes» no hay botón: guardar la devuelve.
     --}}
     @if ($activity->estado === 'borrador')
-        <form method="POST" action="{{ route('account.activities.submit', $activity) }}"
-              style="margin-top:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-            @csrf
-            <button type="submit" class="btn btn-primary">Enviar a revisión</button>
-            <span class="helper" style="max-width:52ch;">Guarda primero los cambios: al enviarla, el equipo organizador la revisa antes de publicarla.</span>
-        </form>
+        <p class="helper" style="margin:14px 0 0;">
+            Al enviarla, el equipo organizador la revisa antes de publicarla.
+        </p>
     @endif
 
     {{-- ══ MODAL DE CANCELACIÓN ══ --}}

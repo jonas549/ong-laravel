@@ -20,8 +20,20 @@
     <div class="wizard-seccion wizard-pie" style="padding:20px 30px;border-top:1px solid var(--linea);background:#fdfcfb;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <span class="helper">* campos obligatorios</span>
         <div class="wizard-pie-botones" style="display:flex;gap:10px;">
-            <button type="button" class="btn btn-outline" disabled title="Pendiente de definir">Guardar borrador</button>
             <button type="submit" class="btn btn-primary">Enviar actividad →</button>
+            {{--
+                Crea la cuenta, la organización y la actividad como borrador
+                (`PublishController::borrador`). Va en el mismo formulario con
+                otra dirección: el `x-on:submit` del wizard mira con qué botón
+                se envió y revisa sólo lo que el borrador exige.
+
+                Detrás de «Enviar» en el HTML y delante a la vista (`order`):
+                Enter en un campo envía con el PRIMER botón del formulario, y
+                tiene que seguir siendo «Enviar actividad».
+            --}}
+            <button type="submit" class="btn btn-outline" data-guardar-borrador style="order:-1;"
+                    name="guardar_borrador" value="1"
+                    formaction="{{ route('publish.borrador') }}">Guardar borrador</button>
         </div>
     </div>
 </div>

@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateActivityRequest;
 use App\Models\Activity;
-use App\Models\Commune;
+use App\Models\User;
 use App\Services\ActivityCatalogService;
 use App\Services\ActivityModerationService;
 use App\Services\AprobacionAutomatica;
 use App\Support\Filtro;
+use App\Support\LugarDeActividad;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\MessageBag;
 
 class MyActivityController extends Controller
 {
@@ -100,13 +104,23 @@ class MyActivityController extends Controller
         // De dónde venía, antes de que la transacción toque nada.
         $veniaDeAjustes = $activity->estado === 'ajustes';
         $estabaPublicada = $activity->estado === 'publicada';
-        $comuna = Commune::find($datos['commune_id'] ?? null);
 
-        DB::transaction(function () use ($request, $activity, $datos, $comuna) {
+        /*
+         * Un borrador tiene dos botones: «Guardar borrador», que sólo exige el
+         * nombre y lo deja como está, y «Enviar a revisión», que pasa por las
+         * reglas completas —las de este FormRequest sin `guardar_borrador`—,
+         * guarda y lo envía. Así no se puede enviar uno a medias.
+         */
+        $enviarARevision = $activity->estado === 'borrador'
+            && ! $request->esBorrador()
+            && $request->boolean('enviar_revision');
+
+        DB::transaction(function () use ($request, $activity, $datos) {
             $activity->fill([
                 'titulo' => $datos['titulo'],
-                'descripcion' => $datos['descripcion'],
-                'formato' => $datos['formato'],
+                // Un borrador puede no tenerla todavía (ver PublishController).
+                'descripcion' => $datos['descripcion'] ?? '',
+                'formato' => $datos['formato'] ?? $activity->formato,
                 'sin_fecha_definida' => $request->boolean('sin_fecha_definida'),
                 'fecha_inicio' => $datos['fecha_inicio'] ?? null,
                 // Sólo si dura varios días (punto 5 del 05/10). Si la actividad
@@ -116,13 +130,8 @@ class MyActivityController extends Controller
                     : null,
                 'hora_inicio' => $datos['hora_inicio'] ?? null,
                 'hora_termino' => $datos['hora_termino'] ?? null,
-                'region_id' => $comuna?->region_id,
-                'commune_id' => $comuna?->id,
-                'direccion' => $datos['direccion'] ?? null,
-                // El punto de la sugerencia elegida (P16). Cambiar la dirección
-                // a mano lo borra: el navegador manda los dos campos vacíos.
-                'latitud' => $datos['latitud'] ?? null,
-                'longitud' => $datos['longitud'] ?? null,
+                // Región, comuna, dirección y punto; vacíos si es online.
+                ...LugarDeActividad::campos($datos),
                 'participantes_estimados' => $datos['participantes_estimados'] ?? null,
                 // Igual que en el wizard: sin inscripción, sin cupos. Y al
                 // encenderla en una ficha que no tenía, el total parte del
@@ -241,6 +250,18 @@ class MyActivityController extends Controller
             app(\App\Services\CorreoTransaccional::class)->equipoActividadEditada($activity);
         }
 
+        if ($enviarARevision) {
+            return redirect()
+                ->route('account.activities.index')
+                ->with('ok', $this->enviar($activity, $request->user(), $moderacion));
+        }
+
+        if ($request->esBorrador()) {
+            return redirect()
+                ->route('account.activities.edit', $activity)
+                ->with('ok', 'Guardamos el borrador. Cuando esté completo, pulsa «Enviar a revisión».');
+        }
+
         return redirect()->route('account.activities.saved', $activity);
     }
 
@@ -336,6 +357,30 @@ class MyActivityController extends Controller
         $this->authorize('submit', $activity);
 
         /*
+         * Un borrador puede estar a medias (lo deja así «Guardar borrador»), y
+         * esta ruta no recibe el formulario: se comprueba lo guardado con las
+         * MISMAS reglas del editor. Si falta algo, al editor con la lista.
+         */
+        if ($activity->estado === 'borrador' && ($faltan = $this->faltaParaEnviar($activity))->isNotEmpty()) {
+            return redirect()
+                ->route('account.activities.edit', $activity)
+                ->withErrors($faltan);
+        }
+
+        return back()->with('ok', $this->enviar($activity, $request->user(), $moderacion, $aprobacion));
+    }
+
+    /**
+     * La envía a revisión —o la publica, si le toca la aprobación automática—
+     * y devuelve el aviso que se le enseña al organizador.
+     */
+    private function enviar(
+        Activity $activity,
+        User $usuario,
+        ActivityModerationService $moderacion,
+        ?AprobacionAutomatica $aprobacion = null,
+    ): string {
+        /*
          * Una actividad que vuelve de «necesita ajustes» SIEMPRE pasa por
          * revisión, por muchas publicadas que tenga la organización: si la
          * ONG pidió cambios, quiere ver cómo quedaron. Es la única excepción
@@ -344,13 +389,48 @@ class MyActivityController extends Controller
          */
         [$estado, $motivo] = $activity->estado === 'ajustes'
             ? ['revision', 'A revisión: vuelve de una petición de ajustes.']
-            : $aprobacion->estadoAlEnviar($activity);
+            : ($aprobacion ?? app(AprobacionAutomatica::class))->estadoAlEnviar($activity);
 
-        $moderacion->cambiar($activity, $estado, $request->user(), $motivo, automatica: $estado === 'publicada');
+        $moderacion->cambiar($activity, $estado, $usuario, $motivo, automatica: $estado === 'publicada');
 
-        return back()->with('ok', $estado === 'publicada'
+        return $estado === 'publicada'
             ? 'Tu actividad ya está publicada en el calendario.'
-            : 'Enviamos tu actividad a revisión.');
+            : 'Enviamos tu actividad a revisión.';
+    }
+
+    /**
+     * Lo que le falta a una actividad guardada para poder enviarse.
+     *
+     * No es una lista de reglas aparte: son las de `UpdateActivityRequest`,
+     * aplicadas a lo que hay en la base en vez de a un formulario, y sólo las
+     * de los campos que se le pasan —los que pueden faltar—.
+     */
+    private function faltaParaEnviar(Activity $activity): MessageBag
+    {
+        $terminos = fn (string $grupo) => $activity->termsDe($grupo)->pluck('id')->all();
+
+        $datos = [
+            'titulo' => $activity->titulo,
+            'descripcion' => $activity->descripcion,
+            'formato' => $activity->formato,
+            'sin_fecha_definida' => $activity->sin_fecha_definida ? '1' : null,
+            'fecha_inicio' => $activity->fecha_inicio?->toDateString(),
+            'region_id' => $activity->region_id,
+            'commune_id' => $activity->commune_id,
+            'direccion' => $activity->direccion,
+            'temas' => $terminos('tema'),
+            'caracteristicas' => $terminos('caracteristica'),
+            'publicos' => $terminos('publico'),
+        ];
+
+        $formulario = UpdateActivityRequest::create('', 'PUT', $datos);
+
+        return Validator::make(
+            $datos,
+            Arr::only($formulario->rules(), array_keys($datos)),
+            $formulario->messages(),
+            $formulario->attributes(),
+        )->errors();
     }
 
     /** "Jornada X" → "Jornada X (copia)" → "Jornada X (copia 2)" … */

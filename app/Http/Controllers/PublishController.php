@@ -19,6 +19,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\UniqueConstraintViolationException;
 use App\Support\ArchivosRetenidos;
 use App\Support\Filtro;
+use App\Support\LugarDeActividad;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -250,6 +251,108 @@ class PublishController extends Controller
     {
         abort_unless(Setting::get('publicacion_abierta', true), 403);
 
+        [$actividad, $conSesion, $seSuma] = $this->crear($request);
+
+        /*
+         * Fuera de la transacción: si el correo falla, la actividad ya existe.
+         *
+         * A quien publica por primera vez le toca revisión siempre, porque su
+         * organización se acaba de crear y no tiene nada publicado; de la
+         * segunda en adelante, sale directa. Ver `AprobacionAutomatica`.
+         */
+        [$estado, $motivo] = app(AprobacionAutomatica::class)
+            ->estadoAlEnviar($actividad);
+
+        // La guía para organizadores ya no sale de aquí sino al publicarse la
+        // actividad (punto 11 del 23/09): la manda `cambiar()`.
+        $moderacion->cambiar($actividad, $estado, null, $motivo, automatica: $estado === 'publicada');
+
+        if (! $conSesion) {
+            $this->estrenarCuenta($request, $actividad, $seSuma);
+        }
+
+        // Ya están guardados donde tenían que estar: lo retenido sobra, y
+        // dejarlo colgando de la sesión ocuparía disco para siempre.
+        ArchivosRetenidos::limpiar();
+
+        return redirect()
+            ->route('publish.done', $actividad)
+            ->with('ok', 'Recibimos tu actividad. Te avisaremos por correo cuando esté revisada.');
+    }
+
+    /**
+     * «Guardar borrador», desde el paso 4.
+     *
+     * Crea de verdad lo mismo que «Enviar actividad» —la cuenta, la
+     * organización y la actividad— pero la actividad se queda en `borrador`:
+     * no pasa por moderación, no avisa a nadie del equipo y no se ve en el
+     * sitio. Aparece en Mi cuenta → Borradores, desde donde se completa y se
+     * envía, entonces sí con todas las reglas.
+     *
+     * Exige entera la cuenta y la organización (sin ellas no hay dónde colgar
+     * la actividad) y de la actividad sólo el nombre. Ver
+     * `PublishActivityRequest::esBorrador()`.
+     */
+    public function borrador(PublishActivityRequest $request)
+    {
+        abort_unless(Setting::get('publicacion_abierta', true), 403);
+
+        [$actividad, $conSesion, $seSuma] = $this->crear($request);
+
+        // La cuenta nace aquí igual que al enviar: sesión abierta, bienvenida
+        // y verificación. Que el correo llegue no se da por hecho: la pantalla
+        // siguiente dice todo lo necesario para volver sin él.
+        if (! $conSesion) {
+            $this->estrenarCuenta($request, $actividad, $seSuma);
+        }
+
+        ArchivosRetenidos::limpiar();
+
+        return redirect()
+            ->route('publish.borrador.guardado', $actividad)
+            ->with('cuenta_creada', ! $conSesion);
+    }
+
+    /**
+     * La pantalla de «guardamos tu borrador».
+     *
+     * Dice las tres cosas que hay que saber para volver: que se creó la cuenta
+     * (si se creó) y con qué correo, que el borrador está guardado y no
+     * enviado, y dónde encontrarlo. No promete ningún correo: el de bienvenida
+     * puede no llegar, y volver no depende de él.
+     *
+     * Del dueño, como la del paso 5; y si ya no es borrador —la envió, o la
+     * dio de baja—, esta pantalla ya no dice la verdad y se va al editor.
+     */
+    public function borradorGuardado(Activity $activity)
+    {
+        abort_unless(Gate::allows('update', $activity), 404);
+
+        if ($activity->estado !== 'borrador') {
+            return redirect()->route('account.activities.edit', $activity);
+        }
+
+        $activity->load('organization');
+
+        return view('public.publish.borrador', [
+            'activity' => $activity,
+            'cuentaCreada' => (bool) session('cuenta_creada'),
+            'correo' => Auth::user()?->email,
+        ]);
+    }
+
+    /**
+     * La cuenta, la organización y la actividad, en una transacción.
+     *
+     * Lo comparten «Enviar actividad» y «Guardar borrador»: la actividad nace
+     * siempre en `borrador`, y es `store()` quien la pasa por moderación.
+     *
+     * @return array{0: Activity, 1: ?User, 2: bool}  la actividad, la cuenta
+     *   que ya tenía sesión (null si se acaba de crear) y si se sumó a una
+     *   organización con cuenta
+     */
+    private function crear(PublishActivityRequest $request): array
+    {
         $datos = $request->validated();
 
         /*
@@ -391,8 +494,6 @@ class PublishController extends Controller
                     }
                 }
 
-                $comuna = Commune::find($datos['commune_id'] ?? null);
-
                 // Misma historia que el logo: formulario, o lo retenido.
                 $portadaGuardada = null;
 
@@ -408,8 +509,10 @@ class PublishController extends Controller
                     // Quién la creó: la ve, la edita y recibe sus correos.
                     'user_id' => $usuario->id,
                     'titulo' => $datos['titulo'],
-                    'descripcion' => $datos['descripcion'],
-                    'formato' => $datos['formato'],
+                    // Un borrador puede no tenerla todavía; la columna no
+                    // admite nulos y una cadena vacía es lo que pinta el editor.
+                    'descripcion' => $datos['descripcion'] ?? '',
+                    'formato' => $datos['formato'] ?? Activity::FORMATOS[0],
                     'fecha_inicio' => $datos['fecha_inicio'] ?? null,
                     // Sólo si dura varios días y tiene fecha (punto 5 del 05/10).
                     'fecha_termino' => $request->boolean('varios_dias') && ! $request->boolean('sin_fecha_definida')
@@ -418,13 +521,8 @@ class PublishController extends Controller
                     'hora_inicio' => $datos['hora_inicio'] ?? null,
                     'hora_termino' => $datos['hora_termino'] ?? null,
                     'sin_fecha_definida' => $request->boolean('sin_fecha_definida'),
-                    'region_id' => $comuna?->region_id ?? ($datos['region_id'] ?? null),
-                    'commune_id' => $comuna?->id,
-                    'direccion' => $datos['direccion'] ?? null,
-                    // El punto de la sugerencia elegida (P16). Nulo si escribió
-                    // la dirección a mano, que sigue estando permitido.
-                    'latitud' => $datos['latitud'] ?? null,
-                    'longitud' => $datos['longitud'] ?? null,
+                    // Región, comuna, dirección y punto; vacíos si es online.
+                    ...LugarDeActividad::campos($datos),
                     'participantes_estimados' => $datos['participantes_estimados'] ?? null,
                     // Sin inscripción previa no hay cupos que contar: lo que
                     // llegue en el campo es el 80 de ejemplo de un campo que
@@ -472,60 +570,43 @@ class PublishController extends Controller
             ]);
         }
 
-        /*
-         * Fuera de la transacción: si el correo falla, la actividad ya existe.
-         *
-         * A quien publica por primera vez le toca revisión siempre, porque su
-         * organización se acaba de crear y no tiene nada publicado; de la
-         * segunda en adelante, sale directa. Ver `AprobacionAutomatica`.
-         */
-        [$estado, $motivo] = app(AprobacionAutomatica::class)
-            ->estadoAlEnviar($actividad);
+        return [$actividad, $conSesion, $seSuma];
+    }
 
-        // La guía para organizadores ya no sale de aquí sino al publicarse la
-        // actividad (punto 11 del 23/09): la manda `cambiar()`.
-        $moderacion->cambiar($actividad, $estado, null, $motivo, automatica: $estado === 'publicada');
+    /**
+     * Lo que pasa cuando la cuenta se acaba de crear en el wizard.
+     *
+     * Quien ya tenía la sesión abierta no estrena cuenta y no pasa por aquí:
+     * ni se le vuelve a iniciar sesión —regenerar la sesión le cambiaría la
+     * que ya tiene sin motivo—, ni se le manda la bienvenida, ni se dispara
+     * `Registered`, que le pediría verificar un correo verificado hace meses.
+     */
+    private function estrenarCuenta(Request $request, Activity $actividad, bool $seSuma): void
+    {
+        // Su autor, no la principal: si se sumó a una organización con
+        // cuenta, la principal es otra persona.
+        $nuevoUsuario = $actividad->autor;
 
-        /*
-         * Quien ya tenía la sesión abierta no estrena cuenta: ni se le vuelve a
-         * iniciar sesión —regenerar la sesión aquí le cambiaría la que ya tiene
-         * sin motivo—, ni se le manda la bienvenida, ni se dispara `Registered`,
-         * que le pediría verificar un correo verificado hace meses.
-         */
-        if (! $conSesion) {
-            // Su autor, no la principal: si se sumó a una organización con
-            // cuenta, la principal es otra persona.
-            $nuevoUsuario = $actividad->autor;
+        // La cuenta se acaba de crear con la contraseña que eligió aquí
+        // mismo: dejarla fuera obligaba a volver a escribirla para ver su
+        // actividad, y el enlace del correo de verificación rebotaba al
+        // login.
+        Auth::login($nuevoUsuario);
+        $request->session()->regenerate();
 
-            // La cuenta se acaba de crear con la contraseña que eligió aquí
-            // mismo: dejarla fuera obligaba a volver a escribirla para ver su
-            // actividad, y el enlace del correo de verificación rebotaba al
-            // login.
-            Auth::login($nuevoUsuario);
-            $request->session()->regenerate();
+        $nuevoUsuario->forceFill(['last_login_at' => now()])->save();
+        app(ControlDeAcceso::class)->exito($request, AccessLog::PANEL_ORGANIZADOR, $nuevoUsuario);
 
-            $nuevoUsuario->forceFill(['last_login_at' => now()])->save();
-            app(ControlDeAcceso::class)->exito($request, AccessLog::PANEL_ORGANIZADOR, $nuevoUsuario);
+        app(CorreoTransaccional::class)->bienvenida($nuevoUsuario);
 
-            app(CorreoTransaccional::class)->bienvenida($nuevoUsuario);
+        // La cuenta nace aquí, así que aquí sale también el correo de
+        // verificación. No bloquea nada: es para confirmar la dirección.
+        event(new Registered($nuevoUsuario));
 
-            // La cuenta nace aquí, así que aquí sale también el correo de
-            // verificación. No bloquea nada: es para confirmar la dirección.
-            event(new Registered($nuevoUsuario));
-
-            // Se sumó a una organización con cuenta: se avisa a su principal.
-            if ($seSuma) {
-                app(CorreoTransaccional::class)->cuentaSumada($nuevoUsuario);
-            }
+        // Se sumó a una organización con cuenta: se avisa a su principal.
+        if ($seSuma) {
+            app(CorreoTransaccional::class)->cuentaSumada($nuevoUsuario);
         }
-
-        // Ya están guardados donde tenían que estar: lo retenido sobra, y
-        // dejarlo colgando de la sesión ocuparía disco para siempre.
-        ArchivosRetenidos::limpiar();
-
-        return redirect()
-            ->route('publish.done', $actividad)
-            ->with('ok', 'Recibimos tu actividad. Te avisaremos por correo cuando esté revisada.');
     }
 
     /**

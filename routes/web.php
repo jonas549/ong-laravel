@@ -117,7 +117,14 @@ Route::get('/publicar-actividad', [PublishController::class, 'create'])
 Route::post('/publicar-actividad', [PublishController::class, 'store'])
     ->middleware('throttle:10,1,publicar')
     ->name('publish.store');
+// «Guardar borrador» del paso 4. Crea la cuenta igual que publicar, así que
+// cuenta contra el MISMO freno: dos rutas no pueden ser dos cupos.
+Route::post('/publicar-actividad/borrador', [PublishController::class, 'borrador'])
+    ->middleware('throttle:10,1,publicar')
+    ->name('publish.borrador');
 Route::get('/publicar-actividad/{activity:slug}/listo', [PublishController::class, 'done'])->name('publish.done');
+Route::get('/publicar-actividad/{activity:slug}/borrador-guardado', [PublishController::class, 'borradorGuardado'])
+    ->name('publish.borrador.guardado');
 
 /*
  * El buscador de organizaciones del paso 3.

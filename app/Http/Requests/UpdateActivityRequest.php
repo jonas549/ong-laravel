@@ -7,6 +7,8 @@ use App\Models\TaxonomyTerm;
 use App\Rules\CorreoEnviable;
 use App\Support\Enlace;
 use App\Support\FechaEscrita;
+use App\Support\LugarDeActividad;
+use App\Support\ReglasDeBorrador;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +29,8 @@ use Illuminate\Validation\Rule;
  */
 class UpdateActivityRequest extends FormRequest
 {
+    use ReglasDeBorrador;
+
     /**
      * El permiso se comprueba **aquí** y no en el controlador.
      *
@@ -85,8 +89,30 @@ class UpdateActivityRequest extends FormRequest
         $this->merge(Enlace::normalizarCampos($this->all(), ['enlace_web', 'enlace_red_social']));
     }
 
+    /**
+     * «Guardar borrador» desde el editor: sólo sobre una actividad que sigue
+     * siendo borrador. Las demás ya pasaron por las reglas completas y no
+     * pueden volver a quedarse a medias.
+     */
+    public function esBorrador(): bool
+    {
+        $actividad = $this->route('activity');
+
+        return $this->boolean('guardar_borrador')
+            && $actividad instanceof Activity
+            && $actividad->estado === 'borrador';
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
+    {
+        $reglas = $this->reglasCompletas();
+
+        return $this->esBorrador() ? $this->sinObligatoriosDeLaActividad($reglas) : $reglas;
+    }
+
+    /** @return array<string, mixed> */
+    private function reglasCompletas(): array
     {
         return [
             'titulo' => ['required', 'string', 'max:255'],
@@ -112,26 +138,9 @@ class UpdateActivityRequest extends FormRequest
                 ['after:hora_inicio'],
             )],
 
-            'region_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:regions,id'],
-            'commune_id' => ['nullable', 'required_without:sin_fecha_definida', 'exists:communes,id'],
-            'direccion' => ['nullable', Rule::requiredIf(
-                // Punto 5 de la tanda del 11/09: una actividad ONLINE no tiene
-                // dirección física que escribir. Va como `requiredIf` y no como
-                // dos reglas `required_*` sueltas porque Laravel las evalúa por
-                // separado: cada una que dispare hace obligatorio el campo, así
-                // que sumarlas daría un O y lo que hace falta es un Y —sólo se
-                // pide si NO es permanente y ADEMÁS no es online—.
-                fn () => ! $this->boolean('sin_fecha_definida') && $this->input('formato') !== 'Online'
-            ), 'string', 'max:255'],
-
-            /*
-             * El punto de la dirección (P16). Nulos si nadie eligió una
-             * sugerencia, que es lo normal: el campo es texto libre y esto
-             * ayuda, no obliga. Los rangos son los del planeta; lo que llega
-             * aquí lo escribe el navegador.
-             */
-            'latitud' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitud' => ['nullable', 'numeric', 'between:-180,180'],
+            // Región, comuna, dirección y el punto: la condición (online,
+            // permanente) vive en `LugarDeActividad`, la misma del wizard.
+            ...LugarDeActividad::reglas($this),
 
             'participantes_estimados' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'cupos_totales' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -196,9 +205,7 @@ class UpdateActivityRequest extends FormRequest
             'hora_inicio.date_format' => 'Escribe la hora como HH:MM, por ejemplo 10:00.',
             'hora_termino.date_format' => 'Escribe la hora como HH:MM, por ejemplo 13:30.',
             'hora_termino.after' => 'La hora de término debe ser posterior a la de inicio.',
-            'region_id.required_without' => 'Elige la región donde ocurre la actividad.',
-            'commune_id.required_without' => 'Elige la comuna donde ocurre la actividad.',
-            'direccion.required' => 'Escribe la dirección, o marca que está disponible de forma permanente.',
+            ...LugarDeActividad::mensajes(),
             'imagen.max' => 'La imagen no puede pesar más de 2 MB.',
             'imagen.mimes' => 'La imagen debe ser JPG, PNG o WEBP.',
         ];

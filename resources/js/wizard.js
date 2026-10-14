@@ -23,6 +23,8 @@ export const wizard = (inicial) => ({
 
     paso: inicial.paso,
     redirigir: false,
+    // Pisa el de la guía: al volver de un «Guardar borrador» rechazado.
+    modoBorrador: inicial.modoBorrador ?? false,
 
     /*
      * C4 y B1/B2: lo que tiene guardado su organización —nombre, tipo, logo…—

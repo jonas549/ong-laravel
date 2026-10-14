@@ -60,6 +60,9 @@ export const editorActividad = (inicial) => ({
 
     modalCancelar: false,
 
+    // Pisa el de la guía: al volver de un «Guardar borrador» rechazado.
+    modoBorrador: inicial.modoBorrador ?? false,
+
     rutaDirecciones: inicial.rutaDirecciones ?? '/direcciones/buscar',
     raiz: null,
 

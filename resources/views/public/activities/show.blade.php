@@ -159,7 +159,7 @@
                             `noopener` y `nofollow`: es un salto a un sitio de
                             fuera desde una página que rellena cualquiera.
                         --}}
-                        @if ($activity->formato !== 'Online' && $activity->mapa_url)
+                        @if ($activity->mapa_url)
                             <a class="textlink" style="font-size:14px;" target="_blank" rel="noopener nofollow"
                                href="{{ $activity->mapa_url }}">
                                 Ver en el mapa{{ $activity->tienePunto() ? '' : ' (búsqueda aproximada)' }}
@@ -213,7 +213,7 @@
 
     @if ($relacionadas->isNotEmpty())
         <section style="margin-top:72px;">
-            <h2 style="font-weight:800;font-size:26px;margin:0 0 22px;">Otras actividades cerca</h2>
+            <h2 style="font-weight:800;font-size:26px;margin:0 0 22px;">{{ $tituloRelacionadas }}</h2>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;">
                 @foreach ($relacionadas as $act)
                     @include('public.partials.activity-card', ['act' => $act])

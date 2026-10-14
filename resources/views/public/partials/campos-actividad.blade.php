@@ -28,10 +28,22 @@
 --}}
 @php
     use App\Support\CamposDeActividad;
+    use App\Support\LugarDeActividad;
 
     $actividad = $actividad ?? null;
     $organizacion = $organizacion ?? null;
     $hora = fn (?string $h) => $h ? substr($h, 0, 5) : null;
+
+    /*
+     * Región, comuna y dirección (ver `LugarDeActividad`). Una online no tiene
+     * lugar: los tres se esconden y se deshabilitan, para que no viajen. Una
+     * disponible de forma permanente sí los enseña, pero sin exigirlos. Las
+     * expresiones de Alpine salen de la misma lista de formatos que usa el
+     * servidor, no de un «Online» escrito aquí.
+     */
+    $conLugar = '! '.Js::from(LugarDeActividad::FORMATOS_SIN_LUGAR).'.includes(formato)';
+    $lugarObligatorio = '! sinFecha && '.$conLugar;
+    $marcaSinLugar = LugarDeActividad::marcaDelNavegador();
 @endphp
 
     {{-- ── Información básica ── --}}
@@ -39,7 +51,9 @@
         <div class="seclabel" style="margin-bottom:18px;">Información básica</div>
 
         <div style="display:flex;flex-direction:column;gap:18px;">
-            <label class="lbl" data-campo="titulo" data-obligatorio
+            {{-- Lo único de la actividad que exige un borrador: con
+                 `ReglasDeBorrador::OBLIGATORIO_EN_BORRADOR` en el servidor. --}}
+            <label class="lbl" data-campo="titulo" data-obligatorio data-obligatorio-en-borrador
                    data-etiqueta="{{ CamposDeActividad::etiqueta('titulo') }}">Nombre de la actividad *
                 <input class="fld @error('titulo') is-invalid @enderror" name="titulo"
                        value="@viejo('titulo', $actividad?->titulo)" placeholder="Ej. Jornada comunitaria en el barrio"
@@ -76,7 +90,7 @@
                     @foreach ($formatos as $f)
                         <button type="button"
                                 x-bind:class="formato === {{ Js::from($f) }} ? 'chip on' : 'chip'"
-                                x-on:click="formato = {{ Js::from($f) }}">{{ $f }}</button>
+                                x-on:click="formato = {{ Js::from($f) }}; $nextTick(() => repasar())">{{ $f }}</button>
                     @endforeach
                 </div>
                 <input type="hidden" name="formato" x-bind:value="formato">
@@ -158,12 +172,20 @@
             </span>
         </label>
 
+        {{-- Al pasar a «Online» se dice por qué desaparece el lugar. --}}
+        <p class="helper" x-show="! ({{ $conLugar }})" x-cloak data-aviso-online style="margin:0;">
+            Es una actividad online: no hace falta región, comuna ni dirección.
+        </p>
+
+        <div x-show="{{ $conLugar }}" data-bloque-lugar>
         <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <label class="lbl" data-campo="region_id" data-obligatorio
                    data-obligatorio-salvo="sin_fecha_definida"
-                   data-etiqueta="{{ CamposDeActividad::etiqueta('region_id') }}">Región *
+                   data-obligatorio-salvo-valor="{{ $marcaSinLugar }}"
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('region_id') }}">Región<span x-show="{{ $lugarObligatorio }}"> *</span>
                 <select class="fld @error('region_id') is-invalid @enderror" name="region_id"
-                        x-model="regionId" x-on:change="cambiarRegion()">
+                        x-model="regionId" x-on:change="cambiarRegion()"
+                        x-bind:disabled="! ({{ $conLugar }})">
                     <option value="">Selecciona</option>
                     @foreach ($regiones as $region)
                         <option value="{{ $region->id }}">{{ $region->nombre }}</option>
@@ -174,8 +196,10 @@
 
             <label class="lbl" data-campo="commune_id" data-obligatorio
                    data-obligatorio-salvo="sin_fecha_definida"
-                   data-etiqueta="{{ CamposDeActividad::etiqueta('commune_id') }}">Comuna *
-                <select class="fld @error('commune_id') is-invalid @enderror" name="commune_id" x-model="communeId">
+                   data-obligatorio-salvo-valor="{{ $marcaSinLugar }}"
+                   data-etiqueta="{{ CamposDeActividad::etiqueta('commune_id') }}">Comuna<span x-show="{{ $lugarObligatorio }}"> *</span>
+                <select class="fld @error('commune_id') is-invalid @enderror" name="commune_id" x-model="communeId"
+                        x-bind:disabled="! ({{ $conLugar }})">
                     <option value="">Selecciona</option>
                     <template x-for="c in comunasDeRegion()" x-bind:key="c.id">
                         <option x-bind:value="c.id" x-text="c.nombre"></option>
@@ -194,14 +218,16 @@
             exacto en vez de a lo que el buscador adivine de una cadena como
             «Metro Salvador, salida norte».
 
-            `data-obligatorio-salvo` es el `required_without` de la regla: una
-            actividad disponible de forma permanente puede no tener sitio fijo.
+            Las dos marcas `data-obligatorio-salvo*` son el `requiredIf` de
+            `LugarDeActividad`: deja de hacer falta si es permanente o si el
+            formato no tiene lugar. Las llevan los tres campos del lugar.
         --}}
         <label class="lbl" style="margin-top:16px;position:relative;" data-campo="direccion" data-obligatorio
                data-obligatorio-salvo="sin_fecha_definida"
-               data-obligatorio-salvo-valor="formato:Online"
-               data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección *
+               data-obligatorio-salvo-valor="{{ $marcaSinLugar }}"
+               data-etiqueta="{{ CamposDeActividad::etiqueta('direccion') }}">Dirección<span x-show="{{ $lugarObligatorio }}"> *</span>
             <input class="fld @error('direccion') is-invalid @enderror" name="direccion"
+                   x-bind:disabled="! ({{ $conLugar }})"
                    value="@viejo('direccion', $actividad?->direccion)" placeholder="Calle, número, referencia"
                    autocomplete="off" role="combobox" aria-autocomplete="list"
                    x-bind:aria-expanded="dirAbiertas"
@@ -211,8 +237,8 @@
                    x-on:keydown.escape.prevent="dirAbiertas = false">
 
             {{-- El punto viaja aparte, en dos campos ocultos. --}}
-            <input type="hidden" name="latitud" x-bind:value="latitud">
-            <input type="hidden" name="longitud" x-bind:value="longitud">
+            <input type="hidden" name="latitud" x-bind:value="latitud" x-bind:disabled="! ({{ $conLugar }})">
+            <input type="hidden" name="longitud" x-bind:value="longitud" x-bind:disabled="! ({{ $conLugar }})">
 
             <span class="helper" x-show="buscandoDir" x-cloak>Buscando direcciones…</span>
 
@@ -241,6 +267,7 @@
 
             @error('direccion') <span class="field-error">{{ $message }}</span> @enderror
         </label>
+        </div>
 
     </div>
 

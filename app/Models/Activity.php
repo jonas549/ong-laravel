@@ -465,7 +465,7 @@ class Activity extends Model
             ->map(fn ($h) => substr((string) $h, 0, 5))
             ->implode('-');
 
-        return collect([$this->fecha_corta, $horas, $this->commune?->nombre])
+        return collect([$this->fecha_corta, $horas, $this->tieneLugar() ? $this->commune?->nombre : 'Online'])
             ->filter()
             ->implode(' · ');
     }
@@ -480,10 +480,30 @@ class Activity extends Model
         };
     }
 
+    /**
+     * Si ocurre en algún sitio. Una online no tiene región, comuna ni
+     * dirección (ver `LugarDeActividad`), y donde iría el lugar dice «Online».
+     */
+    public function tieneLugar(): bool
+    {
+        return \App\Support\LugarDeActividad::tieneLugar($this->formato);
+    }
+
+    /** «Recoleta, Metropolitana», u «Online». Ficha, panel, correos y .ics. */
     public function getLugarAttribute(): string
     {
+        if (! $this->tieneLugar()) {
+            return 'Online';
+        }
+
         return collect([$this->commune?->nombre, $this->region?->nombre])
             ->filter()->implode(', ') ?: 'Por definir';
+    }
+
+    /** Sólo la comuna, u «Online»: lo que va en las tarjetas y en los listados. */
+    public function getLugarCortoAttribute(): string
+    {
+        return $this->tieneLugar() ? ($this->commune?->nombre ?? 'Por definir') : 'Online';
     }
 
     /** Si se eligió una sugerencia y quedó guardado el punto exacto. */
@@ -509,6 +529,11 @@ class Activity extends Model
      */
     public function getMapaUrlAttribute(): ?string
     {
+        // Una online no está en ningún sitio: no hay mapa al que llevar.
+        if (! $this->tieneLugar()) {
+            return null;
+        }
+
         if ($this->tienePunto()) {
             return 'https://www.google.com/maps/search/?api=1&query='
                 .rawurlencode($this->latitud.','.$this->longitud);
