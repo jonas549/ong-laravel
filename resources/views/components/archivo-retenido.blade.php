@@ -17,6 +17,14 @@
         Se dice el nombre del archivo, y no un «hay uno guardado»: reconocerlo
         es lo que permite saber si es el que se quería.
     --}}
+    {{--
+        Y para la guía de errores, que da el campo por relleno si dentro de su
+        caja hay algún control con valor: el `<input type="file">` vuelve vacío,
+        así que sin esto un logo obligatorio ya guardado se seguía pidiendo y el
+        formulario no se dejaba reenviar sin volver a elegirlo. El servidor no
+        lo lee: el archivo lo pone `ArchivosRetenidos`.
+    --}}
+    <input type="hidden" name="{{ $campo }}_retenido" value="1">
     <div class="archivo-retenido" role="status">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
