@@ -15,14 +15,24 @@
     «+2 más» que no responde.
 --}}
 @php
+    /*
+     * Lo usan /actividades y /voluntariados (15/10). Lo que cambia de una a
+     * otra entra por aquí, con el valor de actividades por defecto: la ruta
+     * del listado, el parcial de cada casilla y el nombre de lo que se cuenta.
+     * La franja de arriba lee los suyos (ver `franja-sin-fecha`).
+     */
+    $rutaListado ??= 'activities.index';
+    $parcialCasilla ??= 'public.activities.partials.cal-actividad';
+    $nombrePlural ??= 'actividades';
+
     // Las flechas viajan con los filtros puestos: cambiar de mes no los suelta.
     $conMes = fn (?string $mes) => $mes === null
         ? null
-        : route('activities.index', $puestos + ['vista' => 'calendario', 'mes' => $mes]);
+        : route($rutaListado, $puestos + ['vista' => 'calendario', 'mes' => $mes]);
 
     $anterior = $conMes($calendario->anterior());
     $siguiente = $conMes($calendario->siguiente());
-    $esteMes = route('activities.index', $puestos + ['vista' => 'calendario']);
+    $esteMes = route($rutaListado, $puestos + ['vista' => 'calendario']);
 
     // Cuántas actividades caben en una casilla antes de plegar el resto.
     $tope = 3;
@@ -90,7 +100,7 @@
                     </div>
 
                     @foreach ($primeras as $act)
-                        @include('public.activities.partials.cal-actividad', ['act' => $act, 'dia' => $casilla['fecha']])
+                        @include($parcialCasilla, ['act' => $act, 'dia' => $casilla['fecha']])
                     @endforeach
 
                     @if ($resto->isNotEmpty())
@@ -103,7 +113,7 @@
                         <details class="cal-mas">
                             <summary>+{{ $resto->count() }} más</summary>
                             @foreach ($resto as $act)
-                                @include('public.activities.partials.cal-actividad', ['act' => $act, 'dia' => $casilla['fecha']])
+                                @include($parcialCasilla, ['act' => $act, 'dia' => $casilla['fecha']])
                             @endforeach
                         </details>
                     @endif
@@ -116,7 +126,7 @@
 @if ($calendario->total === 0)
     <div class="card" style="padding:36px;text-align:center;margin-top:22px;">
         <p style="font-size:16px;color:var(--gris);margin:0 0 16px;">
-            No hay actividades con fecha en {{ Str::lower($calendario->titulo()) }}{{ $puestos ? ' con esos filtros' : '' }}.
+            No hay {{ $nombrePlural }} con fecha en {{ Str::lower($calendario->titulo()) }}{{ $puestos ? ' con esos filtros' : '' }}.
         </p>
         @if ($siguiente)
             <a href="{{ $siguiente }}" class="btn btn-outline">Mirar el mes siguiente</a>

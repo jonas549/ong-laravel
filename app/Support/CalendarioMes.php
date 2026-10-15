@@ -9,7 +9,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
- * La rejilla de un mes para la vista de calendario de `/actividades`.
+ * La rejilla de un mes para la vista de calendario de `/actividades` y, desde
+ * el 15/10, de `/voluntariados`.
+ *
+ * No sabe de qué modelo es la consulta: le pide al modelo cuáles caen en una
+ * casilla, cuáles van a la franja, qué cargar y en qué orden (los scopes
+ * `conDia`, `sinDia`, `paraElCalendario`, `ordenDelDia` y `esPermanente()`,
+ * que tienen `Activity` y `Voluntariado`). Los dos guardan el rango en
+ * `fecha_inicio` / `fecha_termino`, y el reparto por días usa eso.
  *
  * Vive aquí y no en el controlador porque cada decisión de las de abajo hay que
  * poder leerla en un sitio, y porque la consulta la pone quien llama: este
@@ -55,8 +62,7 @@ class CalendarioMes
         $hasta = $mes->copy()->endOfMonth();
 
         $actividades = (clone $consulta)
-            ->where('sin_fecha_definida', false)
-            ->whereNotNull('fecha_inicio')
+            ->conDia()
             /*
              * Solapamiento con el mes, no «empieza dentro del mes»: una
              * actividad del 28 de agosto al 3 de septiembre tiene que salir
@@ -65,10 +71,8 @@ class CalendarioMes
              */
             ->whereDate('fecha_inicio', '<=', $hasta)
             ->whereRaw('COALESCE(fecha_termino, fecha_inicio) >= ?', [$desde->toDateString()])
-            ->with(['commune', 'region', 'terms'])
-            ->orderBy('fecha_inicio')
-            ->orderByRaw('hora_inicio IS NULL, hora_inicio')
-            ->orderBy('titulo')
+            ->paraElCalendario()
+            ->ordenDelDia()
             ->get();
 
         $porDia = static::repartirPorDia($actividades, $desde, $hasta);
@@ -89,14 +93,14 @@ class CalendarioMes
     public static function sinFecha(Builder $consulta): array
     {
         $sueltas = (clone $consulta)
-            ->where(fn ($q) => $q->where('sin_fecha_definida', true)->orWhereNull('fecha_inicio'))
-            ->with(['commune', 'region', 'terms'])
+            ->sinDia()
+            ->paraElCalendario()
             ->orderBy('titulo')
             ->get();
 
         return [
-            'permanentes' => $sueltas->filter->sin_fecha_definida->values(),
-            'porDefinir' => $sueltas->reject->sin_fecha_definida->values(),
+            'permanentes' => $sueltas->filter->esPermanente()->values(),
+            'porDefinir' => $sueltas->reject->esPermanente()->values(),
         ];
     }
 

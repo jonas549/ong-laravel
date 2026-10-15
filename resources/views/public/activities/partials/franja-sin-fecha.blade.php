@@ -15,11 +15,16 @@
     JavaScript, ya trae el teclado resuelto y aquí no hace falta nada más.
 --}}
 @php
+    // Los voluntariados (15/10) traen su propio parcial y su texto; por
+    // defecto, los de las actividades.
+    $parcialSuelta ??= 'public.activities.partials.cal-suelta';
+    $textoPermanentes ??= ['Disponibles todo el año', 'Sin fecha concreta: se puede participar cuando quieras.'];
+
     $grupos = [
         [
             'clave' => 'permanentes',
-            'titulo' => 'Disponibles todo el año',
-            'pie' => 'Sin fecha concreta: se puede participar cuando quieras.',
+            'titulo' => $textoPermanentes[0],
+            'pie' => $textoPermanentes[1],
             'items' => $sinFecha['permanentes'],
         ],
         [
@@ -47,14 +52,7 @@
 
                 <div class="cal-sueltas">
                     @foreach ($grupo['items'] as $act)
-                        @php $tema = $act->termsDe('tema')->first(); @endphp
-                        <a class="cal-suelta" href="{{ route('activities.show', $act) }}">
-                            @if ($tema)
-                                <span class="cal-act-tema">{{ $tema->nombre }}</span>
-                            @endif
-                            <span class="cal-suelta-nombre dato-editable">{{ $act->titulo }}</span>
-                            <span class="cal-suelta-lugar">{{ $act->lugar }}</span>
-                        </a>
+                        @include($parcialSuelta, ['act' => $act])
                     @endforeach
                 </div>
             </details>

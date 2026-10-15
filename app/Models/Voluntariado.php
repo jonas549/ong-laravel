@@ -122,6 +122,33 @@ class Voluntariado extends Model
             ->orderBy('id');
     }
 
+    // ── Lo que necesita `App\Support\CalendarioMes` (15/10) ────────
+    // Los mismos cuatro que `Activity`, más `esPermanente()`. La API sólo trae
+    // fechas, sin hora.
+
+    /** Las que caen en alguna casilla: con día y sin ser permanentes. */
+    public function scopeConDia(Builder $q): Builder
+    {
+        return $q->where(fn ($w) => $w->whereNull('horario_tipo')->orWhere('horario_tipo', '<>', 'continuous'))
+            ->whereNotNull('fecha_inicio');
+    }
+
+    /** Las de la franja de arriba: las mismas que `esPermanente()`. */
+    public function scopeSinDia(Builder $q): Builder
+    {
+        return $q->where(fn ($w) => $w->where('horario_tipo', 'continuous')->orWhereNull('fecha_inicio'));
+    }
+
+    public function scopeParaElCalendario(Builder $q): Builder
+    {
+        return $q;
+    }
+
+    public function scopeOrdenDelDia(Builder $q): Builder
+    {
+        return $q->orderBy('fecha_inicio')->orderBy('titulo');
+    }
+
     /** Su portada, o la imagen predeterminada de las actividades si no trae. */
     public function getImagenAttribute(): string
     {

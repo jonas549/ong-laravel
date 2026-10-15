@@ -341,6 +341,41 @@ class Activity extends Model
             ->orderBy('id');
     }
 
+    // ── Lo que necesita `App\Support\CalendarioMes` ───────────────
+    // Los voluntariados tienen los mismos cuatro (15/10): el calendario no
+    // sabe de qué modelo es la consulta que recibe.
+
+    /** Las que caen en alguna casilla: con día y sin ser permanentes. */
+    public function scopeConDia(Builder $q): Builder
+    {
+        return $q->where('sin_fecha_definida', false)->whereNotNull('fecha_inicio');
+    }
+
+    /** Las de la franja de arriba: permanentes o con la fecha por definir. */
+    public function scopeSinDia(Builder $q): Builder
+    {
+        return $q->where(fn ($w) => $w->where('sin_fecha_definida', true)->orWhereNull('fecha_inicio'));
+    }
+
+    public function scopeParaElCalendario(Builder $q): Builder
+    {
+        return $q->with(['commune', 'region', 'terms']);
+    }
+
+    /** Dentro del día, por hora (sin hora primero) y por título. */
+    public function scopeOrdenDelDia(Builder $q): Builder
+    {
+        return $q->orderBy('fecha_inicio')
+            ->orderByRaw('hora_inicio IS NULL, hora_inicio')
+            ->orderBy('titulo');
+    }
+
+    /** En la franja: «todo el año» si es permanente, «por definir» si no. */
+    public function esPermanente(): bool
+    {
+        return (bool) $this->sin_fecha_definida;
+    }
+
     public function scopeFeatured(Builder $q): Builder
     {
         return $q->where('destacada', true);

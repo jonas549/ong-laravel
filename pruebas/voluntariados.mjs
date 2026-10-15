@@ -6,11 +6,11 @@
 //       lleva noindex (meta y cabecera). Encendido: el menú lleva a
 //       /voluntariados en la misma pestaña y sin noindex. Lo deja como estaba.
 //   2 · Con lo que haya en la base (hoy, una sola oportunidad): la tarjeta es
-//       la misma que la de las actividades, sin barra de filtros si hay menos
-//       de dos, y con el enlace a todo Voluntariados Chile al final.
-//   3 · Con cuatro voluntariados sembrados: la barra aparece con búsqueda,
-//       región y formato —sólo con las opciones que hay, y sin tema—, y cada
-//       filtro filtra.
+//       la misma que la de las actividades, con la barra de filtros siempre
+//       (15/10), y con el enlace a todo Voluntariados Chile al final.
+//   3 · Con cuatro voluntariados sembrados: la barra con búsqueda, región
+//       (las 16) y formato (los 3), sin tema, y cada filtro filtra. El
+//       calendario y lo demás del 15/10, en `voluntariados-calendario.mjs`.
 //   4 · La ficha: postular lleva a su sitio en otra pestaña, «Qué harás» y
 //       «Requisitos», categoría tal cual, y NUNCA el nombre ni el correo del
 //       contacto. Una dada de baja o cerrada da 404.
@@ -115,7 +115,8 @@ try {
   const hoy = await tarjetas();
   di('una tarjeta por voluntariado público', hoy.length === reales, `${hoy.length} de ${reales}`);
   di('con la tarjeta de las actividades y «Ver voluntariado»', hoy.every((c) => /Ver voluntariado/.test(c.cta) && c.href.includes('/voluntariados/')));
-  if (reales < 2) di('**con menos de dos, sin barra de filtros**', ! await p.$('[data-filtros-voluntariados]'));
+  // Desde el 15/10 la barra es la de actividades: siempre visible.
+  di('**la barra de filtros está siempre, aunque haya pocos**', !! await p.$('[data-filtros-voluntariados]'));
   const todos = await p.$eval('[data-todos-vch]', (a) => ({ href: a.href, target: a.target, texto: a.textContent.trim() })).catch(() => null);
   di('al final, «Ver todos los voluntariados en Voluntariados Chile»', todos?.href === 'https://voluntariadoschile.cl/oportunidades' && todos.target === '_blank', todos?.texto);
   const actividadesEnVol = await p.$$eval('.act-card .btn', (bs) => bs.filter((b) => /Ver actividad/.test(b.textContent)).length);
@@ -128,9 +129,9 @@ try {
   di('con búsqueda, región y formato', !! await p.$('#f-q') && !! await p.$('#f-region') && !! await p.$('#f-formato'));
   di('**sin filtro de tema**', ! await p.$('[name="tema"]') && ! await p.$('#f-tema'));
   const opcionesRegion = await p.$$eval('#f-region option', (os) => os.map((o) => o.value).filter(Boolean).map(Number));
-  di('región: sólo las que tienen voluntariados', opcionesRegion.includes(VALPO) && opcionesRegion.includes(RM) && opcionesRegion.length <= 3, JSON.stringify(opcionesRegion));
+  di('región: las 16, como en actividades', opcionesRegion.includes(VALPO) && opcionesRegion.includes(RM) && opcionesRegion.length === 16, `(${opcionesRegion.length})`);
   const opcionesFormato = await p.$$eval('#f-formato option', (os) => os.map((o) => o.value).filter(Boolean));
-  di('formato: sólo los que hay', ['Híbrido', 'Online', 'Presencial'].every((f) => opcionesFormato.includes(f)), opcionesFormato.join(','));
+  di('formato: los tres de actividades', opcionesFormato.length === 3 && ['Híbrido', 'Online', 'Presencial'].every((f) => opcionesFormato.includes(f)), opcionesFormato.join(','));
   const enLista = (await tarjetas()).map((c) => c.titulo);
   di('salen las tres abiertas', [`Huerta comunitaria ${SELLO}`, `Tutorías en línea ${SELLO}`, `Ropero solidario ${SELLO}`].every((x) => enLista.includes(x)));
   di('**ni la dada de baja ni la cerrada**', ! enLista.some((x) => /Dado de baja|Postulación cerrada/.test(x)));
