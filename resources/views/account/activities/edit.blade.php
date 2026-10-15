@@ -185,7 +185,8 @@
 
             {{-- ── Barra de acciones ── --}}
             <div style="padding:20px 30px;border-top:1px solid var(--linea);background:#fdfcfb;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                @if ($activity->estado !== 'cancelada')
+                {{-- Cancelar la devuelve a borradores (15/10): un borrador no tiene nada que cancelar. --}}
+                @if (! in_array($activity->estado, ['borrador', 'cancelada'], true))
                     <button type="button" class="btn btn-danger btn-sm" x-on:click="modalCancelar = true">Cancelar actividad</button>
                 @else
                     <span></span>

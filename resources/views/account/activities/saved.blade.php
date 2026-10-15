@@ -40,6 +40,11 @@
     @elseif ($activity->estado === 'publicada')
         <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 14px;color:var(--ink);text-wrap:pretty;">¡Tus cambios ya están publicados!</h1>
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 auto 32px;max-width:46ch;text-wrap:pretty;">La información de tu actividad se actualizó correctamente y ya está visible para las personas que visitan el sitio.</p>
+    @elseif ($activity->estado === 'cancelada')
+        {{-- La cancelada por la ONG (15/10): se puede editar, pero no vuelve
+             a verse por guardar; prometer que «se verá» era falso. --}}
+        <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 14px;color:var(--ink);text-wrap:pretty;">Guardamos tus cambios</h1>
+        <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 auto 32px;max-width:46ch;text-wrap:pretty;"><strong style="color:var(--ink);">{{ $activity->titulo }}</strong> quedó actualizada, pero sigue cancelada y no aparece en el sitio.</p>
     @else
         <h1 style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 14px;color:var(--ink);text-wrap:pretty;">¡Guardamos tus cambios!</h1>
         <p style="font-size:17px;line-height:1.65;color:var(--gris);margin:0 auto 32px;max-width:46ch;text-wrap:pretty;">La información de <strong style="color:var(--ink);">{{ $activity->titulo }}</strong> quedó actualizada. Se verá en el sitio cuando la actividad esté publicada.</p>

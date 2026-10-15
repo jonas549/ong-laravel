@@ -153,7 +153,7 @@ class ActivityController extends Controller
             ($a->autor ?? $a->responsable())?->email ?? '',
             ($a->autor ?? $a->responsable())?->name ?? '',
             \App\Support\Fecha::conHora($a->created_at),
-            $a->sin_fecha_definida ? 'Por definir' : $dia($a->fecha_inicio),
+            $a->sin_fecha_definida ? Activity::TEXTO_PERMANENTE : $dia($a->fecha_inicio),
             $a->sin_fecha_definida ? '' : $dia($a->fecha_termino),
             $hora($a->hora_inicio),
             $hora($a->hora_termino),

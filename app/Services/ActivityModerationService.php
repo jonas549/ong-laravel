@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Activity;
 use App\Models\ActivityStatusLog;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -136,6 +137,64 @@ class ActivityModerationService
         return $actividad;
     }
 
+    /** El comentario que queda en el historial al cancelar el organizador. */
+    public const COMENTARIO_CANCELADA_POR_ORGANIZADOR = 'Cancelada por el organizador.';
+
+    /**
+     * Cuando la cancela su organizador (15/10): vuelve a sus borradores, que
+     * es lo que le promete el diálogo de confirmación, y no a «cancelada».
+     * Cancelar desde el panel sigue siendo `cambiar(..., 'cancelada')`: eso
+     * es moderación, no lo mismo.
+     *
+     * Lo que hace, además de cambiar el estado:
+     *
+     * - Las inscripciones vivas pasan a canceladas y sus cupos vuelven. A esas
+     *   personas se les avisa de que se canceló; si la actividad volviera,
+     *   empieza sin inscritos y nadie recibe el recordatorio de algo que le
+     *   dijimos que no iba.
+     * - `inscripcion_habilitada` NO se apaga (sí al cancelar desde el panel):
+     *   si se vuelve a publicar, vuelve con su formulario.
+     * - Los correos, los de siempre: al organizador el de «cancelada» y a
+     *   cada inscrito el suyo. Fuera de la transacción, como el resto: dentro
+     *   se encolarían antes de que el cambio esté confirmado.
+     *
+     * Volver a enviarla la manda SIEMPRE a revisión: ver
+     * `Activity::vuelveDeCancelacion()` y quien decide al enviar.
+     *
+     * @return int a cuántas personas inscritas se avisó
+     */
+    public function cancelarPorElOrganizador(Activity $actividad, ?User $autor): int
+    {
+        $anterior = $actividad->estado;
+        $ids = $actividad->registrations()->where('estado', '!=', 'cancelado')->pluck('id');
+
+        DB::transaction(function () use ($actividad, $autor, $anterior, $ids) {
+            $actividad->estado = 'borrador';
+            $actividad->save();
+
+            ActivityStatusLog::create([
+                'activity_id' => $actividad->id,
+                'user_id' => $autor?->id,
+                'de_estado' => $anterior,
+                'a_estado' => 'borrador',
+                'comentario' => self::COMENTARIO_CANCELADA_POR_ORGANIZADOR,
+            ]);
+
+            if ($ids->isNotEmpty()) {
+                $actividad->registrations()->whereKey($ids)->update(['estado' => 'cancelado']);
+
+                if ($actividad->cupos_disponibles !== null) {
+                    $actividad->increment('cupos_disponibles', $ids->count());
+                }
+            }
+        });
+
+        $this->avisar($actividad, 'cancelada');
+        $this->avisarInscritos($actividad, $ids->all());
+
+        return $ids->count();
+    }
+
     /**
      * Avisa a la ONG de que una actividad volvió corregida, con el mensaje que
      * escribió el organizador dentro.
@@ -178,13 +237,19 @@ class ActivityModerationService
      *
      * Por lotes: una actividad con cientos de inscritos no debe cargarlos
      * todos en memoria ni encolar de golpe.
+     *
+     * @param  array<int>|null  $ids  las que había vivas antes de cancelar,
+     *                                si ya se marcaron canceladas (lo hace
+     *                                `cancelarPorElOrganizador()`); sin ellas,
+     *                                las que siguen vivas
      */
-    private function avisarInscritos(Activity $actividad): void
+    private function avisarInscritos(Activity $actividad, ?array $ids = null): void
     {
         $correos = app(CorreoTransaccional::class);
 
         $actividad->registrations()
-            ->where('estado', '!=', 'cancelado')
+            ->when($ids === null, fn ($q) => $q->where('estado', '!=', 'cancelado'))
+            ->when($ids !== null, fn ($q) => $q->whereKey($ids))
             ->chunkById(100, function ($inscripciones) use ($correos, $actividad) {
                 foreach ($inscripciones as $inscripcion) {
                     $inscripcion->setRelation('activity', $actividad);

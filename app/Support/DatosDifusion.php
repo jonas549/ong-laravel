@@ -58,8 +58,12 @@ class DatosDifusion
      */
     private static function cuando(Activity $a): array
     {
-        if ($a->sin_fecha_definida || ! $a->fecha_inicio) {
-            return ['fecha' => 'Fecha por definir', 'horas' => ''];
+        if ($a->sin_fecha_definida) {
+            return ['fecha' => Activity::TEXTO_PERMANENTE, 'horas' => ''];
+        }
+
+        if (! $a->fecha_inicio) {
+            return ['fecha' => Activity::TEXTO_SIN_FECHA, 'horas' => ''];
         }
 
         // El mismo texto que la ficha y los correos (`RangoDeFechas`).

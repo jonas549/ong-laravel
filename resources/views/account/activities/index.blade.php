@@ -177,7 +177,8 @@
                                 </a>
                             @endif
 
-                            @if ($a->estado !== 'cancelada')
+                            {{-- Cancelar la devuelve a borradores (15/10): un borrador no tiene nada que cancelar. --}}
+                            @if (! in_array($a->estado, ['borrador', 'cancelada'], true))
                                 <button type="button" class="sqbtn sqbtn-danger" aria-label="Cancelar actividad" title="Cancelar actividad"
                                         x-on:click="cancelar = {{ Js::from([
                                             'nombre' => $a->titulo,

@@ -96,8 +96,8 @@ try {
 
     const r = JSON.parse(sql(`select json_object('nombre', r.nombre, 'correo', r.correo, 'mayor', if(r.es_mayor_edad, 'Sí', 'No'),
         'act', a.titulo, 'org', o.nombre,
-        'fecha', if(a.sin_fecha_definida, 'Por definir', concat(date_format(a.fecha_inicio, '%d-%m-%Y'),
-            if(a.fecha_termino is not null and a.fecha_termino <> a.fecha_inicio, concat(' al ', date_format(a.fecha_termino, '%d-%m-%Y')), ''))))
+        'fecha', if(a.sin_fecha_definida, 'Actividad disponible de forma permanente', if(a.fecha_inicio is null, 'Por definir', concat(date_format(a.fecha_inicio, '%d-%m-%Y'),
+            if(a.fecha_termino is not null and a.fecha_termino <> a.fecha_inicio, concat(' al ', date_format(a.fecha_termino, '%d-%m-%Y')), '')))))
         from registrations r join activities a on a.id = r.activity_id join organizations o on o.id = a.organization_id where r.id = ${regSi}`));
     const f = fila(regSi);
     const v = (c) => String(f?.[col(c)] ?? '');

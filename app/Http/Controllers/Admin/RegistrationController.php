@@ -170,7 +170,11 @@ class RegistrationController extends Controller
      */
     public static function fechaDeActividad(Activity $a): string
     {
-        if ($a->sin_fecha_definida || ! $a->fecha_inicio) {
+        if ($a->sin_fecha_definida) {
+            return Activity::TEXTO_PERMANENTE;
+        }
+
+        if (! $a->fecha_inicio) {
             return 'Por definir';
         }
 

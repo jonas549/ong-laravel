@@ -159,7 +159,9 @@ try {
     t('4 · En línea, sin fecha y sin inscripción');
     const online = await generar(ids.online);
     di('«Actividad en línea»', hay(online.textos, /^Actividad en/));
-    di('«Fecha por definir»', hay(online.textos, /Fecha por/));
+    // Es «disponible de forma permanente»: desde el 15/10 lo dice así.
+    // Partido en líneas: «Actividad / disponible de / forma permanente».
+    di('«Actividad disponible de forma permanente»', hay(online.textos, /disponible de/) && hay(online.textos, /forma permanente/) && ! hay(online.textos, /Fecha por/));
     di('«Sin inscripción previa»', hay(online.textos, /Sin inscripción/));
     di('ningún texto fuera de su sitio', fueraDeSitio(online.textos).length === 0, fueraDeSitio(online.textos).join(' · '));
 

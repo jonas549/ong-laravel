@@ -333,15 +333,23 @@ class MyActivityController extends Controller
          * una confirmación falsa, del mismo tipo que las que ya han costado
          * caro en este proyecto.
          */
-        $avisados = $activity->registrations()->where('estado', '!=', 'cancelado')->count();
+        /*
+         * 15/10: vuelve a sus borradores, que es lo que promete el diálogo, y
+         * sus inscripciones se cancelan (ver `cancelarPorElOrganizador`). Un
+         * borrador no tiene nada que cancelar, ni una que canceló la ONG: el
+         * botón no sale, y si la petición llega igual no se toca nada.
+         */
+        if (in_array($activity->estado, ['borrador', 'cancelada'], true)) {
+            return redirect()->route('account.activities.index');
+        }
 
-        $moderacion->cambiar($activity, 'cancelada', $request->user(), 'Cancelada por el organizador.');
+        $avisados = $moderacion->cancelarPorElOrganizador($activity, $request->user());
 
         $aviso = $avisados === 0
-            ? 'La actividad fue cancelada. No había personas inscritas a las que avisar.'
+            ? 'La actividad fue cancelada y quedó en tus borradores. No había personas inscritas a las que avisar.'
             : ($avisados === 1
-                ? 'La actividad fue cancelada. Avisamos por correo a la persona inscrita.'
-                : 'La actividad fue cancelada. Avisamos por correo a las '.$avisados.' personas inscritas.');
+                ? 'La actividad fue cancelada y quedó en tus borradores. Avisamos por correo a la persona inscrita.'
+                : 'La actividad fue cancelada y quedó en tus borradores. Avisamos por correo a las '.$avisados.' personas inscritas.');
 
         return redirect()
             ->route('account.activities.index')
@@ -383,13 +391,16 @@ class MyActivityController extends Controller
         /*
          * Una actividad que vuelve de «necesita ajustes» SIEMPRE pasa por
          * revisión, por muchas publicadas que tenga la organización: si la
-         * ONG pidió cambios, quiere ver cómo quedaron. Es la única excepción
-         * a la aprobación automática y se decide aquí, que es donde se sabe
-         * de dónde viene la actividad.
+         * ONG pidió cambios, quiere ver cómo quedaron. La otra excepción
+         * (15/10) es la que su organizador canceló y vuelve de borradores:
+         * sin ella, la regla la contaría a ella misma como «ya publicó antes».
+         * Se decide aquí, que es donde se sabe de dónde viene la actividad.
          */
-        [$estado, $motivo] = $activity->estado === 'ajustes'
-            ? ['revision', 'A revisión: vuelve de una petición de ajustes.']
-            : ($aprobacion ?? app(AprobacionAutomatica::class))->estadoAlEnviar($activity);
+        [$estado, $motivo] = match (true) {
+            $activity->estado === 'ajustes' => ['revision', 'A revisión: vuelve de una petición de ajustes.'],
+            $activity->vuelveDeCancelacion() => ['revision', 'A revisión: vuelve de una cancelación.'],
+            default => ($aprobacion ?? app(AprobacionAutomatica::class))->estadoAlEnviar($activity),
+        };
 
         $moderacion->cambiar($activity, $estado, $usuario, $motivo, automatica: $estado === 'publicada');
 

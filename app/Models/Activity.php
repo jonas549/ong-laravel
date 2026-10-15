@@ -471,11 +471,27 @@ class Activity extends Model
         return \App\Support\RangoDeFechas::corto($this->fecha_inicio, $this->fecha_termino);
     }
 
+    /**
+     * Lo que dice una «disponible de forma permanente» donde iría su fecha
+     * larga (15/10): la ficha, Mis actividades, el panel, los correos, las
+     * exportaciones y la imagen de difusión. En los sitios cortos —tarjeta,
+     * calendario, listados del panel— va «Todo el año» (`fecha_corta`).
+     * «Fecha por definir» queda sólo para las que no tienen fecha sin ser
+     * permanentes, que sólo pueden venir de datos antiguos.
+     */
+    public const TEXTO_PERMANENTE = 'Actividad disponible de forma permanente';
+
+    public const TEXTO_SIN_FECHA = 'Fecha por definir';
+
     /** El formato del listado de "Mi cuenta": "26 julio 2026". */
     public function getFechaListaAttribute(): string
     {
-        if ($this->sin_fecha_definida || ! $this->fecha_inicio) {
-            return 'Fecha por definir';
+        if ($this->sin_fecha_definida) {
+            return self::TEXTO_PERMANENTE;
+        }
+
+        if (! $this->fecha_inicio) {
+            return self::TEXTO_SIN_FECHA;
         }
 
         return \App\Support\RangoDeFechas::lista($this->fecha_inicio, $this->fecha_termino);
@@ -483,8 +499,12 @@ class Activity extends Model
 
     public function getFechaLargaAttribute(): string
     {
-        if ($this->sin_fecha_definida || ! $this->fecha_inicio) {
-            return 'Fecha por definir';
+        if ($this->sin_fecha_definida) {
+            return self::TEXTO_PERMANENTE;
+        }
+
+        if (! $this->fecha_inicio) {
+            return self::TEXTO_SIN_FECHA;
         }
 
         // Con varios días, el rango entero (tanda del 05/10): lo leen la
@@ -691,6 +711,26 @@ class Activity extends Model
         $ultimo = $this->statusLogs()->reorder('id', 'desc')->first();
 
         return $ultimo?->de_estado === 'ajustes' && $ultimo->a_estado === 'revision';
+    }
+
+    /**
+     * Si es un borrador que llegó ahí porque lo canceló su organizador (15/10).
+     *
+     * Lo dice el historial, como `vuelveDeAjustes()`: el último movimiento es
+     * «algo → borrador», y la única forma de entrar a borrador desde otro
+     * estado es esa cancelación (un borrador nuevo nace sin historial). Al
+     * volver a enviarla va SIEMPRE a revisión: si no, la aprobación automática
+     * la contaría a ella misma como «ya publicó antes».
+     */
+    public function vuelveDeCancelacion(): bool
+    {
+        if ($this->estado !== 'borrador') {
+            return false;
+        }
+
+        $ultimo = $this->statusLogs()->reorder('id', 'desc')->first();
+
+        return $ultimo !== null && $ultimo->a_estado === 'borrador' && $ultimo->de_estado !== null;
     }
 
     /**

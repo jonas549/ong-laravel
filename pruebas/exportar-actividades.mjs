@@ -153,7 +153,7 @@ try {
     const v = (c) => String(fila?.[col(c)] ?? '');
     const a = JSON.parse(sql(`select json_object(
         'titulo', a.titulo, 'org', o.nombre, 'correo', ifnull(u.email, ''),
-        'fecha', if(a.sin_fecha_definida, 'Por definir', ifnull(date_format(a.fecha_inicio, '%d-%m-%Y'), '')),
+        'fecha', if(a.sin_fecha_definida, 'Actividad disponible de forma permanente', ifnull(date_format(a.fecha_inicio, '%d-%m-%Y'), '')),
         'termino', if(a.sin_fecha_definida, '', ifnull(date_format(a.fecha_termino, '%d-%m-%Y'), '')),
         'hi', ifnull(left(a.hora_inicio, 5), ''), 'ht', ifnull(left(a.hora_termino, 5), ''),
         'dir', ifnull(a.direccion, ''), 'comuna', ifnull(c.nombre, ''), 'region', ifnull(r.nombre, ''), 'formato', ifnull(a.formato, ''),
